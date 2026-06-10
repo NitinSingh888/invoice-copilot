@@ -3,10 +3,13 @@ from __future__ import annotations
 from decimal import Decimal
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, UploadFile
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_role
+from app.agents import extraction_agent
+from app.api.deps import get_db, get_llm, get_role
+from app.clients.llm.base import LLMClient
+from app.core.config import get_settings
 from app.core.exceptions import NotFoundError
 from app.domain.policy.findings import Severity
 from app.domain.policy.matching import InvoiceData
@@ -14,7 +17,6 @@ from app.repositories import invoice_repo
 from app.schemas.common import FindingOut
 from app.schemas.invoice import ActionIn, InvoiceIn, InvoiceOut, ProcessResultOut
 from app.services import enrichment_service, execution_service, learning_service, pipeline_service, policy_service
-from app.core.config import get_settings
 
 router = APIRouter()
 
@@ -36,6 +38,49 @@ def create_invoice(
     inv = invoice_repo.get(db, result.invoice_id)
     if inv is None:
         raise NotFoundError(f"invoice {result.invoice_id} not found after processing")
+    return ProcessResultOut(
+        invoice_id=result.invoice_id,
+        verdict=result.decision.verdict.value,
+        route=result.decision.route,
+        reason=result.decision.reason,
+        status=inv.status,
+        findings=[FindingOut.from_domain(f) for f in result.findings],
+    )
+
+
+@router.post("/upload", status_code=201, response_model=ProcessResultOut)
+def upload_invoice(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    role: str = Depends(get_role),
+    llm: LLMClient = Depends(get_llm),
+) -> ProcessResultOut:
+    file_bytes = file.file.read()
+    filename = file.filename or ""
+    content_type = file.content_type or "application/octet-stream"
+
+    extracted = extraction_agent.extract(
+        llm,
+        file_bytes=file_bytes,
+        filename=filename,
+        content_type=content_type,
+    )
+
+    invoice_id = f"inv-{uuid4().hex[:8]}"
+    invoice_data = InvoiceData(
+        invoice_id=invoice_id,
+        vendor=extracted.vendor or "",
+        amount=extracted.amount or Decimal("0"),
+        po_number=extracted.po_number,
+        invoice_number=extracted.invoice_number or "",
+    )
+
+    result = pipeline_service.process_invoice(db, invoice_data, extracted.overall_confidence)
+
+    inv = invoice_repo.get(db, result.invoice_id)
+    if inv is None:
+        raise NotFoundError(f"invoice {result.invoice_id} not found after processing")
+
     return ProcessResultOut(
         invoice_id=result.invoice_id,
         verdict=result.decision.verdict.value,
