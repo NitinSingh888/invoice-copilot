@@ -1,0 +1,31 @@
+# Invoice Copilot — Render Blueprint
+#
+# Deploy:
+#   1. Create a free Postgres on Neon (https://neon.tech).
+#   2. Copy the connection string (psycopg / asyncpg driver URL).
+#   3. Set IC_DATABASE_URL below to that string, or paste it in the Render
+#      dashboard under "Environment" → IC_DATABASE_URL.
+#   4. Push this file; Render will build from Dockerfile automatically.
+#
+# The app seeds demo data on first boot (no separate migration step needed).
+# PORT is injected automatically by Render — no need to set it here.
+
+services:
+  - type: web
+    name: invoice-copilot
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /api/v1/health
+
+    envVars:
+      - key: IC_LLM_PROVIDER
+        value: mock
+
+      # Paste your Neon connection string here, e.g.:
+      #   postgresql+psycopg://user:pass@ep-xxx.region.aws.neon.tech/dbname?sslmode=require
+      - key: IC_DATABASE_URL
+        sync: false   # user must supply this — never committed to source control
+
+      - key: PYTHONUNBUFFERED
+        value: "1"
