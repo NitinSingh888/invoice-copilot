@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-import pytest
 from sqlalchemy.orm import Session
 
 from app.db.models.invoice import Invoice
