@@ -165,7 +165,8 @@ function App() {
           setMessages((x) => x.map((m) => (m.kind === "card" && m.invId === invId ? { id: m.id, kind: "resolved", invId, action, actor } : m)));
           // Refresh queue from backend
           const rows = await IC_API.listInvoices();
-          const mapped = rows.map(mapLiveInvoice);
+          // exclude historical cold-start rows (status "cleared") from the live queue
+          const mapped = rows.filter((r) => r.status !== "cleared").map(mapLiveInvoice);
           setInvoices(mapped);
           recalcSaved(mapped);
         } catch (err) {
@@ -300,7 +301,8 @@ function App() {
           // If result has batch counts, refresh the queue
           if (r.result && (r.result.queued != null || r.result.needs != null || r.result.blocked != null)) {
             const rows = await IC_API.listInvoices();
-            const mapped = rows.map(mapLiveInvoice);
+            // exclude historical cold-start rows (status "cleared") from the live queue
+          const mapped = rows.filter((r) => r.status !== "cleared").map(mapLiveInvoice);
             setInvoices(mapped);
             recalcSaved(mapped);
             const q = r.result.queued || 0;
@@ -401,7 +403,8 @@ function App() {
     try {
       await IC_API.reset();
       const rows = await IC_API.listInvoices();
-      const mapped = rows.map(mapLiveInvoice);
+      // exclude historical cold-start rows (status "cleared") from the live queue
+      const mapped = rows.filter((r) => r.status !== "cleared").map(mapLiveInvoice);
       setInvoices(mapped);
       recalcSaved(mapped);
       setMessages([]);
