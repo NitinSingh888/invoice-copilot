@@ -38,5 +38,7 @@ def apply_rules(rules: Sequence[LearnedRule], ctx: RuleContext) -> RuleOutcome |
     matching = [r for r in rules if _matches(r, ctx)]
     if not matching:
         return None
-    winner = max(matching, key=lambda r: r.specificity)  # most-specific wins
+    # Most-specific wins; tie-break by id so the winner is deterministic
+    # regardless of input order.
+    winner = max(matching, key=lambda r: (r.specificity, r.id))
     return RuleOutcome(force_escalate=True, route=winner.route, rule_id=winner.id)

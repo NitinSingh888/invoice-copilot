@@ -17,8 +17,8 @@ class PatternCandidate:
     vendor: str
     finding_code: str
     action: str
-    example_ids: list[str]
-    over_pcts: list[Decimal]
+    example_ids: tuple[str, ...]
+    over_pcts: tuple[Decimal, ...]
 
     @property
     def max_over_pct(self) -> Decimal:
@@ -35,7 +35,7 @@ def detect_pattern(corrections: Sequence[Correction], min_count: int = 3) -> Pat
         if len(items) >= min_count:
             return PatternCandidate(
                 vendor=vendor, finding_code=code, action=action,
-                example_ids=[c.invoice_id for c in items],
-                over_pcts=[c.over_pct for c in items],
+                example_ids=tuple(c.invoice_id for c in items),
+                over_pcts=tuple(c.over_pct for c in items),
             )
     return None
