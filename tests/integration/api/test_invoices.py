@@ -1,53 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Generator
-
-import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import StaticPool, create_engine
-from sqlalchemy.orm import Session, sessionmaker
-
-import app.db.models  # noqa: F401 — populate metadata
-from app.api.deps import get_db
-from app.db.base import Base
-from app.main import app
-from tests.integration.api._seed import seed_clearable
-
-
-# ---------------------------------------------------------------------------
-# Per-test in-memory DB (StaticPool so all connections share the same db)
-# ---------------------------------------------------------------------------
-
-
-@pytest.fixture()
-def client() -> Generator[TestClient, None, None]:
-    engine = create_engine(
-        "sqlite+pysqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    Base.metadata.create_all(engine)
-    TestingSession = sessionmaker(bind=engine, expire_on_commit=False)
-
-    # Seed once before any requests
-    with TestingSession() as s:
-        seed_clearable(s)
-        s.commit()
-
-    def override_get_db() -> Generator[Session, None, None]:
-        s: Session = TestingSession()
-        try:
-            yield s
-            s.commit()
-        finally:
-            s.close()
-
-    app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as c:
-        yield c
-
-    app.dependency_overrides.pop(get_db, None)
-    engine.dispose()
 
 
 # ---------------------------------------------------------------------------
@@ -76,8 +29,8 @@ ESCALATE_PAYLOAD = {
 # ---------------------------------------------------------------------------
 
 
-def test_post_invoice_auto_clear(client: TestClient) -> None:
-    resp = client.post("/api/v1/invoices", json=CLEAR_PAYLOAD)
+def test_post_invoice_auto_clear(seeded_client: TestClient) -> None:
+    resp = seeded_client.post("/api/v1/invoices", json=CLEAR_PAYLOAD)
     assert resp.status_code == 201
     data = resp.json()
     assert data["verdict"] == "AUTO_CLEAR"
@@ -90,8 +43,8 @@ def test_post_invoice_auto_clear(client: TestClient) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_post_invoice_escalate(client: TestClient) -> None:
-    resp = client.post("/api/v1/invoices", json=ESCALATE_PAYLOAD)
+def test_post_invoice_escalate(seeded_client: TestClient) -> None:
+    resp = seeded_client.post("/api/v1/invoices", json=ESCALATE_PAYLOAD)
     assert resp.status_code == 201
     data = resp.json()
     assert data["verdict"] == "ESCALATE"
@@ -103,9 +56,9 @@ def test_post_invoice_escalate(client: TestClient) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_list_invoices_non_empty(client: TestClient) -> None:
-    client.post("/api/v1/invoices", json=CLEAR_PAYLOAD)
-    resp = client.get("/api/v1/invoices")
+def test_list_invoices_non_empty(seeded_client: TestClient) -> None:
+    seeded_client.post("/api/v1/invoices", json=CLEAR_PAYLOAD)
+    resp = seeded_client.get("/api/v1/invoices")
     assert resp.status_code == 200
     items = resp.json()
     assert isinstance(items, list)
@@ -117,16 +70,16 @@ def test_list_invoices_non_empty(client: TestClient) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_get_invoice_by_id(client: TestClient) -> None:
-    post = client.post("/api/v1/invoices", json=CLEAR_PAYLOAD)
+def test_get_invoice_by_id(seeded_client: TestClient) -> None:
+    post = seeded_client.post("/api/v1/invoices", json=CLEAR_PAYLOAD)
     invoice_id = post.json()["invoice_id"]
-    resp = client.get(f"/api/v1/invoices/{invoice_id}")
+    resp = seeded_client.get(f"/api/v1/invoices/{invoice_id}")
     assert resp.status_code == 200
     assert resp.json()["id"] == invoice_id
 
 
-def test_get_invoice_missing(client: TestClient) -> None:
-    resp = client.get("/api/v1/invoices/does-not-exist-xyz")
+def test_get_invoice_missing(seeded_client: TestClient) -> None:
+    resp = seeded_client.get("/api/v1/invoices/does-not-exist-xyz")
     assert resp.status_code == 404
     assert "not found" in resp.json()["detail"]
 
@@ -136,15 +89,15 @@ def test_get_invoice_missing(client: TestClient) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_invoice_action_route(client: TestClient) -> None:
+def test_invoice_action_route(seeded_client: TestClient) -> None:
     # Create an escalated invoice first
-    post = client.post("/api/v1/invoices", json=ESCALATE_PAYLOAD)
+    post = seeded_client.post("/api/v1/invoices", json=ESCALATE_PAYLOAD)
     assert post.status_code == 201
     invoice_id = post.json()["invoice_id"]
     assert post.json()["verdict"] == "ESCALATE"
 
     # Route it as priya
-    resp = client.post(
+    resp = seeded_client.post(
         f"/api/v1/invoices/{invoice_id}/action",
         json={"action": "route"},
         headers={"X-Role": "priya"},

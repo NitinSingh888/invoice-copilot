@@ -1,16 +1,13 @@
-"""Unit tests for conversation_agent — MockClient + in-memory DB."""
+"""Unit tests for conversation_agent — MockClient + Postgres test DB."""
 from __future__ import annotations
 
 from decimal import Decimal
 
 import pytest
-from sqlalchemy import StaticPool, create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session
 
-import app.db.models  # noqa: F401 — populate metadata
 from app.agents import conversation_agent
 from app.clients.llm.mock_client import MockClient
-from app.db.base import Base
 from app.db.models.invoice import Invoice
 from app.schemas.chat import ChatMessageIn
 from tests.integration.api._seed import seed_clearable
@@ -22,19 +19,11 @@ from tests.integration.api._seed import seed_clearable
 
 
 @pytest.fixture()
-def db() -> Session:  # type: ignore[return]
-    engine = create_engine(
-        "sqlite+pysqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    Base.metadata.create_all(engine)
-    TestingSession = sessionmaker(bind=engine, expire_on_commit=False)
-    with TestingSession() as s:
-        seed_clearable(s)
-        s.commit()
-    with TestingSession() as s:
-        yield s
+def seeded_db(db: Session) -> Session:
+    """db pre-seeded with clearable vendor/PO/history."""
+    seed_clearable(db)
+    db.commit()
+    return db
 
 
 @pytest.fixture()
@@ -47,9 +36,9 @@ def client() -> MockClient:
 # ---------------------------------------------------------------------------
 
 
-def test_process_batch_returns_counts(db: Session, client: MockClient) -> None:
+def test_process_batch_returns_counts(seeded_db: Session, client: MockClient) -> None:
     # Seed a "received" invoice so the batch has something to process
-    db.add(
+    seeded_db.add(
         Invoice(
             id="inv-recv-1",
             status="received",
@@ -59,11 +48,11 @@ def test_process_batch_returns_counts(db: Session, client: MockClient) -> None:
             po_number="PO-1",
         )
     )
-    db.flush()
+    seeded_db.flush()
 
     _, intent, result = conversation_agent.handle(
         client,
-        db,
+        seeded_db,
         message="process today's invoices",
         history=[],
         role="maya",
@@ -75,10 +64,10 @@ def test_process_batch_returns_counts(db: Session, client: MockClient) -> None:
     assert "blocked" in result
 
 
-def test_process_batch_counts_are_ints(db: Session, client: MockClient) -> None:
+def test_process_batch_counts_are_ints(seeded_db: Session, client: MockClient) -> None:
     _, _, result = conversation_agent.handle(
         client,
-        db,
+        seeded_db,
         message="run the batch now",
         history=[],
         role="maya",
@@ -94,13 +83,15 @@ def test_process_batch_counts_are_ints(db: Session, client: MockClient) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_explain_returns_trail_for_known_invoice(db: Session, client: MockClient) -> None:
+def test_explain_returns_trail_for_known_invoice(
+    seeded_db: Session, client: MockClient
+) -> None:
     # First process an invoice so there's an audit trail
-    from app.services import pipeline_service
     from app.domain.policy.matching import InvoiceData
+    from app.services import pipeline_service
 
     pipeline_service.process_invoice(
-        db,
+        seeded_db,
         InvoiceData(
             invoice_id="INV-4495",
             vendor="Acme Corp",
@@ -110,11 +101,11 @@ def test_explain_returns_trail_for_known_invoice(db: Session, client: MockClient
         ),
         "HIGH",
     )
-    db.flush()
+    seeded_db.flush()
 
     _, intent, result = conversation_agent.handle(
         client,
-        db,
+        seeded_db,
         message="why did you escalate INV-4495?",
         history=[],
         role="priya",
@@ -125,11 +116,13 @@ def test_explain_returns_trail_for_known_invoice(db: Session, client: MockClient
     assert "trail" in result
 
 
-def test_explain_no_invoice_id_gives_none_result(db: Session, client: MockClient) -> None:
+def test_explain_no_invoice_id_gives_none_result(
+    seeded_db: Session, client: MockClient
+) -> None:
     # "why" intent but no INV-\d+ pattern in the message → args["invoice_id"] absent
     _, intent, result = conversation_agent.handle(
         client,
-        db,
+        seeded_db,
         message="why was that escalated?",
         history=[],
         role="priya",
@@ -144,9 +137,9 @@ def test_explain_no_invoice_id_gives_none_result(db: Session, client: MockClient
 # ---------------------------------------------------------------------------
 
 
-def test_approve_transitions_invoice(db: Session, client: MockClient) -> None:
+def test_approve_transitions_invoice(seeded_db: Session, client: MockClient) -> None:
     # Seed a "needs" (escalated) invoice — ID must match INV-\d+ for MockClient
-    db.add(
+    seeded_db.add(
         Invoice(
             id="INV-9001",
             status="needs",
@@ -155,11 +148,11 @@ def test_approve_transitions_invoice(db: Session, client: MockClient) -> None:
             invoice_number="ESC-1",
         )
     )
-    db.flush()
+    seeded_db.flush()
 
     _, intent, result = conversation_agent.handle(
         client,
-        db,
+        seeded_db,
         message="approve INV-9001",
         history=[],
         role="priya",
@@ -172,7 +165,7 @@ def test_approve_transitions_invoice(db: Session, client: MockClient) -> None:
     # Verify the invoice status was changed
     from app.repositories import invoice_repo
 
-    inv = invoice_repo.get(db, "INV-9001")
+    inv = invoice_repo.get(seeded_db, "INV-9001")
     assert inv is not None
     assert inv.status == "queued"
 
@@ -182,10 +175,10 @@ def test_approve_transitions_invoice(db: Session, client: MockClient) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_smalltalk_returns_none_result(db: Session, client: MockClient) -> None:
+def test_smalltalk_returns_none_result(seeded_db: Session, client: MockClient) -> None:
     _, intent, result = conversation_agent.handle(
         client,
-        db,
+        seeded_db,
         message="hello there",
         history=[],
         role="maya",
@@ -199,11 +192,11 @@ def test_smalltalk_returns_none_result(db: Session, client: MockClient) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_history_is_passed_to_client(db: Session, client: MockClient) -> None:
+def test_history_is_passed_to_client(seeded_db: Session, client: MockClient) -> None:
     history = [ChatMessageIn(role="assistant", content="How can I help?")]
     _, intent, _ = conversation_agent.handle(
         client,
-        db,
+        seeded_db,
         message="process invoices",
         history=history,
         role="maya",

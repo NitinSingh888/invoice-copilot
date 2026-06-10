@@ -2,48 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Generator
-
-import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import StaticPool, create_engine
-from sqlalchemy.orm import Session, sessionmaker
-
-import app.db.models  # noqa: F401 — populate metadata
-from app.api.deps import get_db
-from app.db.base import Base
-from app.main import app
-
-
-# ---------------------------------------------------------------------------
-# Per-test in-memory DB (no pre-seed — demo/reset provides the data)
-# ---------------------------------------------------------------------------
-
-
-@pytest.fixture()
-def client() -> Generator[TestClient, None, None]:
-    engine = create_engine(
-        "sqlite+pysqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    Base.metadata.create_all(engine)
-    TestingSession = sessionmaker(bind=engine, expire_on_commit=False)
-
-    def override_get_db() -> Generator[Session, None, None]:
-        s: Session = TestingSession()
-        try:
-            yield s
-            s.commit()
-        finally:
-            s.close()
-
-    app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as c:
-        yield c
-
-    app.dependency_overrides.pop(get_db, None)
-    engine.dispose()
 
 
 # ---------------------------------------------------------------------------

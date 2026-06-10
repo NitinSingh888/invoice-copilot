@@ -4,9 +4,12 @@ from __future__ import annotations
 from decimal import Decimal
 
 import pytest
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import sessionmaker
 
 from app.agents import induction_agent
 from app.clients.llm.mock_client import MockClient
+from app.db.models.correction import Correction
 
 
 @pytest.fixture()
@@ -77,26 +80,12 @@ def test_reasoning_is_deterministic(client: MockClient) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_activate_rule_stores_reasoning(client: MockClient) -> None:
-    from decimal import Decimal as D
-
-    from sqlalchemy import StaticPool, create_engine
-    from sqlalchemy.orm import sessionmaker
-
-    import app.db.models  # noqa: F401 — populate metadata
-    from app.db.base import Base
-    from app.db.models.correction import Correction
+def test_activate_rule_stores_reasoning(client: MockClient, _engine: Engine) -> None:
     from app.services import learning_service
 
-    engine = create_engine(
-        "sqlite+pysqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine, expire_on_commit=False)
+    TestingSession = sessionmaker(bind=_engine, expire_on_commit=False)
 
-    with Session() as s:
+    with TestingSession() as s:
         for i, over_pct in enumerate(["0.06", "0.04", "0.07"]):
             s.add(
                 Correction(
@@ -105,12 +94,12 @@ def test_activate_rule_stores_reasoning(client: MockClient) -> None:
                     vendor="Acme Corp",
                     finding_code="OVER_TOLERANCE",
                     user_action="route",
-                    over_pct=D(over_pct),
+                    over_pct=Decimal(over_pct),
                 )
             )
         s.commit()
 
-    with Session() as s:
+    with TestingSession() as s:
         proposal = learning_service.propose_rule(s)
         assert proposal is not None
 
@@ -118,7 +107,7 @@ def test_activate_rule_stores_reasoning(client: MockClient) -> None:
         rule = learning_service.activate_rule(
             s,
             proposal=proposal,
-            threshold_pct=D("0.08"),
+            threshold_pct=Decimal("0.08"),
             route="Priya",
             reasoning=custom_note,
         )
@@ -127,26 +116,14 @@ def test_activate_rule_stores_reasoning(client: MockClient) -> None:
         assert rule.reasoning_note == custom_note
 
 
-def test_activate_rule_without_reasoning_uses_default(client: MockClient) -> None:
-    from decimal import Decimal as D
-
-    from sqlalchemy import StaticPool, create_engine
-    from sqlalchemy.orm import sessionmaker
-
-    import app.db.models  # noqa: F401 — populate metadata
-    from app.db.base import Base
-    from app.db.models.correction import Correction
+def test_activate_rule_without_reasoning_uses_default(
+    client: MockClient, _engine: Engine
+) -> None:
     from app.services import learning_service
 
-    engine = create_engine(
-        "sqlite+pysqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine, expire_on_commit=False)
+    TestingSession = sessionmaker(bind=_engine, expire_on_commit=False)
 
-    with Session() as s:
+    with TestingSession() as s:
         for i, over_pct in enumerate(["0.06", "0.04", "0.07"]):
             s.add(
                 Correction(
@@ -155,19 +132,19 @@ def test_activate_rule_without_reasoning_uses_default(client: MockClient) -> Non
                     vendor="Acme Corp",
                     finding_code="OVER_TOLERANCE",
                     user_action="route",
-                    over_pct=D(over_pct),
+                    over_pct=Decimal(over_pct),
                 )
             )
         s.commit()
 
-    with Session() as s:
+    with TestingSession() as s:
         proposal = learning_service.propose_rule(s)
         assert proposal is not None
 
         rule = learning_service.activate_rule(
             s,
             proposal=proposal,
-            threshold_pct=D("0.08"),
+            threshold_pct=Decimal("0.08"),
             route="Priya",
             # reasoning omitted — uses default deterministic note
         )

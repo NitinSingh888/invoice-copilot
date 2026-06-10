@@ -9,7 +9,7 @@ from app.core.config import Settings, get_settings
 
 def test_defaults() -> None:
     s = Settings()
-    assert s.database_url.startswith("sqlite")
+    assert s.database_url.startswith("postgresql")
     assert s.t_amount == Decimal("10000")
 
 
