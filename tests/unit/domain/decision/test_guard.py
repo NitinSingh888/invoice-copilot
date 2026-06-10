@@ -69,3 +69,19 @@ def test_rule_cannot_loosen_hard_stop():
                amount=Decimal("100"), vendor_status="approved",
                rule_outcome=ro, thresholds=T, cold_start_ok=True)
     assert d.verdict is Verdict.BLOCK
+
+def test_amount_exactly_at_cap_auto_clears():
+    # The cap is inclusive (<=): an invoice exactly at T_amount still auto-clears.
+    d = decide(findings=_ok_findings(), confidence=ConfidenceBand.HIGH,
+               amount=Decimal("10000"), vendor_status="approved",
+               rule_outcome=None, thresholds=T, cold_start_ok=True)
+    assert d.verdict is Verdict.AUTO_CLEAR
+
+def test_non_forcing_rule_is_a_noop():
+    # A rule with force_escalate=False must not tighten an otherwise-auto-clearable
+    # invoice — it does nothing, so the envelope still grants AUTO_CLEAR.
+    ro = RuleOutcome(force_escalate=False, route="Priya", rule_id="R-1")
+    d = decide(findings=_ok_findings(), confidence=ConfidenceBand.HIGH,
+               amount=Decimal("2000"), vendor_status="approved",
+               rule_outcome=ro, thresholds=T, cold_start_ok=True)
+    assert d.verdict is Verdict.AUTO_CLEAR
