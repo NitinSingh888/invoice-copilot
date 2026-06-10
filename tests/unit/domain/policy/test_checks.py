@@ -35,6 +35,20 @@ def test_tolerance_under():
     f = check_tolerance(_inv("80"), po, Decimal("0.05"))
     assert f.code == "UNDER_TOLERANCE"
 
+def test_tolerance_exactly_at_boundary_is_clean():
+    # 5% over with a 5% tolerance must NOT flag (strict > / <).
+    po = PurchaseOrder("PO-1", "Acme", Decimal("100"))
+    assert check_tolerance(_inv("105"), po, Decimal("0.05")) is None
+
+def test_tolerance_zero_po_amount_returns_none():
+    # Guard against division by zero on a $0 PO.
+    po = PurchaseOrder("PO-1", "Acme", Decimal("0"))
+    assert check_tolerance(_inv("100"), po, Decimal("0.05")) is None
+
+def test_tolerance_equal_amount_returns_none():
+    po = PurchaseOrder("PO-1", "Acme", Decimal("100"))
+    assert check_tolerance(_inv("100"), po, Decimal("0.05")) is None
+
 def test_partial_po_flags_when_po_partly_fulfilled():
     po = PurchaseOrder("PO-1", "Acme", Decimal("100"), remaining_balance=Decimal("40"))
     f = check_partial_po(_inv("30"), po)  # 30 <= remaining 40, but PO partly used
