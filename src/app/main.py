@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -10,12 +11,22 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api.v1.router import api_router
 from app.core.exceptions import AppError, NotFoundError
-from app.db.session import engine, init_db
+from app.db.session import SessionLocal, engine, init_db
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     init_db(engine)
+    try:
+        from app.seed import seed
+
+        with SessionLocal() as s:
+            seed(s)
+            s.commit()
+    except Exception:
+        logger.exception("Seed-on-boot failed — continuing without demo data")
     yield
 
 
