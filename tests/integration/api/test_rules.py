@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from collections.abc import Generator
 from decimal import Decimal
-from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
