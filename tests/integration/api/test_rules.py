@@ -109,6 +109,9 @@ def test_activate_rule(client: TestClient) -> None:
     assert data["status"] == "active"
     assert Decimal(str(data["max_over_pct"])) == Decimal("0.08")
     assert data["route"] == "Priya"
+    # Induction agent should populate reasoning_note with non-empty LLM explanation
+    assert data["reasoning_note"] is not None
+    assert len(data["reasoning_note"]) > 0
 
 
 # ---------------------------------------------------------------------------

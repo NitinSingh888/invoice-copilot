@@ -4,7 +4,9 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db
+from app.agents import induction_agent
+from app.api.deps import get_db, get_llm
+from app.clients.llm.base import LLMClient
 from app.core.exceptions import AppError, NotFoundError
 from app.repositories import rule_repo
 from app.schemas.rule import ActivateRuleIn, PatternOut, RuleOut, RuleProposalOut, RuleStatusIn
@@ -40,15 +42,24 @@ def propose_rule(db: Session = Depends(get_db)) -> Response | RuleProposalOut:
 def activate_rule(
     body: ActivateRuleIn,
     db: Session = Depends(get_db),
+    llm: LLMClient = Depends(get_llm),
 ) -> RuleOut:
     p = learning_service.propose_rule(db)
     if p is None:
         raise AppError("no rule to activate")
+    note = induction_agent.reasoning(
+        llm,
+        vendor=p.candidate.vendor or "",
+        over_pcts=list(p.candidate.over_pcts),
+        threshold_pct=body.threshold_pct,
+        route=body.route,
+    )
     rule = learning_service.activate_rule(
         db,
         proposal=p,
         threshold_pct=body.threshold_pct,
         route=body.route,
+        reasoning=note,
     )
     return RuleOut.model_validate(rule)
 

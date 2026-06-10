@@ -81,14 +81,23 @@ def activate_rule(
     threshold_pct: Decimal,
     route: str,
     created_by: str = "maya",
+    reasoning: str | None = None,
 ) -> Rule:
-    """Persist the proposed rule as an active Rule row and emit an audit event."""
+    """Persist the proposed rule as an active Rule row and emit an audit event.
+
+    If *reasoning* is supplied (e.g. from the induction agent), it is stored
+    as the human-readable ``reasoning_note``; otherwise a deterministic note
+    is generated from the correction data.
+    """
     rule_id = f"R-{uuid4().hex[:8]}"
     cand = proposal.candidate
 
-    reasoning_note = (
-        f"Inferred from corrections at {list(cand.over_pcts)} → ~{threshold_pct}"
-    )
+    if reasoning is not None:
+        reasoning_note = reasoning
+    else:
+        reasoning_note = (
+            f"Inferred from corrections at {list(cand.over_pcts)} → ~{threshold_pct}"
+        )
 
     rule = Rule(
         id=rule_id,
