@@ -8,7 +8,7 @@ Each event is hashed over the dict::
 
 ``ts``, ``seq``, ``prev_hash``, and ``hash`` are EXCLUDED from the body so
 that the hash is fully reproducible from stored row fields without needing to
-know the exact timestamp that SQLite/the ORM resolved.  Both ``append`` and
+know the exact timestamp that the database/ORM resolved.  Both ``append`` and
 ``verify`` build the body the same way.
 """
 

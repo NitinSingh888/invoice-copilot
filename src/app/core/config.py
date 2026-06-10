@@ -13,7 +13,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    database_url: str = "sqlite:///./invoice_copilot.db"
+    database_url: str = "postgresql+psycopg://copilot:copilot@localhost:5432/copilot"
     t_amount: Decimal = Decimal("10000")
     tolerance_pct: Decimal = Decimal("0.05")
     learn_min_corrections: int = 3

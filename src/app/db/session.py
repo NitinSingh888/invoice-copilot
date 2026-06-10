@@ -10,10 +10,7 @@ from app.core.config import get_settings
 from app.db.base import Base
 
 _settings = get_settings()
-_connect_args = (
-    {"check_same_thread": False} if "sqlite" in _settings.database_url else {}
-)
-engine = create_engine(_settings.database_url, connect_args=_connect_args)
+engine = create_engine(_settings.database_url, pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 
 
