@@ -38,7 +38,7 @@ AFTER = NOW - timedelta(days=1)
 
 
 def test_add_and_get(db: Session) -> None:
-    inv = invoice_repo.add(db, _inv("i1"))
+    invoice_repo.add(db, _inv("i1"))
     result = invoice_repo.get(db, "i1")
     assert result is not None
     assert result.id == "i1"
