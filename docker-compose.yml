@@ -1,0 +1,26 @@
+# Local development: a real Postgres for parity with the deployed (Neon) database.
+# Tests still use in-memory SQLite; this is only for running the app against Postgres locally.
+#
+#   docker compose up -d postgres
+#   IC_DATABASE_URL=postgresql+psycopg://copilot:copilot@localhost:5432/copilot \
+#     PYTHONPATH=src .venv/bin/uvicorn app.main:app --port 8123
+#
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: copilot
+      POSTGRES_PASSWORD: copilot
+      POSTGRES_DB: copilot
+    ports:
+      - "5432:5432"
+    volumes:
+      - copilot_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U copilot"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  copilot_pg:
