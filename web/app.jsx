@@ -65,6 +65,7 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
 
 function App() {
   const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const [mode, setMode] = React.useState("demo");
   const [invoices, setInvoices] = React.useState(() => window.IC.INVOICES.map((i) => ({ ...i, status: "received" })));
   const [messages, setMessages] = React.useState([]);
   const [role, setRole] = React.useState("maya");
@@ -74,6 +75,8 @@ function App() {
   const [playing, setPlaying] = React.useState(false);
   const [suggestions, setSuggestions] = React.useState(["Process today\u2019s invoices"]);
   const [savedMin, setSavedMin] = React.useState(0);
+  const [liveTrailEvents, setLiveTrailEvents] = React.useState([]);
+  const [liveChainVerified, setLiveChainVerified] = React.useState(true);
 
   const invRef = React.useRef(invoices); invRef.current = invoices;
   const acmeRef = React.useRef(0);
@@ -147,6 +150,32 @@ function App() {
 
   /* ---------- resolve an escalation ---------- */
   function resolveInvoice(invId, action, payload) {
+    if (mode === "live") {
+      // Live mode: call backend action endpoint, then refresh queue (no scripted choreography)
+      const actor = role;
+      (async () => {
+        try {
+          await IC_API.action(invId, {
+            action,
+            amount: payload && payload.amount ? payload.amount : undefined,
+            route: payload && payload.route ? payload.route : undefined,
+            reason: payload && payload.reason ? payload.reason : undefined,
+          }, role);
+          // Collapse card to resolved summary immediately
+          setMessages((x) => x.map((m) => (m.kind === "card" && m.invId === invId ? { id: m.id, kind: "resolved", invId, action, actor } : m)));
+          // Refresh queue from backend
+          const rows = await IC_API.listInvoices();
+          const mapped = rows.map(mapLiveInvoice);
+          setInvoices(mapped);
+          recalcSaved(mapped);
+        } catch (err) {
+          add({ kind: "system", text: "Action failed: " + err.message });
+        }
+      })();
+      return;
+    }
+
+    // Demo mode — existing scripted choreography (unchanged)
     const inv = invRef.current.find((i) => i.id === invId); if (!inv) return;
     const actor = role;
     const newStatus = action === "route" ? "routed" : action === "hold" ? "held" : "queued";
@@ -219,10 +248,87 @@ function App() {
     setSuggestions([]);
   }
 
-  function openTrail(invId) { setSelected(invId); setDrawer({ type: "audit", invId }); }
+  function openTrail(invId) {
+    setSelected(invId);
+    if (mode === "live") {
+      // Live mode: fetch real audit trail from backend
+      (async () => {
+        try {
+          const data = await IC_API.trail(invId);
+          // Map backend event shape to what AuditDrawer expects
+          const mapped = (data.events || []).map((e) => ({
+            module: e.module,
+            actor: e.actor,
+            actorGroup: e.actor === "agent" ? "agent" : e.module === "guard" ? "guard" : e.module === "policy" ? "system" : e.actor.startsWith("user:") ? "human" : "system",
+            icon: e.action ? "verdict" : "flag",
+            time: String(e.seq),
+            action: e.action,
+            rationale: e.rationale,
+            detail: e.inputs || e.outputs ? { ...e.inputs, ...e.outputs } : undefined,
+            meta: e.model_meta || null,
+            hash: e.hash,
+            prev_hash: e.prev_hash,
+          }));
+          setLiveTrailEvents(mapped);
+          setLiveChainVerified(data.chain_verified !== false);
+        } catch (err) {
+          setLiveTrailEvents([]);
+          setLiveChainVerified(false);
+        }
+        setDrawer({ type: "audit", invId });
+      })();
+    } else {
+      // Demo mode: use genTrail (existing)
+      setDrawer({ type: "audit", invId });
+    }
+  }
 
   /* ---------- free-text intent ---------- */
   function handleSend(text) {
+    if (mode === "live") {
+      // Live mode: send to backend chat API, no scripted regex
+      userSay(text, role);
+      setSuggestions([]);
+      (async () => {
+        try {
+          // Build a simple history array from current messages for context
+          const history = messages
+            .filter((m) => m.kind === "user" || m.kind === "agent")
+            .map((m) => ({ role: m.kind === "user" ? "user" : "assistant", content: m.text }));
+          const r = await IC_API.chat(text, history, role);
+          await say(r.reply);
+          // If result has batch counts, refresh the queue
+          if (r.result && (r.result.queued != null || r.result.needs != null || r.result.blocked != null)) {
+            const rows = await IC_API.listInvoices();
+            const mapped = rows.map(mapLiveInvoice);
+            setInvoices(mapped);
+            recalcSaved(mapped);
+            const q = r.result.queued || 0;
+            const n = r.result.needs || 0;
+            const b = r.result.blocked || 0;
+            add({ kind: "narration", steps: [
+              { text: "Processed batch via API", meta: "" },
+              { text: "Queued for payment run", meta: q + " invoices" },
+              { text: "Need your review", meta: n + " invoices" },
+              { text: "Blocked", meta: b + " invoices" },
+            ] });
+          }
+          // If explain intent with invoice_id, open the trail
+          if (r.intent === "explain" && r.result && r.result.invoice_id) {
+            openTrail(r.result.invoice_id);
+          }
+          // Refresh rules if a rule-related intent
+          if (r.intent === "rules") {
+            openRulesDrawerLive();
+          }
+        } catch (err) {
+          add({ kind: "system", text: "API error: " + err.message });
+        }
+      })();
+      return;
+    }
+
+    // Demo mode \u2014 existing scripted intent matching (unchanged)
     userSay(text, role);
     setSuggestions([]);
     const low = text.toLowerCase();
@@ -264,6 +370,78 @@ function App() {
     setSuggestions(["Process today\u2019s invoices"]);
   }
 
+  /* ---------- map backend invoice \u2192 Queue shape ---------- */
+  function mapLiveInvoice(row) {
+    // backend statuses: received|queued|needs|blocked|routed|held|cleared
+    // frontend statuses: queued|needs|blocked|reading|routed|ruled|held|received
+    const statusMap = {
+      received: "received",
+      queued: "queued",
+      needs: "needs",
+      blocked: "blocked",
+      routed: "routed",
+      held: "held",
+      cleared: "queued",
+    };
+    return {
+      id: row.id,
+      vendor: row.vendor,
+      amount: Number(row.amount),
+      po: row.po_number || "\u2014",
+      status: statusMap[row.status] || "received",
+      // carry raw fields so ApprovalCard can use findings etc. if present
+      findings: row.findings || [],
+      kind: row.verdict || null,
+      _raw: row,
+    };
+  }
+
+  /* ---------- enter live mode ---------- */
+  async function enterLive() {
+    try {
+      await IC_API.reset();
+      const rows = await IC_API.listInvoices();
+      const mapped = rows.map(mapLiveInvoice);
+      setInvoices(mapped);
+      recalcSaved(mapped);
+      setMessages([]);
+      add({ kind: "system", text: "Live mode \u2014 connected to the API. Try: \u2018process today\u2019s invoices\u2019." });
+      setSuggestions(["Process today\u2019s invoices", "Show me the rules"]);
+    } catch (err) {
+      add({ kind: "system", text: "Could not connect to the API: " + err.message });
+    }
+  }
+
+  /* ---------- handle mode switching ---------- */
+  function handleModeSwitch(newMode) {
+    if (newMode === mode) return;
+    setMode(newMode);
+    if (newMode === "live") {
+      enterLive();
+    } else {
+      resetDemo();
+    }
+  }
+
+  /* ---------- open rules drawer (live: fetch from API) ---------- */
+  async function openRulesDrawerLive() {
+    try {
+      const apiRules = await IC_API.listRules();
+      const mapped = (apiRules || []).map((r) => ({
+        id: r.id,
+        vendor: r.vendor,
+        threshold: r.max_over_pct != null ? r.max_over_pct * 100 : r.threshold || 0,
+        route: r.route,
+        status: r.status,
+        sources: r.source_correction_ids || [],
+      }));
+      setRules(mapped);
+    } catch (err) {
+      // leave existing rules state if fetch fails
+    }
+    setDrawer({ type: "rules" });
+  }
+
   /* ---------- role switch ---------- */
   function switchRole(r) {
     if (r === role) return; setRole(r);
@@ -273,12 +451,13 @@ function App() {
   }
 
   const trailInv = drawer && drawer.type === "audit" ? invoices.find((i) => i.id === drawer.invId) : null;
-  const trailEvents = trailInv ? genTrail(trailInv) : [];
+  // In live mode use events fetched from the API; in demo mode generate them from scripted data
+  const trailEvents = mode === "live" ? liveTrailEvents : (trailInv ? genTrail(trailInv) : []);
   const intro = messages.length === 0;
 
   return (
     <div className="app">
-      <TopBar t={t} setTweak={setTweak} role={role} onRole={switchRole} onPlay={playDemo} playing={playing} onResetDemo={resetDemo} />
+      <TopBar t={t} setTweak={setTweak} role={role} onRole={switchRole} onPlay={playDemo} playing={playing} onResetDemo={resetDemo} mode={mode} onMode={handleModeSwitch} />
 
       <div className="workspace">
         <Queue invoices={invoices} selected={selected} onSelect={openTrail} savedMin={savedMin} />
@@ -291,8 +470,8 @@ function App() {
               <div className="sub">AP agent &middot; acting for {role === "maya" ? "Maya" : "Priya"}</div>
             </div>
             <div className="liveband">
-              <button className="link-btn" onClick={() => setDrawer({ type: "rules" })}><window.Icon.book /> Rules{rules.length ? " \u00b7 " + rules.length : ""}</button>
-              {messages.length > 0 && <React.Fragment><span style={{ color: "var(--line)" }}>|</span><button className="link-btn" onClick={resetDemo}>Reset</button></React.Fragment>}
+              <button className="link-btn" onClick={() => mode === "live" ? openRulesDrawerLive() : setDrawer({ type: "rules" })}><window.Icon.book /> Rules{rules.length ? " \u00b7 " + rules.length : ""}</button>
+              {mode === "demo" && messages.length > 0 && <React.Fragment><span style={{ color: "var(--line)" }}>|</span><button className="link-btn" onClick={resetDemo}>Reset</button></React.Fragment>}
             </div>
           </div>
 
@@ -311,8 +490,15 @@ function App() {
           <Composer onSend={handleSend} suggestions={suggestions} busy={playing} />
         </section>
 
-        {drawer && drawer.type === "audit" && <AuditDrawer inv={trailInv} events={trailEvents} onClose={() => setDrawer(null)} />}
-        {drawer && drawer.type === "rules" && <RulesDrawer rules={rules} onToggle={(id) => setRules((rs) => rs.map((r) => (r.id === id ? { ...r, status: r.status === "active" ? "disabled" : "active" } : r)))} onClose={() => setDrawer(null)} />}
+        {drawer && drawer.type === "audit" && <AuditDrawer inv={trailInv} events={trailEvents} chainVerified={mode === "live" ? liveChainVerified : true} onClose={() => setDrawer(null)} />}
+        {drawer && drawer.type === "rules" && <RulesDrawer rules={rules} onToggle={(id) => {
+          const r = rules.find((x) => x.id === id);
+          const newStatus = r && r.status === "active" ? "disabled" : "active";
+          if (mode === "live") {
+            IC_API.setRuleStatus(id, newStatus).catch(() => {});
+          }
+          setRules((rs) => rs.map((x) => (x.id === id ? { ...x, status: newStatus } : x)));
+        }} onClose={() => setDrawer(null)} />}
       </div>
 
       <TweaksPanel>

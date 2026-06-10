@@ -2,7 +2,7 @@
 const { money: fmt } = window.IC;
 
 /* ============================== TOP BAR ============================== */
-function TopBar({ t, setTweak, role, onRole, onPlay, playing, beatLabel, onResetDemo }) {
+function TopBar({ t, setTweak, role, onRole, onPlay, playing, beatLabel, onResetDemo, mode, onMode }) {
   const min = 2000, max = 25000;
   const fill = ((t.tAmount - min) / (max - min)) * 100;
   return (
@@ -40,10 +40,17 @@ function TopBar({ t, setTweak, role, onRole, onPlay, playing, beatLabel, onReset
         {t.dark ? <window.Icon.sun style={{ width: 17, height: 17 }} /> : <window.Icon.moon style={{ width: 17, height: 17 }} />}
       </button>
 
-      <button className={"play-btn " + (playing ? "ghost" : "")} onClick={onPlay}>
-        {playing ? <window.Icon.pause style={{ width: 13, height: 13 }} /> : <window.Icon.play style={{ width: 13, height: 13 }} />}
-        {playing ? "Demo running" : "Play demo"}
-      </button>
+      <div className="roleswitch" role="tablist" title="Switch between scripted demo and live API mode">
+        <button className={"role-btn " + (mode === "demo" ? "active" : "")} onClick={() => onMode("demo")}>Demo</button>
+        <button className={"role-btn " + (mode === "live" ? "active" : "")} onClick={() => onMode("live")}>Live</button>
+      </div>
+
+      {mode !== "live" && (
+        <button className={"play-btn " + (playing ? "ghost" : "")} onClick={onPlay}>
+          {playing ? <window.Icon.pause style={{ width: 13, height: 13 }} /> : <window.Icon.play style={{ width: 13, height: 13 }} />}
+          {playing ? "Demo running" : "Play demo"}
+        </button>
+      )}
     </header>
   );
 }
@@ -141,7 +148,7 @@ function Composer({ onSend, suggestions, busy }) {
 const TL_ICON = { read: "eye", resolve: "link", flag: "alert", shield: "shield", ask: "user", execute: "check", learn: "spark", verdict: "gavel" };
 const TL_GROUP = { extraction: "agent", enrichment: "agent", policy: "system", guard: "guard", execution: "execute", learning: "agent", human: "human" };
 
-function AuditDrawer({ inv, events, onClose }) {
+function AuditDrawer({ inv, events, chainVerified, onClose }) {
   const [open, setOpen] = React.useState({});
   return (
     <React.Fragment>
@@ -152,7 +159,7 @@ function AuditDrawer({ inv, events, onClose }) {
             <h3>Audit trail</h3>
             <div className="sub">{inv ? <span>{inv.vendor} &middot; <span className="mono">{inv.id}</span> &middot; {fmt(inv.amount)}</span> : "Full event stream"}</div>
           </div>
-          <span className="chain-badge"><window.Icon.link /> chain verified</span>
+          <span className={"chain-badge" + (chainVerified === false ? " warn" : "")}><window.Icon.link /> {chainVerified === false ? "chain broken" : "chain verified"}</span>
           <button className="icon-btn" onClick={onClose}><window.Icon.x style={{ width: 17, height: 17 }} /></button>
         </div>
         <div className="drawer-body scroll">
