@@ -308,11 +308,12 @@ function App() {
             const q = r.result.queued || 0;
             const n = r.result.needs || 0;
             const b = r.result.blocked || 0;
+            const plural = (c) => c + (c === 1 ? " invoice" : " invoices");
             add({ kind: "narration", steps: [
               { text: "Processed batch via API", meta: "" },
-              { text: "Queued for payment run", meta: q + " invoices" },
-              { text: "Need your review", meta: n + " invoices" },
-              { text: "Blocked", meta: b + " invoices" },
+              { text: "Queued for payment run", meta: plural(q) },
+              { text: "Need your review", meta: plural(n) },
+              { text: "Blocked", meta: plural(b) },
             ] });
           }
           // If explain intent with invoice_id, open the trail
