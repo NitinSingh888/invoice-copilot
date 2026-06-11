@@ -107,11 +107,11 @@ def test_get_samples_have_required_fields(seeded_client: TestClient) -> None:
 
 
 def test_get_samples_invoice_numbers_fresh(seeded_client: TestClient) -> None:
-    """Sample invoice numbers should be in the INV-9001..9004 range."""
+    """Non-duplicate sample invoice numbers should be in the INV-9001..9004 range."""
     resp = seeded_client.get("/api/v1/invoices/samples")
     non_duplicate_samples = [
         s for s in resp.json()
-        if s["label"] != "Exact duplicate"  # duplicate intentionally reuses INV-4502
+        if s["label"] != "Exact duplicate"  # duplicate intentionally reuses a real invoice_number
     ]
     for sample in non_duplicate_samples:
         assert sample["invoice_number"].startswith("INV-9")

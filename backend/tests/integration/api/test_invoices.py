@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+
+from app.seed import seed
 
 
 # ---------------------------------------------------------------------------
@@ -104,3 +108,89 @@ def test_invoice_action_route(seeded_client: TestClient) -> None:
     )
     assert resp.status_code == 200
     assert resp.json()["status"] == "routed"
+
+
+# ---------------------------------------------------------------------------
+# GET /invoices/{id}/file — document preview endpoint
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def demo_seeded_client(client: TestClient, db: Session) -> TestClient:
+    """Client with the full demo seed loaded (real invoice PDFs)."""
+    seed(db)
+    db.commit()
+    return client
+
+
+def test_get_invoice_file_returns_200_pdf(demo_seeded_client: TestClient) -> None:
+    """A seed invoice with a real PDF → GET /file returns 200 + application/pdf."""
+    resp = demo_seeded_client.get("/api/v1/invoices/inv-azure/file")
+    assert resp.status_code == 200
+    assert resp.headers["content-type"].startswith("application/pdf")
+
+
+def test_get_invoice_file_returns_pdf_bytes(demo_seeded_client: TestClient) -> None:
+    """File response body starts with the PDF magic bytes (%PDF)."""
+    resp = demo_seeded_client.get("/api/v1/invoices/inv-azure/file")
+    assert resp.status_code == 200
+    assert resp.content[:4] == b"%PDF"
+
+
+def test_get_invoice_file_unknown_id_returns_404(demo_seeded_client: TestClient) -> None:
+    """Unknown invoice id → 404."""
+    resp = demo_seeded_client.get("/api/v1/invoices/inv-does-not-exist/file")
+    assert resp.status_code == 404
+    assert "not found" in resp.json()["detail"]
+
+
+def test_get_invoice_file_no_file_returns_404(client: TestClient, db: Session) -> None:
+    """Invoice with no source_file set → 404."""
+    from app.db.models.invoice import Invoice as InvoiceModel
+    from decimal import Decimal
+
+    inv = InvoiceModel(
+        id="inv-no-file",
+        invoice_number="NF-001",
+        status="received",
+        vendor="Test Vendor",
+        amount=Decimal("100.00"),
+        confidence="HIGH",
+        source_file=None,
+    )
+    db.add(inv)
+    db.commit()
+
+    resp = client.get("/api/v1/invoices/inv-no-file/file")
+    assert resp.status_code == 404
+
+
+def test_invoice_out_exposes_source_file(demo_seeded_client: TestClient) -> None:
+    """GET /invoices/{id} includes source_file field in InvoiceOut."""
+    resp = demo_seeded_client.get("/api/v1/invoices/inv-azure")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "source_file" in data
+    assert data["source_file"] == "AzureInterior.pdf"
+
+
+def test_invoice_out_source_file_none_for_no_file(client: TestClient, db: Session) -> None:
+    """Invoice with no source_file → source_file is null in InvoiceOut."""
+    from app.db.models.invoice import Invoice as InvoiceModel
+    from decimal import Decimal
+
+    inv = InvoiceModel(
+        id="inv-nf-2",
+        invoice_number="NF-002",
+        status="received",
+        vendor="Test Vendor",
+        amount=Decimal("100.00"),
+        confidence="HIGH",
+        source_file=None,
+    )
+    db.add(inv)
+    db.commit()
+
+    resp = client.get("/api/v1/invoices/inv-nf-2")
+    assert resp.status_code == 200
+    assert resp.json()["source_file"] is None

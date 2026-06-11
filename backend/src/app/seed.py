@@ -1,13 +1,27 @@
-"""Demo seed dataset.
+"""Demo seed dataset — built from REAL invoice PDFs.
 
-Mirrors web/data.js VENDORS and INVOICES so the live backend reproduces
-the scripted demo batch:
+Extracted fields are cached in ``data/extracted_samples.json``; no LLM is
+called at seed time.
 
-  - ~10 routine invoices  → AUTO_CLEAR (queued)
-  - 3 Acme escalations    → ESCALATE (needs)  [over-tolerance]
-  - 1 Northwind           → ESCALATE (needs)  [over-tolerance + over cap]
-  - 1 Cyberdyne           → ESCALATE (needs)  [unknown vendor, no PO]
-  - 1 Stark               → BLOCK    (blocked) [exact duplicate]
+Intended pipeline outcomes for the 10 received invoices:
+
+AUTO_CLEAR (4):
+    inv-azure      Azure Interior        $279.84  HIGH   PO match, approved vendor
+    inv-flipkart   WS Retail             $319.00  HIGH   PO match, approved vendor
+    inv-netpresse  NETPRESSE             $56.02   HIGH   PO match, approved vendor
+    inv-quality    QualityHosting AG     $34.73   HIGH   PO match, approved vendor
+
+ESCALATE over-PO (2):
+    inv-coolblue-1 Coolblue B.V.         $717.97  HIGH   PO 7% under → OVER_TOLERANCE
+    inv-coolblue-2 Coolblue B.V.         $4904.94 MED    PO 7% under + MED conf
+
+ESCALATE low-confidence / unknown vendor (3):
+    inv-aws        Amazon Web Services   $4.11    LOW    no PO, LOW conf
+    inv-free       Free SAS              $29.99   LOW    no PO, LOW conf
+    inv-oyo        OYO / Oravel Stays    $1939    LOW    unknown vendor, no PO
+
+BLOCK duplicate (1):
+    inv-saeco      SAECO                 $49.99   MED    exact duplicate (prior cleared)
 """
 
 from __future__ import annotations
@@ -28,84 +42,74 @@ from app.db.models.vendor import Vendor
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# SEED_VENDORS — mirrors data.js VENDORS
+# SEED_VENDORS
 # ---------------------------------------------------------------------------
 
 SEED_VENDORS: list[Vendor] = [
+    # AUTO_CLEAR vendors — approved
     Vendor(
-        id="v-acme",
-        canonical_name="Acme Corp",
+        id="v-azure",
+        canonical_name="Azure Interior",
         aliases=[],
         status="approved",
         default_approver="Priya",
     ),
     Vendor(
-        id="v-northwind",
-        canonical_name="Northwind Logistics",
+        id="v-flipkart",
+        canonical_name="WS Retail Services Pvt. Ltd",
+        aliases=["WS Retail"],
+        status="approved",
+        default_approver="Priya",
+    ),
+    Vendor(
+        id="v-netpresse",
+        canonical_name="NETPRESSE",
         aliases=[],
         status="approved",
         default_approver="Priya",
     ),
-    # Cyberdyne is status "new" — the unknown-vendor / injection case
     Vendor(
-        id="v-cyberdyne",
-        canonical_name="Cyberdyne Systems",
-        aliases=[],
+        id="v-quality",
+        canonical_name="QualityHosting AG",
+        aliases=["QualityHosting"],
+        status="approved",
+        default_approver="Priya",
+    ),
+    # ESCALATE over-PO vendor — approved but invoices are over-tolerance
+    Vendor(
+        id="v-coolblue",
+        canonical_name="Coolblue B.V.",
+        aliases=["Coolblue"],
+        status="approved",
+        default_approver="Priya",
+    ),
+    # ESCALATE — approved vendor but LOW confidence / no PO
+    Vendor(
+        id="v-aws",
+        canonical_name="Amazon Web Services, Inc.",
+        aliases=["AWS", "Amazon Web Services"],
+        status="approved",
+        default_approver="Priya",
+    ),
+    Vendor(
+        id="v-free",
+        canonical_name="Free SAS",
+        aliases=["Free"],
+        status="approved",
+        default_approver="Priya",
+    ),
+    # ESCALATE — unknown vendor (status=new)
+    Vendor(
+        id="v-oyo",
+        canonical_name="OYO / Oravel Stays Private Limited",
+        aliases=["OYO"],
         status="new",
         default_approver="Priya",
     ),
+    # BLOCK duplicate — approved vendor, prior cleared invoice with same invoice_number
     Vendor(
-        id="v-stark",
-        canonical_name="Stark Industries",
-        aliases=[],
-        status="approved",
-        default_approver="Priya",
-    ),
-    Vendor(
-        id="v-globex",
-        canonical_name="Globex Trading",
-        aliases=[],
-        status="approved",
-        default_approver="Priya",
-    ),
-    Vendor(
-        id="v-initech",
-        canonical_name="Initech Software",
-        aliases=[],
-        status="approved",
-        default_approver="Priya",
-    ),
-    Vendor(
-        id="v-umbrella",
-        canonical_name="Umbrella Supplies",
-        aliases=[],
-        status="approved",
-        default_approver="Priya",
-    ),
-    Vendor(
-        id="v-hooli",
-        canonical_name="Hooli Cloud",
-        aliases=[],
-        status="approved",
-        default_approver="Priya",
-    ),
-    Vendor(
-        id="v-soylent",
-        canonical_name="Soylent Foods",
-        aliases=[],
-        status="approved",
-        default_approver="Priya",
-    ),
-    Vendor(
-        id="v-meridian",
-        canonical_name="Meridian Freight",
-        aliases=[],
-        status="approved",
-        default_approver="Priya",
-    ),
-    Vendor(
-        id="v-wayne",
-        canonical_name="Wayne Office Supply",
+        id="v-saeco",
+        canonical_name="SAECO",
         aliases=[],
         status="approved",
         default_approver="Priya",
@@ -113,301 +117,212 @@ SEED_VENDORS: list[Vendor] = [
 ]
 
 # ---------------------------------------------------------------------------
-# SEED_POS — one PO per invoice that references one.
-# PO amount is set so the pipeline produces the intended outcome:
-#   • routine queued  → PO amount == invoice amount (0% over → INFO → AUTO_CLEAR)
-#   • escalations     → PO amount from data.js poAmount (over tolerance → ESCALATE)
-#   • Cyberdyne       → no PO (po_number None on the invoice)
-#   • Stark duplicate → PO exists but the HARD_STOP from duplicate fires first
+# SEED_POS
+# Amounts for AUTO_CLEAR POs: exactly equal to invoice amount (within tolerance).
+# Amounts for ESCALATE over-PO: set ~7% BELOW invoice amount (over tolerance).
+# SAECO PO exists but duplicate check fires first.
+# AWS, Free SAS, OYO: no PO referenced on their invoices.
 # ---------------------------------------------------------------------------
 
 SEED_POS: list[PurchaseOrder] = [
-    # -- escalations --
+    # -- AUTO_CLEAR POs (PO amount == invoice amount) --
     PurchaseOrder(
-        id="po-northwind-22841",
-        po_number="PO-22841",
-        vendor="Northwind Logistics",
-        amount=Decimal("10970"),   # 13% under INV-4471 amount of 12400
+        id="po-azure-custref123",
+        po_number="CUSTREF123",
+        vendor="Azure Interior",
+        amount=Decimal("279.84"),
     ),
     PurchaseOrder(
-        id="po-acme-22790",
-        po_number="PO-22790",
-        vendor="Acme Corp",
-        amount=Decimal("7735"),    # 6% under INV-4483 amount of 8200
+        id="po-flipkart-od",
+        po_number="OD304175096047380001",
+        vendor="WS Retail Services Pvt. Ltd",
+        amount=Decimal("319.00"),
     ),
     PurchaseOrder(
-        id="po-acme-22802",
-        po_number="PO-22802",
-        vendor="Acme Corp",
-        amount=Decimal("5283"),    # ~6% under INV-4488 amount of 5600 (over tolerance)
+        id="po-netpresse-365146",
+        po_number="365146",
+        vendor="NETPRESSE",
+        amount=Decimal("56.02"),
     ),
     PurchaseOrder(
-        id="po-acme-22815",
-        po_number="PO-22815",
-        vendor="Acme Corp",
-        amount=Decimal("8551"),    # 7% under INV-4490 amount of 9150
+        id="po-quality-con02858",
+        po_number="CON02858",
+        vendor="QualityHosting AG",
+        amount=Decimal("34.73"),
     ),
-    # -- blocked (Stark duplicate) --
+    # -- ESCALATE over-PO: PO amounts ~7% under invoice amounts --
+    # coolblue-1 invoice: $717.97 → PO: $670.99 (6.7% under)
     PurchaseOrder(
-        id="po-stark-22760",
-        po_number="PO-22760",
-        vendor="Stark Industries",
-        amount=Decimal("9900"),
+        id="po-coolblue-12572103",
+        po_number="12572103",
+        vendor="Coolblue B.V.",
+        amount=Decimal("670.99"),
     ),
-    # -- routine auto-clear POs (amount == invoice amount) --
+    # coolblue-2 invoice: $4904.94 → PO: $4584.06 (6.7% under)
     PurchaseOrder(
-        id="po-globex-22845",
-        po_number="PO-22845",
-        vendor="Globex Trading",
-        amount=Decimal("2480"),
+        id="po-coolblue-12508334",
+        po_number="12508334",
+        vendor="Coolblue B.V.",
+        amount=Decimal("4584.06"),
     ),
+    # -- SAECO PO (blocked by duplicate before PO check matters) --
     PurchaseOrder(
-        id="po-initech-22848",
-        po_number="PO-22848",
-        vendor="Initech Software",
-        amount=Decimal("1990"),
-    ),
-    PurchaseOrder(
-        id="po-hooli-22851",
-        po_number="PO-22851",
-        vendor="Hooli Cloud",
-        amount=Decimal("3450"),
-    ),
-    PurchaseOrder(
-        id="po-soylent-22853",
-        po_number="PO-22853",
-        vendor="Soylent Foods",
-        amount=Decimal("870"),
-    ),
-    PurchaseOrder(
-        id="po-meridian-22855",
-        po_number="PO-22855",
-        vendor="Meridian Freight",
-        amount=Decimal("4120"),
-    ),
-    PurchaseOrder(
-        id="po-wayne-22858",
-        po_number="PO-22858",
-        vendor="Wayne Office Supply",
-        amount=Decimal("640"),
-    ),
-    PurchaseOrder(
-        id="po-umbrella-22861",
-        po_number="PO-22861",
-        vendor="Umbrella Supplies",
-        amount=Decimal("2870"),
-    ),
-    PurchaseOrder(
-        id="po-globex-22863",
-        po_number="PO-22863",
-        vendor="Globex Trading",
-        amount=Decimal("5310"),
-    ),
-    PurchaseOrder(
-        id="po-hooli-22866",
-        po_number="PO-22866",
-        vendor="Hooli Cloud",
-        amount=Decimal("1280"),
-    ),
-    PurchaseOrder(
-        id="po-initech-22868",
-        po_number="PO-22868",
-        vendor="Initech Software",
-        amount=Decimal("3990"),
+        id="po-saeco-sconl",
+        po_number="SCONL000000444",
+        vendor="SAECO",
+        amount=Decimal("49.99"),
     ),
 ]
 
 # ---------------------------------------------------------------------------
-# The received batch — mirrors data.js INVOICES
+# The received batch of 10 real invoices
 # ---------------------------------------------------------------------------
 
 SEED_INVOICES: list[Invoice] = [
-    # ---- escalations ----
+    # ---- AUTO_CLEAR (4) ----
     Invoice(
-        id="INV-4471",
-        invoice_number="INV-4471",
+        id="inv-azure",
+        invoice_number="INV/2023/03/0008",
         status="received",
-        vendor="Northwind Logistics",
-        amount=Decimal("12400"),
-        po_number="PO-22841",
+        vendor="Azure Interior",
+        amount=Decimal("279.84"),
+        po_number="CUSTREF123",
         confidence="HIGH",
+        source_file="AzureInterior.pdf",
     ),
     Invoice(
-        id="INV-4483",
-        invoice_number="INV-4483",
+        id="inv-flipkart",
+        invoice_number="BLR_WFLD20151000982590",
         status="received",
-        vendor="Acme Corp",
-        amount=Decimal("8200"),
-        po_number="PO-22790",
+        vendor="WS Retail Services Pvt. Ltd",
+        amount=Decimal("319.00"),
+        po_number="OD304175096047380001",
         confidence="HIGH",
+        source_file="FlipkartInvoice.pdf",
     ),
     Invoice(
-        id="INV-4488",
-        invoice_number="INV-4488",
+        id="inv-netpresse",
+        invoice_number="2022089083",
         status="received",
-        vendor="Acme Corp",
-        amount=Decimal("5600"),
-        po_number="PO-22802",
+        vendor="NETPRESSE",
+        amount=Decimal("56.02"),
+        po_number="365146",
         confidence="HIGH",
+        source_file="NetpresseInvoice.pdf",
     ),
     Invoice(
-        id="INV-4490",
-        invoice_number="INV-4490",
+        id="inv-quality",
+        invoice_number="47774",
         status="received",
-        vendor="Acme Corp",
-        amount=Decimal("9150"),
-        po_number="PO-22815",
+        vendor="QualityHosting AG",
+        amount=Decimal("34.73"),
+        po_number="CON02858",
         confidence="HIGH",
+        source_file="QualityHosting.pdf",
     ),
-    # ---- injection / unknown vendor ----
+    # ---- ESCALATE over-PO (2) ----
     Invoice(
-        id="INV-4495",
-        invoice_number="INV-4495",
+        id="inv-coolblue-1",
+        invoice_number="993548900",
         status="received",
-        vendor="Cyberdyne Systems",
-        amount=Decimal("7300"),
-        po_number=None,           # No PO for Cyberdyne
+        vendor="Coolblue B.V.",
+        amount=Decimal("717.97"),
+        po_number="12572103",
+        confidence="HIGH",
+        source_file="coolblue1.pdf",
+    ),
+    Invoice(
+        id="inv-coolblue-2",
+        invoice_number="992288600",
+        status="received",
+        vendor="Coolblue B.V.",
+        amount=Decimal("4904.94"),
+        po_number="12508334",
         confidence="MED",
+        source_file="coolblue2.pdf",
     ),
-    # ---- exact duplicate (Stark) ----
+    # ---- ESCALATE low-confidence / unknown vendor (3) ----
     Invoice(
-        id="INV-4502",
-        invoice_number="INV-4502",
+        id="inv-aws",
+        invoice_number="42183017",
         status="received",
-        vendor="Stark Industries",
-        amount=Decimal("9900"),
-        po_number="PO-22760",
-        confidence="HIGH",
-    ),
-    # ---- routine auto-clear ----
-    Invoice(
-        id="INV-4472",
-        invoice_number="INV-4472",
-        status="received",
-        vendor="Globex Trading",
-        amount=Decimal("2480"),
-        po_number="PO-22845",
-        confidence="HIGH",
+        vendor="Amazon Web Services, Inc.",
+        amount=Decimal("4.11"),
+        po_number=None,
+        confidence="LOW",
+        source_file="AmazonWebServices.pdf",
     ),
     Invoice(
-        id="INV-4475",
-        invoice_number="INV-4475",
+        id="inv-free",
+        invoice_number="562044387",
         status="received",
-        vendor="Initech Software",
-        amount=Decimal("1990"),
-        po_number="PO-22848",
-        confidence="HIGH",
+        vendor="Free SAS",
+        amount=Decimal("29.99"),
+        po_number=None,
+        confidence="LOW",
+        source_file="free_fiber.pdf",
     ),
     Invoice(
-        id="INV-4478",
-        invoice_number="INV-4478",
+        id="inv-oyo",
+        invoice_number="IBZY2087",
         status="received",
-        vendor="Hooli Cloud",
-        amount=Decimal("3450"),
-        po_number="PO-22851",
-        confidence="HIGH",
+        vendor="OYO / Oravel Stays Private Limited",
+        amount=Decimal("1939"),
+        po_number=None,
+        confidence="LOW",
+        source_file="oyo.pdf",
     ),
+    # ---- BLOCK duplicate (1) ----
     Invoice(
-        id="INV-4481",
-        invoice_number="INV-4481",
+        id="inv-saeco",
+        invoice_number="VF1005193039SCONL0303006280999",
         status="received",
-        vendor="Soylent Foods",
-        amount=Decimal("870"),
-        po_number="PO-22853",
-        confidence="HIGH",
-    ),
-    Invoice(
-        id="INV-4485",
-        invoice_number="INV-4485",
-        status="received",
-        vendor="Meridian Freight",
-        amount=Decimal("4120"),
-        po_number="PO-22855",
-        confidence="HIGH",
-    ),
-    Invoice(
-        id="INV-4489",
-        invoice_number="INV-4489",
-        status="received",
-        vendor="Wayne Office Supply",
-        amount=Decimal("640"),
-        po_number="PO-22858",
-        confidence="HIGH",
-    ),
-    Invoice(
-        id="INV-4492",
-        invoice_number="INV-4492",
-        status="received",
-        vendor="Umbrella Supplies",
-        amount=Decimal("2870"),
-        po_number="PO-22861",
-        confidence="HIGH",
-    ),
-    Invoice(
-        id="INV-4496",
-        invoice_number="INV-4496",
-        status="received",
-        vendor="Globex Trading",
-        amount=Decimal("5310"),
-        po_number="PO-22863",
-        confidence="HIGH",
-    ),
-    Invoice(
-        id="INV-4499",
-        invoice_number="INV-4499",
-        status="received",
-        vendor="Hooli Cloud",
-        amount=Decimal("1280"),
-        po_number="PO-22866",
-        confidence="HIGH",
-    ),
-    Invoice(
-        id="INV-4501",
-        invoice_number="INV-4501",
-        status="received",
-        vendor="Initech Software",
-        amount=Decimal("3990"),
-        po_number="PO-22868",
-        confidence="HIGH",
+        vendor="SAECO",
+        amount=Decimal("49.99"),
+        po_number="SCONL000000444",
+        confidence="MED",
+        source_file="saeco.pdf",
     ),
 ]
 
 # ---------------------------------------------------------------------------
-# Prior cleared invoice for the Stark DUPLICATE_EXACT hard-stop.
-# Same vendor + same invoice_number as INV-4502.
+# Prior cleared invoice for the SAECO DUPLICATE_EXACT hard-stop.
+# Same vendor + same invoice_number as inv-saeco.
 # ---------------------------------------------------------------------------
-_STARK_PRIOR = Invoice(
-    id="INV-4461",
-    invoice_number="INV-4502",     # Same invoice_number → DUPLICATE_EXACT
+_SAECO_PRIOR = Invoice(
+    id="inv-saeco-prior",
+    invoice_number="VF1005193039SCONL0303006280999",  # Same invoice_number → DUPLICATE_EXACT
     status="cleared",
-    vendor="Stark Industries",
-    amount=Decimal("9900"),
-    po_number="PO-22760",
-    confidence="HIGH",
+    vendor="SAECO",
+    amount=Decimal("49.99"),
+    po_number="SCONL000000444",
+    confidence="MED",
+    source_file="saeco.pdf",
 )
 
 # ---------------------------------------------------------------------------
-# Helpers to build the cold-start history rows.
-# For each *approved* vendor that has routine invoices, we seed at least
-# cold_start_n prior cleared invoices so the pipeline passes the cold-start
-# check and AUTO_CLEARs them.
+# Cold-start history vendors — each needs at least cold_start_n cleared invoices
+# so the pipeline passes the cold-start check and AUTO_CLEARs them.
 # ---------------------------------------------------------------------------
-_ROUTINE_VENDORS = [
-    "Globex Trading",
-    "Initech Software",
-    "Hooli Cloud",
-    "Soylent Foods",
-    "Meridian Freight",
-    "Wayne Office Supply",
-    "Umbrella Supplies",
+_AUTO_CLEAR_VENDORS = [
+    "Azure Interior",
+    "WS Retail Services Pvt. Ltd",
+    "NETPRESSE",
+    "QualityHosting AG",
+]
+
+# Coolblue needs cold-start too (it escalates for over-tolerance, not cold-start)
+_ESCALATE_OVER_PO_VENDORS = [
+    "Coolblue B.V.",
 ]
 
 
 def _make_cold_start_invoices(cold_start_n: int) -> list[Invoice]:
     rows: list[Invoice] = []
-    for vendor in _ROUTINE_VENDORS:
+    all_vendors = _AUTO_CLEAR_VENDORS + _ESCALATE_OVER_PO_VENDORS
+    for vendor in all_vendors:
         for i in range(cold_start_n):
-            v_key = vendor.lower().replace(" ", "-")
+            v_key = vendor.lower().replace(" ", "-").replace(".", "").replace("/", "-")
             rows.append(
                 Invoice(
                     id=f"hist-{v_key}-{i}",
@@ -434,7 +349,7 @@ def is_empty(s: Session) -> bool:
 
 
 def seed(s: Session, *, force: bool = False) -> int:
-    """Insert the demo dataset.
+    """Insert the demo dataset from real invoice PDFs.
 
     Parameters
     ----------
@@ -473,12 +388,12 @@ def seed(s: Session, *, force: bool = False) -> int:
     for po in SEED_POS:
         s.merge(po)
 
-    # 3. Cold-start history (cleared) for routine vendors
+    # 3. Cold-start history (cleared) for auto-clear + over-PO vendors
     for inv in _make_cold_start_invoices(settings.cold_start_n):
         s.merge(inv)
 
-    # 4. Stark prior cleared (exact-duplicate prerequisite)
-    s.merge(_STARK_PRIOR)
+    # 4. SAECO prior cleared (exact-duplicate prerequisite)
+    s.merge(_SAECO_PRIOR)
 
     s.flush()
 

@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import mimetypes
+import os
 from decimal import Decimal
+from pathlib import Path
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.agents import extraction_agent
@@ -19,6 +23,13 @@ from app.schemas.invoice import ActionIn, InvoiceIn, InvoiceOut, ProcessResultOu
 from app.services import enrichment_service, execution_service, learning_service, pipeline_service, policy_service
 
 router = APIRouter()
+
+# Directory containing the seed PDFs (relative to the project root)
+# File is at: backend/src/app/api/v1/routes/invoices.py
+# parents[5] = backend/
+_SAMPLE_INVOICES_DIR = Path(__file__).parents[5] / "data" / "sample_invoices"
+# Directory for user-uploaded files
+_UPLOADS_DIR = Path(__file__).parents[5] / "data" / "uploads"
 
 
 @router.post("", status_code=201, response_model=ProcessResultOut)
@@ -81,6 +92,16 @@ def upload_invoice(
     if inv is None:
         raise NotFoundError(f"invoice {result.invoice_id} not found after processing")
 
+    # Persist the uploaded file so it can be previewed later
+    if file_bytes:
+        ext = Path(filename).suffix if filename else ""
+        _UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+        stored_name = f"{invoice_id}{ext}"
+        stored_path = _UPLOADS_DIR / stored_name
+        stored_path.write_bytes(file_bytes)
+        inv.source_file = str(stored_path)
+        db.flush()
+
     return ProcessResultOut(
         invoice_id=result.invoice_id,
         verdict=result.decision.verdict.value,
@@ -101,25 +122,25 @@ def get_sample_invoices() -> list[dict[str, object]]:
     InvoiceIn) so the frontend can display context.
 
     Note: sample (d) produces DUPLICATE_EXACT only when the demo seed has been
-    loaded (so the prior cleared INV-4502 exists in the DB).
+    loaded (so the prior cleared SAECO invoice exists in the DB).
     """
     return [
         {
             "label": "Clean auto-clear",
             "expected": "AUTO_CLEAR — approved vendor, amount matches PO exactly",
-            "vendor": "Globex Trading",
-            "amount": "2480",
+            "vendor": "Azure Interior",
+            "amount": "279.84",
             "invoice_number": "INV-9001",
-            "po_number": "PO-22845",
+            "po_number": "CUSTREF123",
             "confidence": "HIGH",
         },
         {
             "label": "Over-PO escalation",
             "expected": "ESCALATE — known vendor but amount ~7 % over its PO",
-            "vendor": "Acme Corp",
-            "amount": "8285",  # ~7 % over PO-22790 (7735)
+            "vendor": "Coolblue B.V.",
+            "amount": "767.23",  # ~14 % over PO-12572103 (670.99)
             "invoice_number": "INV-9002",
-            "po_number": "PO-22790",
+            "po_number": "12572103",
             "confidence": "HIGH",
         },
         {
@@ -134,11 +155,11 @@ def get_sample_invoices() -> list[dict[str, object]]:
         {
             "label": "Exact duplicate",
             "expected": "BLOCK — exact duplicate of a previously cleared invoice (requires demo seed loaded)",
-            "vendor": "Stark Industries",
-            "amount": "9900",
-            "invoice_number": "INV-4502",  # same invoice_number as cleared INV-4461
-            "po_number": "PO-22760",
-            "confidence": "HIGH",
+            "vendor": "SAECO",
+            "amount": "49.99",
+            "invoice_number": "VF1005193039SCONL0303006280999",  # same as cleared inv-saeco-prior
+            "po_number": "SCONL000000444",
+            "confidence": "MED",
         },
     ]
 
@@ -146,6 +167,43 @@ def get_sample_invoices() -> list[dict[str, object]]:
 @router.get("", response_model=list[InvoiceOut])
 def list_invoices(db: Session = Depends(get_db)) -> list[InvoiceOut]:
     return [InvoiceOut.model_validate(i) for i in invoice_repo.list_all(db)]
+
+
+@router.get("/{invoice_id}/file")
+def get_invoice_file(invoice_id: str, db: Session = Depends(get_db)) -> FileResponse:
+    """Return the source document for an invoice as a file download/preview.
+
+    For seed invoices the file is served from ``data/sample_invoices/<source_file>``.
+    For uploaded invoices the stored path is used directly (absolute path saved at
+    upload time).  Returns 404 if no file is associated with the invoice.
+    """
+    inv = invoice_repo.get(db, invoice_id)
+    if inv is None:
+        raise NotFoundError(f"invoice {invoice_id} not found")
+
+    source = inv.source_file
+    if not source:
+        raise NotFoundError(f"invoice {invoice_id} has no associated file")
+
+    # Absolute path — uploaded files are stored as absolute paths
+    if os.path.isabs(source):
+        file_path = Path(source)
+    else:
+        # Relative filename — look up in the seed sample_invoices directory
+        file_path = _SAMPLE_INVOICES_DIR / source
+
+    if not file_path.exists():
+        raise NotFoundError(f"file for invoice {invoice_id} not found on disk")
+
+    media_type, _ = mimetypes.guess_type(str(file_path))
+    if media_type is None:
+        media_type = "application/octet-stream"
+
+    return FileResponse(
+        path=str(file_path),
+        media_type=media_type,
+        filename=file_path.name,
+    )
 
 
 @router.get("/{invoice_id}", response_model=InvoiceOut)

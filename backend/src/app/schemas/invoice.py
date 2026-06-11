@@ -29,6 +29,11 @@ class InvoiceOut(BaseModel):
     status: str
     verdict: str | None
     route: str | None
+    source_file: str | None = None
+
+    @property
+    def has_file(self) -> bool:
+        return self.source_file is not None
 
 
 class ProcessResultOut(BaseModel):

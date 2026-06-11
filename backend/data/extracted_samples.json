@@ -1,0 +1,82 @@
+[
+  {
+    "file": "AmazonWebServices.pdf",
+    "vendor": "Amazon Web Services, Inc.",
+    "amount": "4.11",
+    "po_number": null,
+    "invoice_number": "42183017",
+    "confidence": "LOW"
+  },
+  {
+    "file": "AzureInterior.pdf",
+    "vendor": "Azure Interior",
+    "amount": "279.84",
+    "po_number": "CUSTREF123",
+    "invoice_number": "INV/2023/03/0008",
+    "confidence": "HIGH"
+  },
+  {
+    "file": "FlipkartInvoice.pdf",
+    "vendor": "WS Retail Services Pvt. Ltd",
+    "amount": "319.00",
+    "po_number": "OD304175096047380001",
+    "invoice_number": "BLR_WFLD20151000982590",
+    "confidence": "HIGH"
+  },
+  {
+    "file": "NetpresseInvoice.pdf",
+    "vendor": "NETPRESSE",
+    "amount": "56.02",
+    "po_number": "365146",
+    "invoice_number": "2022089083",
+    "confidence": "HIGH"
+  },
+  {
+    "file": "QualityHosting.pdf",
+    "vendor": "QualityHosting AG",
+    "amount": "34.73",
+    "po_number": "CON02858",
+    "invoice_number": "47774",
+    "confidence": "HIGH"
+  },
+  {
+    "file": "coolblue1.pdf",
+    "vendor": "Coolblue B.V.",
+    "amount": "717.97",
+    "po_number": "12572103",
+    "invoice_number": "993548900",
+    "confidence": "HIGH"
+  },
+  {
+    "file": "coolblue2.pdf",
+    "vendor": "Coolblue B.V.",
+    "amount": "4904.94",
+    "po_number": "12508334",
+    "invoice_number": "992288600",
+    "confidence": "MED"
+  },
+  {
+    "file": "free_fiber.pdf",
+    "vendor": "Free SAS",
+    "amount": "29.99",
+    "po_number": null,
+    "invoice_number": "562044387",
+    "confidence": "LOW"
+  },
+  {
+    "file": "oyo.pdf",
+    "vendor": "OYO / Oravel Stays Private Limited",
+    "amount": "1939",
+    "po_number": null,
+    "invoice_number": "IBZY2087",
+    "confidence": "LOW"
+  },
+  {
+    "file": "saeco.pdf",
+    "vendor": "SAECO",
+    "amount": "49.99",
+    "po_number": "SCONL000000444",
+    "invoice_number": "VF1005193039SCONL0303006280999",
+    "confidence": "MED"
+  }
+]

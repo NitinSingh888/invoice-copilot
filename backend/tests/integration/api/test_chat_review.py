@@ -1,11 +1,11 @@
 """Integration tests for the review_invoice chat intent.
 
-These tests seed the full demo dataset (all vendors, POs, invoices) and run the
-batch first so that invoices have verdicts and statuses.  Then they exercise
-the three review_invoice paths:
+These tests seed the full real-invoice demo dataset and run the batch first so
+that invoices have verdicts and statuses.  Then they exercise the three
+review_invoice paths:
 
-  1. "review cyberdyne" → vendor-substring lookup → UNKNOWN_VENDOR + MISSING_PO
-  2. "show INV-4502"   → direct id lookup → blocked, DUPLICATE_EXACT
+  1. "review oyo" → vendor-substring lookup → UNKNOWN_VENDOR + MISSING_PO
+  2. "review saeco" → vendor lookup → blocked, DUPLICATE_EXACT
   3. "review zzz nonexistent" → not_found
 """
 from __future__ import annotations
@@ -30,44 +30,44 @@ def demo_processed_client(client: TestClient, db: Session) -> TestClient:
 
 
 # ---------------------------------------------------------------------------
-# 1. review cyberdyne → vendor lookup, UNKNOWN_VENDOR + MISSING_PO
+# 1. review oyo → vendor lookup, UNKNOWN_VENDOR + MISSING_PO
 # ---------------------------------------------------------------------------
 
 
-def test_review_cyberdyne_intent(demo_processed_client: TestClient) -> None:
+def test_review_oyo_intent(demo_processed_client: TestClient) -> None:
     resp = demo_processed_client.post(
         "/api/v1/chat",
-        json={"message": "review cyberdyne invoice"},
+        json={"message": "review oyo invoice"},
     )
     assert resp.status_code == 200
     data = resp.json()
     assert data["intent"] == "review_invoice"
 
 
-def test_review_cyberdyne_vendor(demo_processed_client: TestClient) -> None:
+def test_review_oyo_vendor(demo_processed_client: TestClient) -> None:
     resp = demo_processed_client.post(
         "/api/v1/chat",
-        json={"message": "review cyberdyne invoice"},
+        json={"message": "review oyo invoice"},
     )
     result = resp.json()["result"]
     assert result is not None
-    assert result["invoice"]["vendor"] == "Cyberdyne Systems"
+    assert result["invoice"]["vendor"] == "OYO / Oravel Stays Private Limited"
 
 
-def test_review_cyberdyne_findings_unknown_vendor(demo_processed_client: TestClient) -> None:
+def test_review_oyo_findings_unknown_vendor(demo_processed_client: TestClient) -> None:
     resp = demo_processed_client.post(
         "/api/v1/chat",
-        json={"message": "review cyberdyne invoice"},
+        json={"message": "review oyo invoice"},
     )
     result = resp.json()["result"]
     codes = [f["code"] for f in result["findings"]]
     assert "UNKNOWN_VENDOR" in codes
 
 
-def test_review_cyberdyne_findings_missing_po(demo_processed_client: TestClient) -> None:
+def test_review_oyo_findings_missing_po(demo_processed_client: TestClient) -> None:
     resp = demo_processed_client.post(
         "/api/v1/chat",
-        json={"message": "review cyberdyne invoice"},
+        json={"message": "review oyo invoice"},
     )
     result = resp.json()["result"]
     codes = [f["code"] for f in result["findings"]]
@@ -75,43 +75,43 @@ def test_review_cyberdyne_findings_missing_po(demo_processed_client: TestClient)
 
 
 # ---------------------------------------------------------------------------
-# 2. show INV-4502 → direct id lookup, blocked + DUPLICATE_EXACT
+# 2. review saeco → vendor lookup → blocked + DUPLICATE_EXACT
 # ---------------------------------------------------------------------------
 
 
-def test_show_inv4502_intent(demo_processed_client: TestClient) -> None:
+def test_show_saeco_intent(demo_processed_client: TestClient) -> None:
     resp = demo_processed_client.post(
         "/api/v1/chat",
-        json={"message": "show INV-4502"},
+        json={"message": "review saeco invoice"},
     )
     assert resp.status_code == 200
     assert resp.json()["intent"] == "review_invoice"
 
 
-def test_show_inv4502_status_blocked(demo_processed_client: TestClient) -> None:
+def test_show_saeco_status_blocked(demo_processed_client: TestClient) -> None:
     resp = demo_processed_client.post(
         "/api/v1/chat",
-        json={"message": "show INV-4502"},
+        json={"message": "review saeco invoice"},
     )
     result = resp.json()["result"]
     assert result is not None
     assert result["invoice"]["status"] == "blocked"
 
 
-def test_show_inv4502_findings_duplicate_exact(demo_processed_client: TestClient) -> None:
+def test_show_saeco_findings_duplicate_exact(demo_processed_client: TestClient) -> None:
     resp = demo_processed_client.post(
         "/api/v1/chat",
-        json={"message": "show INV-4502"},
+        json={"message": "review saeco invoice"},
     )
     result = resp.json()["result"]
     codes = [f["code"] for f in result["findings"]]
     assert "DUPLICATE_EXACT" in codes
 
 
-def test_show_inv4502_has_summary(demo_processed_client: TestClient) -> None:
+def test_show_saeco_has_summary(demo_processed_client: TestClient) -> None:
     resp = demo_processed_client.post(
         "/api/v1/chat",
-        json={"message": "show INV-4502"},
+        json={"message": "review saeco invoice"},
     )
     result = resp.json()["result"]
     assert isinstance(result["summary"], str)
