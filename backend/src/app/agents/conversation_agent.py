@@ -123,6 +123,20 @@ def handle(
     elif intent == "smalltalk":
         result = None
 
+    # For a resolved review, replace the LLM narration (which may ask for details
+    # the code already has) with a clean confirmation that matches the card shown.
+    if intent == "review_invoice" and result is not None:
+        if result.get("not_found"):
+            text = (
+                f"I couldn't find an invoice matching “{result.get('query')}”. "
+                "Try an invoice number like INV-4495 or a vendor name."
+            )
+        else:
+            inv = result["invoice"]
+            label = inv.get("invoice_number") or inv.get("id")
+            text = f"Here's {label} from {inv.get('vendor')}:"
+        return (text, intent, result)
+
     return (reply.text, intent, result)
 
 

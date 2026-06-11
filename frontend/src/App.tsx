@@ -183,15 +183,10 @@ export default function App() {
         await presentNextEscalation()
         toast.success(`Batch processed · ${queued} queued, ${needs} need review, ${blocked} blocked`)
       } else if (res.intent === 'review_invoice' && isReviewInvoiceResult(res.result)) {
-        const result = res.result
-        if (isReviewFound(result)) {
-          push({ type: 'inspection', data: result })
-        } else {
-          const query = result.query ?? msg
-          push({
-            type: 'agent',
-            content: `I couldn't find an invoice matching "${query}". Try an invoice number like INV-4495 or a vendor name.`,
-          })
+        // res.reply already carries a clean confirmation ("Here's INV-… from …:")
+        // or the not-found message; only the found case adds an inspection card.
+        if (isReviewFound(res.result)) {
+          push({ type: 'inspection', data: res.result })
         }
       }
     } catch (e) {
