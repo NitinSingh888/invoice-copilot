@@ -14,6 +14,7 @@ class Rule(Base):
 
     id: Mapped[str] = mapped_column(primary_key=True)
     vendor: Mapped[str | None] = mapped_column(default=None)
+    finding_code: Mapped[str | None] = mapped_column(default=None)
     max_over_pct: Mapped[Decimal | None] = mapped_column(Numeric(6, 4), default=None)
     route: Mapped[str]
     status: Mapped[str] = mapped_column(default="active")

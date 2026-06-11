@@ -11,6 +11,7 @@ class RuleOut(BaseModel):
 
     id: str
     vendor: str | None
+    finding_code: str | None
     max_over_pct: Decimal | None
     route: str
     status: str

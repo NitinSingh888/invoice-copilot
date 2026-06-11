@@ -52,6 +52,65 @@ def resolve(s: Session, name: str) -> Vendor | None:
     return None
 
 
+def resolve_from_text(s: Session, text: str) -> Vendor | None:
+    """Find the vendor whose canonical_name (or alias) best matches *text*.
+
+    Matching strategy (in priority order):
+    1. The full canonical_name appears verbatim as a substring of *text*
+       (case-insensitive, e.g. "Cyberdyne Systems" in "review Cyberdyne Systems invoice").
+    2. Any individual significant word (≥4 chars) from the canonical_name appears
+       in *text* (e.g. "cyberdyne" from "Cyberdyne Systems" in "review cyberdyne invoice").
+
+    When multiple vendors match at the same priority level, prefer the one with
+    the longest canonical_name (most specific).
+    """
+    norm_text = _normalize(text)
+    best: Vendor | None = None
+    best_len = 0
+    best_priority = 999  # lower = better
+
+    for vendor in s.query(Vendor).all():
+        cname_norm = _normalize(vendor.canonical_name)
+        priority: int | None = None
+        match_len = 0
+
+        # Priority 1: full canonical name is a substring
+        if cname_norm in norm_text:
+            priority = 1
+            match_len = len(cname_norm)
+        else:
+            # Priority 2: any significant word from canonical name appears in text
+            words = [w for w in cname_norm.split() if len(w) >= 4]
+            if any(w in norm_text for w in words):
+                priority = 2
+                match_len = len(cname_norm)
+
+        # Check aliases at same priority levels
+        for alias in vendor.aliases or []:
+            alias_norm = _normalize(alias)
+            if alias_norm in norm_text:
+                p = 1
+                ml = len(alias_norm)
+            else:
+                alias_words = [w for w in alias_norm.split() if len(w) >= 4]
+                if any(w in norm_text for w in alias_words):
+                    p = 2
+                    ml = len(alias_norm)
+                else:
+                    continue
+            if priority is None or p < priority or (p == priority and ml > match_len):
+                priority = p
+                match_len = ml
+
+        if priority is not None:
+            if priority < best_priority or (priority == best_priority and match_len > best_len):
+                best = vendor
+                best_len = match_len
+                best_priority = priority
+
+    return best
+
+
 def status_of(s: Session, name: str) -> str:
     vendor = resolve(s, name)
     if vendor is None:

@@ -91,6 +91,58 @@ def upload_invoice(
     )
 
 
+@router.get("/samples")
+def get_sample_invoices() -> list[dict[str, object]]:
+    """Return ~4 ready-to-POST sample invoices (InvoiceIn-shaped) covering
+    each interesting pipeline outcome.  Use these to demo the upload UI before
+    the user has real invoices.
+
+    Each sample has ``label`` and ``expected`` hint fields (extra, not part of
+    InvoiceIn) so the frontend can display context.
+
+    Note: sample (d) produces DUPLICATE_EXACT only when the demo seed has been
+    loaded (so the prior cleared INV-4502 exists in the DB).
+    """
+    return [
+        {
+            "label": "Clean auto-clear",
+            "expected": "AUTO_CLEAR — approved vendor, amount matches PO exactly",
+            "vendor": "Globex Trading",
+            "amount": "2480",
+            "invoice_number": "INV-9001",
+            "po_number": "PO-22845",
+            "confidence": "HIGH",
+        },
+        {
+            "label": "Over-PO escalation",
+            "expected": "ESCALATE — known vendor but amount ~7 % over its PO",
+            "vendor": "Acme Corp",
+            "amount": "8285",  # ~7 % over PO-22790 (7735)
+            "invoice_number": "INV-9002",
+            "po_number": "PO-22790",
+            "confidence": "HIGH",
+        },
+        {
+            "label": "Unknown vendor / no PO",
+            "expected": "ESCALATE — vendor not in registry, no PO referenced",
+            "vendor": "Phantom Supplies Inc",
+            "amount": "4750",
+            "invoice_number": "INV-9003",
+            "po_number": None,
+            "confidence": "MED",
+        },
+        {
+            "label": "Exact duplicate",
+            "expected": "BLOCK — exact duplicate of a previously cleared invoice (requires demo seed loaded)",
+            "vendor": "Stark Industries",
+            "amount": "9900",
+            "invoice_number": "INV-4502",  # same invoice_number as cleared INV-4461
+            "po_number": "PO-22760",
+            "confidence": "HIGH",
+        },
+    ]
+
+
 @router.get("", response_model=list[InvoiceOut])
 def list_invoices(db: Session = Depends(get_db)) -> list[InvoiceOut]:
     return [InvoiceOut.model_validate(i) for i in invoice_repo.list_all(db)]

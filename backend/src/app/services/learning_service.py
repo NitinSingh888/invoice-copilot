@@ -102,6 +102,7 @@ def activate_rule(
     rule = Rule(
         id=rule_id,
         vendor=cand.vendor,
+        finding_code=cand.finding_code,
         max_over_pct=threshold_pct,
         route=route,
         status="active",
@@ -110,9 +111,15 @@ def activate_rule(
         reasoning_note=reasoning_note,
         created_by=created_by,
     )
-    # Supersede any prior active rule for the same vendor (latest wins — no duplicates).
+    # Supersede prior active rules matching BOTH vendor AND finding_code
+    # (so a vendor can have separate rules for OVER_TOLERANCE vs DUPLICATE_SUSPECT,
+    # but re-approving the same (vendor, finding_code) pair disables the prior one).
     for existing in rule_repo.list_all(s):
-        if existing.status == "active" and existing.vendor == cand.vendor:
+        if (
+            existing.status == "active"
+            and existing.vendor == cand.vendor
+            and existing.finding_code == cand.finding_code
+        ):
             existing.status = "disabled"
     rule_repo.add(s, rule)
 

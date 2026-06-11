@@ -1,14 +1,25 @@
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from sqlalchemy.orm import Session
 
 from app.clients.llm.base import LLMClient
 from app.clients.llm.types import AgentReply, ChatMessage
-from app.repositories import invoice_repo
+from app.core.config import get_settings
+from app.db.models.invoice import Invoice
+from app.domain.policy.findings import Finding
+from app.repositories import invoice_repo, vendor_repo
 from app.schemas.chat import ChatMessageIn
-from app.services import audit_service, execution_service, learning_service, pipeline_service
+from app.services import (
+    audit_service,
+    enrichment_service,
+    execution_service,
+    learning_service,
+    pipeline_service,
+    policy_service,
+)
 
 
 def handle(
@@ -88,7 +99,98 @@ def handle(
         else:
             result = None
 
+    elif intent == "review_invoice":
+        result = _resolve_review_invoice(db, message)
+
     elif intent == "smalltalk":
         result = None
 
     return (reply.text, intent, result)
+
+
+# ---------------------------------------------------------------------------
+# Internal helpers for review_invoice
+# ---------------------------------------------------------------------------
+
+
+def _resolve_review_invoice(db: Session, message: str) -> dict[str, Any]:
+    """Deterministically resolve and return a structured invoice review."""
+    settings = get_settings()
+
+    # 1. Try to extract an explicit INV-#### from the message.
+    inv_id_match = re.search(r"(INV-\d+)", message, re.IGNORECASE)
+    inv: Invoice | None = None
+    query_entity: str = message.strip()
+
+    if inv_id_match:
+        inv_id = inv_id_match.group(1).upper()
+        query_entity = inv_id
+        inv = invoice_repo.get(db, inv_id)
+    else:
+        # 2. Try to find a vendor name substring in the message.
+        vendor = vendor_repo.resolve_from_text(db, message)
+        if vendor is not None:
+            query_entity = vendor.canonical_name
+            # Prefer invoice in needs/blocked status, else most recent.
+            candidates = (
+                db.query(Invoice)
+                .filter(Invoice.vendor == vendor.canonical_name)
+                .order_by(Invoice.created_at.desc())
+                .all()
+            )
+            priority = [c for c in candidates if c.status in ("needs", "blocked")]
+            inv = priority[0] if priority else (candidates[0] if candidates else None)
+
+    if inv is None:
+        return {"not_found": True, "query": query_entity}
+
+    # 3. Recompute findings via policy service (uses enrichment).
+    inv_data = invoice_repo.to_domain(inv)
+    enr = enrichment_service.enrich(db, inv_data)
+    findings = policy_service.run(inv_data, enr, settings.tolerance_pct)
+
+    # Salient findings: exclude trivial INFO PO_MATCH_OK
+    salient = [f for f in findings if f.code != "PO_MATCH_OK"]
+
+    return {
+        "invoice": {
+            "id": inv.id,
+            "vendor": inv.vendor,
+            "amount": str(inv.amount) if inv.amount is not None else None,
+            "invoice_number": inv.invoice_number,
+            "po_number": inv.po_number,
+            "status": inv.status,
+            "verdict": inv.verdict,
+            "confidence": inv.confidence,
+        },
+        "findings": [
+            {"code": f.code, "severity": f.severity.value, "detail": f.detail}
+            for f in salient
+        ],
+        "summary": _build_summary(inv, salient),
+    }
+
+
+def _build_summary(inv: Invoice, findings: list[Finding]) -> str:
+    codes = [f.code for f in findings]
+    parts: list[str] = []
+    if "DUPLICATE_EXACT" in codes:
+        parts.append("blocked as exact duplicate of a previously cleared invoice")
+    if "UNKNOWN_VENDOR" in codes:
+        parts.append("vendor not yet approved")
+    if "MISSING_PO" in codes:
+        parts.append("no PO referenced")
+    if "OVER_TOLERANCE" in codes:
+        parts.append("amount exceeds PO tolerance")
+    if "DUPLICATE_SUSPECT" in codes:
+        parts.append("suspected duplicate (same vendor + amount seen recently)")
+    if not parts:
+        if inv.status == "needs":
+            parts.append("escalated for manual review")
+        elif inv.status == "blocked":
+            parts.append("blocked by policy")
+        else:
+            parts.append(f"status is {inv.status}")
+    vendor_name = inv.vendor or "unknown vendor"
+    inv_num = inv.invoice_number or inv.id
+    return f"{inv_num} from {vendor_name} is {inv.status}: {'; '.join(parts)}."

@@ -145,9 +145,12 @@ def test_activate_rule_persists_active_rule(db: Session) -> None:
     assert any(r.id == rule.id for r in active)
 
 
-def test_activate_rule_supersedes_prior_active_rule_for_vendor(db: Session) -> None:
-    """Re-approving for the same vendor disables the prior active rule — latest
-    wins, so there are never duplicate active rules for one vendor."""
+def test_activate_rule_supersedes_prior_active_rule_for_vendor_and_finding(
+    db: Session,
+) -> None:
+    """Re-approving for the same (vendor, finding_code) disables the prior
+    active rule — latest wins, so there are no duplicate (vendor, finding_code)
+    active rules."""
     for inv in ("i1", "i2", "i3"):
         _add_correction(db, invoice_id=inv, over_pct="0.06")
 
@@ -170,6 +173,53 @@ def test_activate_rule_supersedes_prior_active_rule_for_vendor(db: Session) -> N
     by_id = {r.id: r for r in rule_repo.list_all(db)}
     assert by_id[first.id].status == "disabled"
     assert by_id[second.id].status == "active"
+
+
+def test_activate_rule_different_finding_codes_both_stay_active(db: Session) -> None:
+    """A vendor can have separate active rules for different finding_codes.
+    Activating an OVER_TOLERANCE rule and a DUPLICATE_SUSPECT rule for the
+    same vendor should leave both active (no supersede)."""
+    # Add 3 corrections for OVER_TOLERANCE
+    for i in range(3):
+        learning_service.record_correction(
+            db,
+            invoice_id=f"ot-{i}",
+            vendor="Acme",
+            finding_code="OVER_TOLERANCE",
+            user_action="route",
+            over_pct=Decimal("0.06"),
+        )
+
+    p_ot = learning_service.propose_rule(db)
+    assert p_ot is not None
+    rule_ot = learning_service.activate_rule(
+        db, proposal=p_ot, threshold_pct=p_ot.threshold_pct, route=p_ot.route
+    )
+    assert rule_ot.finding_code == "OVER_TOLERANCE"
+
+    # Add 3 corrections for DUPLICATE_SUSPECT
+    for i in range(3):
+        learning_service.record_correction(
+            db,
+            invoice_id=f"dup-{i}",
+            vendor="Acme",
+            finding_code="DUPLICATE_SUSPECT",
+            user_action="route",
+            over_pct=Decimal("0.00"),
+        )
+
+    p_dup = learning_service.propose_rule(db)
+    assert p_dup is not None
+    rule_dup = learning_service.activate_rule(
+        db, proposal=p_dup, threshold_pct=p_dup.threshold_pct, route=p_dup.route
+    )
+    assert rule_dup.finding_code == "DUPLICATE_SUSPECT"
+
+    # Both rules should be active — different finding codes, no supersede
+    active = rule_repo.list_active(db)
+    active_ids = {r.id for r in active}
+    assert rule_ot.id in active_ids
+    assert rule_dup.id in active_ids
 
 
 def test_activate_rule_writes_audit_event(db: Session) -> None:

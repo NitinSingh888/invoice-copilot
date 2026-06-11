@@ -87,8 +87,15 @@ def test_converse_explain_inv_id_captured(client: MockClient) -> None:
 
 
 def test_converse_explain_cyberdyne(client: MockClient) -> None:
+    # "show" + vendor name → review_invoice intent (not explain)
+    reply = client.converse(history=_msg("show cyberdyne invoice"), context={})
+    assert reply.intent == "review_invoice"
+
+
+def test_converse_what_about_cyberdyne_smalltalk(client: MockClient) -> None:
+    # Phrasing without a review keyword → smalltalk (no structured action)
     reply = client.converse(history=_msg("what about cyberdyne?"), context={})
-    assert reply.intent == "explain"
+    assert reply.intent == "smalltalk"
 
 
 def test_converse_approve(client: MockClient) -> None:

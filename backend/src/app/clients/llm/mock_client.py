@@ -100,7 +100,16 @@ class MockClient:
         if re.search(r"process|today|run the batch|go ahead", last):
             intent = "process_batch"
             text = "Starting the batch processing run now."
-        elif re.search(r"why|trail|escalat|injection|cyberdyne|4495|pay now", last):
+        elif re.search(
+            r"\b(review|show|look at|find|pull up|pull-up)\b",
+            last,
+        ) and re.search(
+            r"(inv-\d+|invoice|vendor|cyberdyne|acme|northwind|stark|globex|initech|hooli|soylent|meridian|wayne|umbrella)",
+            last,
+        ):
+            intent = "review_invoice"
+            text = "Here is the structured review for that invoice."
+        elif re.search(r"why|trail|escalat|injection|4495|pay now", last):
             intent = "explain"
             text = "Here is the explanation for that invoice decision."
         elif re.search(r"\bapprove\b", last):
