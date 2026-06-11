@@ -203,6 +203,8 @@ def get_invoice_file(invoice_id: str, db: Session = Depends(get_db)) -> FileResp
         path=str(file_path),
         media_type=media_type,
         filename=file_path.name,
+        # inline so the browser renders it in the preview iframe instead of downloading
+        content_disposition_type="inline",
     )
 
 
