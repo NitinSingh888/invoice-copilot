@@ -5,6 +5,22 @@ const usd = window.IC.money;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let _uid = 0; const uid = () => "m" + (++_uid);
 
+/* ---------- live-mode finding code → display meta ---------- */
+const FINDING_META = {
+  OVER_TOLERANCE:       { sev: "warn", text: "Over PO tolerance" },
+  AMOUNT_OVER_CAP:      { sev: "warn", text: "Above $10k auto-cap" },
+  UNDER_TOLERANCE:      { sev: "warn", text: "Under PO amount" },
+  UNKNOWN_VENDOR:       { sev: "warn", text: "Vendor not approved" },
+  NO_PO_MATCH:          { sev: "warn", text: "No matching PO" },
+  MISSING_PO:           { sev: "warn", text: "No PO referenced" },
+  MULTI_PO_MATCH:       { sev: "warn", text: "Ambiguous PO match" },
+  PARTIAL_PO:           { sev: "warn", text: "PO only partly fulfilled" },
+  DUPLICATE_SUSPECT:    { sev: "warn", text: "Possible duplicate" },
+  DUPLICATE_EXACT:      { sev: "stop", text: "Exact duplicate" },
+  VENDOR_BLOCKED:       { sev: "stop", text: "Vendor blocked" },
+  PO_MATCH_OK:          { sev: "ok",   text: "Matched PO" },
+};
+
 /* ---------- audit trail generation ---------- */
 function genTrail(inv) {
   if (inv.kind === "injection") {
@@ -84,6 +100,7 @@ function App() {
   const procRef = React.useRef(false);
   const lateRef = React.useRef(false);
   const threadRef = React.useRef(null);
+  const liveEscalRef = React.useRef([]);
 
   /* theme + accent */
   React.useEffect(() => {
@@ -169,6 +186,9 @@ function App() {
           const mapped = rows.filter((r) => r.status !== "cleared").map(mapLiveInvoice);
           setInvoices(mapped);
           recalcSaved(mapped);
+          // advance to the next escalation card, if any
+          await sleep(420);
+          await presentNextLive();
         } catch (err) {
           add({ kind: "system", text: "Action failed: " + err.message });
         }
@@ -210,6 +230,41 @@ function App() {
     else {
       // all routine escalations cleared — nudge toward the trust beat
       setSuggestions(["Why did you escalate Cyberdyne?", "Show me the Cyberdyne trail"]);
+    }
+  }
+
+  /* ---------- LIVE: present the next escalated invoice as an interactive card ---------- */
+  async function presentNextLive() {
+    const queue = liveEscalRef.current || [];
+    if (queue.length === 0) {
+      setSuggestions(["Show the blocked invoice", "Open the rules"]);
+      return;
+    }
+    const invId = queue.shift();
+    try {
+      const data = await IC_API.trail(invId);
+      const events = data.events || [];
+      const policyEv = events.find((e) => e.action === "findings_computed");
+      const guardEv = events.find((e) => e.action && e.action.indexOf("verdict:") === 0);
+      const codes = (policyEv && policyEv.outputs && policyEv.outputs.findings) || [];
+      const findings = codes
+        .map((c) => ({ code: c, ...(FINDING_META[c] || { sev: "warn", text: c }) }))
+        .filter((f) => f.sev !== "ok" || codes.length === 1);
+      const inv = invRef.current.find((i) => i.id === invId);
+      const vendor = inv ? inv.vendor : invId;
+      const unapproved = codes.includes("UNKNOWN_VENDOR") || codes.includes("NO_PO_MATCH");
+      const kind = unapproved ? "injection" : (vendor === "Acme Corp" ? "acme_over" : null);
+      setInvoices((prev) => prev.map((i) => (i.id === invId ? {
+        ...i, findings,
+        action: unapproved
+          ? "Escalated for human review — I did not act on the document’s instruction."
+          : "Hold for your approval — route to the payment run if you approve.",
+        why: guardEv ? guardEv.rationale : "Outside the auto-clear envelope — handed to a human.",
+        kind,
+      } : i)));
+      add({ kind: "card", invId });
+    } catch (err) {
+      add({ kind: "system", text: "Couldn’t load " + invId + ": " + err.message });
     }
   }
 
@@ -315,6 +370,13 @@ function App() {
               { text: "Need your review", meta: plural(n) },
               { text: "Blocked", meta: plural(b) },
             ] });
+            // present the escalations as interactive Approve/Hold/Route cards
+            const needsIds = rows.filter((row) => row.status === "needs").map((row) => row.id);
+            liveEscalRef.current = needsIds;
+            if (needsIds.length) {
+              await say("Let’s start with the ones that need your judgement:", 500);
+              await presentNextLive();
+            }
           }
           // If explain intent with invoice_id, open the trail
           if (r.intent === "explain" && r.result && r.result.invoice_id) {
