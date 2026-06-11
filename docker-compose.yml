@@ -1,10 +1,11 @@
-# Local development: a real Postgres for parity with the deployed (Neon) database.
-# Tests still use in-memory SQLite; this is only for running the app against Postgres locally.
+# Local development database.
+# The backend and frontend are run natively (see Makefile: make backend / make frontend).
+# Only Postgres needs to be containerised for local dev parity with Neon.
 #
-#   docker compose up -d postgres
-#   IC_DATABASE_URL=postgresql+psycopg://copilot:copilot@localhost:5432/copilot \
-#     PYTHONPATH=src .venv/bin/uvicorn app.main:app --port 8123
-#
+#   make db          # start Postgres (waits until healthy)
+#   make backend     # FastAPI on :8123 (reads backend/.env)
+#   make frontend    # Vite on :5173   (proxies /api → :8123)
+
 services:
   postgres:
     image: postgres:16-alpine

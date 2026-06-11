@@ -1,13 +1,17 @@
 # Invoice Copilot — Render Blueprint
 #
-# Deploy:
+# Before deploying:
 #   1. Create a free Postgres on Neon (https://neon.tech).
-#   2. Copy the connection string (psycopg / asyncpg driver URL).
-#   3. Set IC_DATABASE_URL below to that string, or paste it in the Render
-#      dashboard under "Environment" → IC_DATABASE_URL.
-#   4. Push this file; Render will build from Dockerfile automatically.
+#   2. Copy the psycopg connection string, e.g.:
+#        postgresql+psycopg://user:pass@ep-xxx.region.aws.neon.tech/dbname?sslmode=require
+#   3. Set IC_DATABASE_URL in the Render dashboard (Environment tab) to that string.
 #
-# The app seeds demo data on first boot (no separate migration step needed).
+# LLM provider:
+#   IC_LLM_PROVIDER defaults to "mock" so the app runs key-free out of the box.
+#   To enable the real Anthropic LLM:
+#     - Set IC_LLM_PROVIDER=anthropic
+#     - Set IC_ANTHROPIC_API_KEY to your Anthropic API key
+#
 # PORT is injected automatically by Render — no need to set it here.
 
 services:
@@ -26,6 +30,10 @@ services:
       #   postgresql+psycopg://user:pass@ep-xxx.region.aws.neon.tech/dbname?sslmode=require
       - key: IC_DATABASE_URL
         sync: false   # user must supply this — never committed to source control
+
+      # Optional — only needed when IC_LLM_PROVIDER=anthropic
+      - key: IC_ANTHROPIC_API_KEY
+        sync: false
 
       - key: PYTHONUNBUFFERED
         value: "1"

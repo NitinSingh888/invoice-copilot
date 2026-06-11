@@ -1,36 +1,30 @@
-# Invoice Copilot — production image
+# Invoice Copilot — multi-stage production image
 #
-# Single-stage build on python:3.12-slim.
-# psycopg[binary] ships its own libpq, so no extra OS packages are needed.
+# Stage 1: build the Vite/React frontend (node:22-slim)
+# Stage 2: install the FastAPI backend on python:3.12-slim and copy in the
+#           built static assets; uvicorn serves the API *and* the SPA from one
+#           process via IC_STATIC_DIR.
 #
-# The app binds to $PORT (Render injects this automatically; default 8000).
-# The src-layout package ("app") is installed as a proper package via
-# `pip install .` so `import app` works without PYTHONPATH tricks.
+# The app binds to $PORT (Render injects this; default 8000).
 
+# ---- build frontend ----
+FROM node:22-slim AS frontend
+# Upgrade npm to match host version (npm 11.6.2 / Node 25) so the lockfile is accepted by npm ci.
+RUN npm install -g npm@11.6.2
+WORKDIR /fe
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build
+
+# ---- backend + serve built frontend ----
 FROM python:3.12-slim
-
-# Reduce noise and keep the layer cache clean.
-ENV PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1
-
+ENV PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 IC_STATIC_DIR=/app/static
 WORKDIR /app
-
-# Copy only the files needed to install the package first (better layer caching).
-COPY pyproject.toml ./
-
-# Copy source tree, static web assets and the demo script.
-COPY src/ ./src/
-COPY web/ ./web/
-COPY scripts/ ./scripts/
-
-# Install the package (non-editable, no dev extras).
-# pip finds packages via [tool.setuptools.packages.find] where = ["src"].
+COPY backend/pyproject.toml ./
+COPY backend/src ./src
+COPY backend/scripts ./scripts
 RUN pip install .
-
-# Expose the default Render port.
+COPY --from=frontend /fe/dist /app/static
 EXPOSE 8000
-
-# Use sh -c so $PORT is expanded at runtime (Render sets it; default 8000).
-# `web/` is served as static files relative to the CWD (/app), matching
-# the StaticFiles(directory="web") mount in app.main.
 CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
