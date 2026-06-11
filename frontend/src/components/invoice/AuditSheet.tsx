@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react'
 import {
+  FileText,
+  Link2,
+  Flag,
   Shield,
-  Brain,
   CheckCircle2,
-  Router,
-  AlertTriangle,
+  Sparkles,
+  User,
+  Brain,
+  Link as LinkIcon,
   ChevronDown,
   ChevronRight,
-  XCircle,
 } from 'lucide-react'
 import {
   Sheet,
@@ -30,13 +33,16 @@ interface AuditSheetProps {
 }
 
 function moduleIcon(module: string) {
-  const m = module.toLowerCase()
-  if (m.includes('rule') || m.includes('validate')) return <Shield className="h-3.5 w-3.5" />
-  if (m.includes('route')) return <Router className="h-3.5 w-3.5" />
-  if (m.includes('check') || m.includes('duplicate')) return <AlertTriangle className="h-3.5 w-3.5" />
-  if (m.includes('approve') || m.includes('action')) return <CheckCircle2 className="h-3.5 w-3.5" />
-  if (m.includes('reject') || m.includes('block')) return <XCircle className="h-3.5 w-3.5" />
-  return <Brain className="h-3.5 w-3.5" />
+  switch (module) {
+    case 'extraction': return <FileText className="h-3.5 w-3.5" />
+    case 'enrichment': return <Link2 className="h-3.5 w-3.5" />
+    case 'policy': return <Flag className="h-3.5 w-3.5" />
+    case 'guard': return <Shield className="h-3.5 w-3.5" />
+    case 'execution': return <CheckCircle2 className="h-3.5 w-3.5" />
+    case 'learning': return <Sparkles className="h-3.5 w-3.5" />
+    case 'human': return <User className="h-3.5 w-3.5" />
+    default: return <Brain className="h-3.5 w-3.5" />
+  }
 }
 
 function EventRow({ event }: { event: AuditEvent }) {
@@ -71,6 +77,17 @@ function EventRow({ event }: { event: AuditEvent }) {
           </div>
           {event.rationale && (
             <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{event.rationale}</p>
+          )}
+          {event.model_meta && event.model_meta.provider != null && (
+            <p className="mt-1 font-mono text-[10px] text-muted-foreground">
+              {String(event.model_meta.provider)}/{String(event.model_meta.model ?? '')}
+              {event.model_meta.confidence != null && ` · conf ${String(event.model_meta.confidence)}`}
+            </p>
+          )}
+          {event.hash && (
+            <p className="mt-1 flex items-center gap-1 font-mono text-[10px] text-muted-foreground/70">
+              <LinkIcon className="h-2.5 w-2.5" /> {event.hash.slice(0, 16)}…
+            </p>
           )}
           {hasData && (
             <button
@@ -132,7 +149,7 @@ export function AuditSheet({ invoiceId, open, onOpenChange }: AuditSheetProps) {
             <Shield className="h-4 w-4 text-primary" />
             Audit Trail
             {invoiceId && (
-              <span className="font-mono text-xs text-muted-foreground">INV-{invoiceId}</span>
+              <span className="font-mono text-xs text-muted-foreground">{invoiceId}</span>
             )}
           </SheetTitle>
           <SheetDescription>

@@ -65,7 +65,7 @@ export function InvoiceQueue({ invoices, loading, onInvoiceClick }: InvoiceQueue
   const queued = invoices.filter((i) => i.status === 'queued').length
   const needs = invoices.filter((i) => i.status === 'needs').length
   const blocked = invoices.filter((i) => i.status === 'blocked').length
-  const saved = minutesSaved(visible.length)
+  const saved = minutesSaved(queued)
 
   return (
     <div className="flex flex-col h-full border-r border-border">

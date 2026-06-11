@@ -83,7 +83,7 @@ export function Dashboard({ invoices, loading, onProcessBatch, onSwitchToInbox }
   const needs = invoices.filter((i) => i.status === 'needs').length
   const blocked = invoices.filter((i) => i.status === 'blocked').length
   const auto = queued
-  const mins = minutesSaved(total)
+  const mins = minutesSaved(queued) // time saved = invoices the agent auto-cleared
   const hours = (mins / 60).toFixed(1)
   const throughputPct = total > 0 ? Math.round((queued / total) * 100) : 0
 
@@ -103,7 +103,7 @@ export function Dashboard({ invoices, loading, onProcessBatch, onSwitchToInbox }
       <PageHeader
         title="Dashboard"
         subtitle="Today's invoice processing summary"
-        savedCount={total}
+        savedCount={queued}
       />
 
       <div className="flex-1 p-6 space-y-6">

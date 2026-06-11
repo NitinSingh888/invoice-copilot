@@ -59,7 +59,7 @@ export function Inbox({
       <PageHeader
         title="Inbox"
         subtitle={needsCount > 0 ? `${needsCount} invoice${needsCount !== 1 ? 's' : ''} need your attention` : 'Agent workspace'}
-        savedCount={invoices.length}
+        savedCount={invoices.filter((i) => i.status === 'queued').length}
       />
 
       <div className="flex min-h-0 flex-1">
