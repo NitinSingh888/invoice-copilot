@@ -2,17 +2,8 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-
-# ---------------------------------------------------------------------------
-# Static serving — GET / → index.html
-# ---------------------------------------------------------------------------
-
-
-def test_static_index_html(client: TestClient) -> None:
-    resp = client.get("/")
-    assert resp.status_code == 200
-    assert "text/html" in resp.headers["content-type"]
-
+# (Static frontend serving is production-only — the built Vite app is copied in
+# and served by the API in the Docker image; in dev the frontend runs on Vite.)
 
 # ---------------------------------------------------------------------------
 # E2E smoke — full multi-router round-trip

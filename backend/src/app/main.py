@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import logging
+import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -51,7 +53,12 @@ def create_app() -> FastAPI:
 
     application.include_router(api_router, prefix="/api/v1")
 
-    application.mount("/", StaticFiles(directory="web", html=True), name="web")
+    # In production the built frontend (Vite dist) is copied here and served by the
+    # API as a single service. In development the frontend runs on the Vite dev
+    # server (which proxies /api to this backend), so this directory is absent.
+    static_dir = os.environ.get("IC_STATIC_DIR", "static")
+    if Path(static_dir).is_dir():
+        application.mount("/", StaticFiles(directory=static_dir, html=True), name="web")
 
     return application
 

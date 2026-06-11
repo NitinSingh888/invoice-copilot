@@ -20,7 +20,8 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 import app.db.models  # noqa: F401 — populate Base.metadata
-from app.api.deps import get_db
+from app.api.deps import get_db, get_llm
+from app.clients.llm.mock_client import MockClient
 from app.db.base import Base
 from app.main import app
 
@@ -96,11 +97,15 @@ def client(_engine: Engine) -> Generator[TestClient, None, None]:
             session.close()
 
     app.dependency_overrides[get_db] = override_get_db
+    # Force the deterministic mock LLM so tests never hit a real provider,
+    # regardless of any IC_LLM_PROVIDER / API keys in a developer's .env.
+    app.dependency_overrides[get_llm] = lambda: MockClient()
     test_client = TestClient(app)
     try:
         yield test_client
     finally:
         app.dependency_overrides.pop(get_db, None)
+        app.dependency_overrides.pop(get_llm, None)
 
 
 @pytest.fixture
