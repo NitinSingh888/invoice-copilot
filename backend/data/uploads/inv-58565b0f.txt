@@ -1,4 +1,0 @@
-Vendor: Acme Corp
-Invoice: INV-9100
-Amount: 1500
-PO: PO-22845
