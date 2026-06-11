@@ -5,90 +5,95 @@
    ============================================================ */
 
 :root {
-  /* ---- neutrals (cool slate) — light ---- */
-  --bg:        oklch(0.985 0.004 255);
-  --bg-sunken: oklch(0.965 0.005 255);
-  --surface:   oklch(1 0 0);
-  --surface-2: oklch(0.978 0.004 255);
-  --line:      oklch(0.912 0.006 258);
-  --line-soft: oklch(0.945 0.005 258);
-  --ink:       oklch(0.255 0.018 264);
-  --ink-2:     oklch(0.44 0.016 262);
-  --ink-3:     oklch(0.60 0.014 260);
-  --ink-faint: oklch(0.72 0.012 258);
+  /* ---- neutrals — light (Linear) ---- */
+  --bg:        #fafbfc;
+  --bg-sunken: #f4f5f7;
+  --surface:   #ffffff;
+  --surface-2: #fbfbfd;
+  --line:      #e6e7eb;
+  --line-soft: #eef0f2;
+  --ink:       #16171a;
+  --ink-2:     #494c54;
+  --ink-3:     #6f737c;
+  --ink-faint: #9499a3;
 
-  /* ---- accent (indigo) ---- */
-  --accent:      oklch(0.50 0.135 266);
-  --accent-press:oklch(0.44 0.135 266);
-  --accent-soft: oklch(0.95 0.03 266);
-  --accent-line: oklch(0.86 0.06 266);
-  --accent-ink:  oklch(0.42 0.14 266);
-  --on-accent:   oklch(0.99 0.005 266);
+  /* ---- accent (Linear indigo — solid, no gradients) ---- */
+  --accent:      #5e6ad2;
+  --accent-press:#515cc4;
+  --accent-soft: #eef0fb;
+  --accent-line: #d6dbf6;
+  --accent-ink:  #4853c4;
+  --on-accent:   #ffffff;
 
-  /* ---- status (fixed by spec) ---- */
-  --ok:        oklch(0.60 0.12 152);
-  --ok-soft:   oklch(0.95 0.045 152);
-  --ok-line:   oklch(0.84 0.08 152);
-  --ok-ink:    oklch(0.46 0.11 152);
+  /* ---- status ---- */
+  --ok:        #3d9a70;
+  --ok-soft:   #e7f5ee;
+  --ok-line:   #c2e6d4;
+  --ok-ink:    #2b7a56;
 
-  --warn:      oklch(0.74 0.135 73);
-  --warn-soft: oklch(0.96 0.05 78);
-  --warn-line: oklch(0.86 0.10 75);
-  --warn-ink:  oklch(0.55 0.12 62);
+  --warn:      #cf9220;
+  --warn-soft: #fbf3e0;
+  --warn-line: #f1dcaa;
+  --warn-ink:  #8f6410;
 
-  --hold:      oklch(0.66 0.012 260);
-  --hold-soft: oklch(0.95 0.004 260);
-  --hold-line: oklch(0.88 0.006 260);
-  --hold-ink:  oklch(0.48 0.012 260);
+  --hold:      #8a8f98;
+  --hold-soft: #f1f2f4;
+  --hold-line: #e3e4e8;
+  --hold-ink:  #5b6069;
 
-  --bad:       oklch(0.58 0.17 26);
-  --bad-soft:  oklch(0.95 0.04 26);
-  --bad-line:  oklch(0.85 0.09 26);
-  --bad-ink:   oklch(0.50 0.17 26);
+  --bad:       #e5484d;
+  --bad-soft:  #fdecec;
+  --bad-line:  #f6c8ca;
+  --bad-ink:   #c23a3f;
 
-  /* ---- type ---- */
-  --serif: "Newsreader", Georgia, "Times New Roman", serif;
-  --sans:  "Hanken Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  /* ---- type (Inter, à la Linear) ---- */
+  --serif: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --sans:  "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --mono:  "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
-  /* ---- shape & depth ---- */
-  --r-xs: 6px;  --r-sm: 9px;  --r-md: 13px;  --r-lg: 18px;  --r-xl: 24px;
-  --sh-1: 0 1px 2px oklch(0.4 0.02 264 / 0.06), 0 1px 1px oklch(0.4 0.02 264 / 0.04);
-  --sh-2: 0 2px 8px oklch(0.35 0.02 264 / 0.07), 0 1px 2px oklch(0.35 0.02 264 / 0.05);
-  --sh-3: 0 10px 30px oklch(0.32 0.03 264 / 0.12), 0 2px 8px oklch(0.32 0.03 264 / 0.07);
-  --sh-pop: 0 24px 64px oklch(0.28 0.04 264 / 0.20), 0 4px 14px oklch(0.28 0.03 264 / 0.10);
+  /* ---- shape & depth (Linear: small radii, border-led, subtle shadow) ---- */
+  --r-xs: 5px;  --r-sm: 7px;  --r-md: 9px;  --r-lg: 12px;  --r-xl: 16px;
+  --sh-1: 0 1px 2px rgba(16,17,26,0.05);
+  --sh-2: 0 2px 6px rgba(16,17,26,0.07), 0 1px 2px rgba(16,17,26,0.05);
+  --sh-3: 0 8px 28px rgba(16,17,26,0.12), 0 2px 6px rgba(16,17,26,0.06);
+  --sh-pop: 0 18px 52px rgba(16,17,26,0.20), 0 4px 12px rgba(16,17,26,0.10);
 
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 [data-theme="dark"] {
-  --bg:        oklch(0.205 0.014 264);
-  --bg-sunken: oklch(0.18 0.014 264);
-  --surface:   oklch(0.245 0.016 264);
-  --surface-2: oklch(0.275 0.017 264);
-  --line:      oklch(0.33 0.018 264);
-  --line-soft: oklch(0.30 0.016 264);
-  --ink:       oklch(0.95 0.006 258);
-  --ink-2:     oklch(0.80 0.012 258);
-  --ink-3:     oklch(0.66 0.014 258);
-  --ink-faint: oklch(0.55 0.014 258);
+  /* ---- neutrals — dark (Linear near-black) ---- */
+  --bg:        #0b0c0e;
+  --bg-sunken: #08090a;
+  --surface:   #141518;
+  --surface-2: #1b1c20;
+  --line:      #26282d;
+  --line-soft: #1e2024;
+  --ink:       #f7f8f8;
+  --ink-2:     #c2c5cc;
+  --ink-3:     #8a8f98;
+  --ink-faint: #62666d;
 
-  --accent:      oklch(0.70 0.13 266);
-  --accent-press:oklch(0.64 0.13 266);
-  --accent-soft: oklch(0.32 0.05 266);
-  --accent-line: oklch(0.42 0.08 266);
-  --accent-ink:  oklch(0.80 0.11 266);
-  --on-accent:   oklch(0.16 0.02 266);
+  --accent:      #7c84e8;
+  --accent-press:#6b73d6;
+  --accent-soft: #20223b;
+  --accent-line: #343864;
+  --accent-ink:  #b3b8f2;
+  --on-accent:   #0b0c10;
 
-  --ok-soft:   oklch(0.32 0.05 152);  --ok-line: oklch(0.42 0.07 152);  --ok-ink: oklch(0.80 0.10 152);
-  --warn-soft: oklch(0.34 0.05 70);   --warn-line: oklch(0.46 0.08 70); --warn-ink: oklch(0.84 0.11 78);
-  --hold-soft: oklch(0.30 0.008 260); --hold-line: oklch(0.40 0.01 260);--hold-ink: oklch(0.74 0.012 260);
-  --bad-soft:  oklch(0.32 0.06 26);   --bad-line: oklch(0.45 0.10 26);  --bad-ink: oklch(0.80 0.13 26);
+  --ok:        #4cb782;
+  --ok-soft:   #102619;  --ok-line:  #1f3f2e;  --ok-ink:  #5fd09a;
+  --warn:      #e6a33a;
+  --warn-soft: #271f10;  --warn-line: #433619; --warn-ink: #f0c25f;
+  --hold:      #8a8f98;
+  --hold-soft: #191a1d;  --hold-line: #2b2d32; --hold-ink: #9a9fa8;
+  --bad:       #f0575c;
+  --bad-soft:  #2a1416;  --bad-line:  #47221f; --bad-ink:  #f08488;
 
-  --sh-1: 0 1px 2px oklch(0 0 0 / 0.30);
-  --sh-2: 0 2px 10px oklch(0 0 0 / 0.36);
-  --sh-3: 0 12px 34px oklch(0 0 0 / 0.46);
-  --sh-pop: 0 26px 70px oklch(0 0 0 / 0.58), 0 4px 14px oklch(0 0 0 / 0.4);
+  --sh-1: 0 1px 2px rgba(0,0,0,0.40);
+  --sh-2: 0 2px 8px rgba(0,0,0,0.45);
+  --sh-3: 0 12px 32px rgba(0,0,0,0.55);
+  --sh-pop: 0 22px 60px rgba(0,0,0,0.62), 0 4px 14px rgba(0,0,0,0.45);
 }
 
 * { box-sizing: border-box; }
