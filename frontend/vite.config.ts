@@ -11,9 +11,12 @@ export default defineConfig({
     },
   },
   server: {
+    host: true, // listen on 0.0.0.0 so it's reachable from outside the container
+    port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:8123',
+        // In Docker compose this points at the backend service; natively it's localhost.
+        target: process.env.VITE_API_PROXY || 'http://localhost:8123',
         changeOrigin: true,
       },
     },

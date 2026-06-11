@@ -24,19 +24,28 @@ invoice-copilot/
 
 The backend is a standalone API; the frontend is a standalone SPA that talks to it. In **development** they run as two processes (Vite proxies `/api` to the backend). In **production** the Docker image builds the frontend and the FastAPI app serves it — a single service.
 
-## Quickstart (local)
+## Quickstart — one command (Docker)
 
-**Prerequisites:** Python 3.11+, Node 20+, Docker (for Postgres). No API keys required — it runs on a deterministic mock LLM by default.
+**Only prerequisite: Docker.** No local Python, Node, or venv needed. No API keys required (runs on a deterministic mock LLM by default).
 
 ```bash
-make install          # backend venv + deps, frontend npm install
-make db               # start Postgres (Docker) — required for backend AND tests
-# then, in two terminals:
-make backend          # FastAPI on http://localhost:8123
-make frontend         # Vite dev server on http://localhost:5173
+docker compose up        # Postgres + backend + frontend, all containerised, hot-reload
+# or:  make up
 ```
 
-Open **http://localhost:5173**. Toggle **dark/light** (top-right), switch the **Maya / Priya** role, and click **"Process today's invoices"** — watch the queue clear the safe ones, escalate the rest as **Approve / Hold / Edit** cards, and open any invoice's **audit trail**.
+Open **http://localhost:5173**. Toggle **dark/light** (top-right), switch the **Maya / Priya** role, and click **"Process today's invoices"** — watch the queue clear the safe ones, escalate the rest as **Approve / Hold / Edit** cards, and open any invoice's **audit trail**. Source is bind-mounted, so edits to `backend/` or `frontend/` hot-reload without rebuilding.
+
+<details>
+<summary>Prefer to run natively (without Docker for the app)?</summary>
+
+Needs Python 3.11+ and Node 20+:
+```bash
+make install     # backend venv + deps, frontend npm install
+make db          # just Postgres (Docker)
+make backend     # FastAPI on :8123   (terminal 2)
+make frontend    # Vite on :5173      (terminal 3)
+```
+</details>
 
 ### Turn on the real LLM (optional)
 Create **`backend/.env`** (copy `backend/.env.example`) and set:

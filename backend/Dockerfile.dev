@@ -1,0 +1,14 @@
+# Development image for the FastAPI backend (hot-reload via mounted src).
+# Production uses the root multi-stage Dockerfile instead.
+FROM python:3.12-slim
+
+ENV PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 PYTHONPATH=/app/src
+WORKDIR /app
+
+# Install dependencies (cached unless pyproject changes). src is bind-mounted at runtime.
+COPY pyproject.toml ./
+COPY src ./src
+RUN pip install -e ".[dev]"
+
+EXPOSE 8123
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8123", "--reload"]

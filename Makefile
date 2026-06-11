@@ -1,21 +1,23 @@
 # Invoice Copilot — developer entry points (split monorepo: backend/ + frontend/)
 # Run `make help` to see all targets (the default).
 
-.PHONY: help install db db-down backend frontend dev test lint typecheck fe-build check docker-build
+.PHONY: help up down logs rebuild install db db-down backend frontend dev test lint typecheck fe-build check docker-build
 
 help:  ## Show this help message
 	@echo ""
 	@echo "  Invoice Copilot — make targets"
 	@echo ""
-	@echo "  Setup"
-	@echo "    make install       Install backend .venv + frontend node_modules"
-	@echo "    make db            Start Postgres container (docker compose)"
-	@echo "    make db-down       Stop and remove Postgres container"
+	@echo "  Run everything in Docker (recommended — no local Python/Node needed)"
+	@echo "    make up             Postgres + backend + frontend (hot-reload) → http://localhost:5173"
+	@echo "    make down           Stop all containers"
+	@echo "    make logs           Tail logs from all services"
+	@echo "    make rebuild        Rebuild images and restart (after dependency changes)"
 	@echo ""
-	@echo "  Development  (run each in its own terminal)"
-	@echo "    make backend       Start API server on :8123 with --reload (requires make db)"
-	@echo "    make frontend      Start Vite dev server on :5173 (proxies /api → :8123)"
-	@echo "    make dev           Print instructions for running both services"
+	@echo "  Run natively (optional fast path — needs local Python + Node)"
+	@echo "    make install       Install backend .venv + frontend node_modules"
+	@echo "    make db            Start just Postgres"
+	@echo "    make backend       Start API server on :8123 with --reload"
+	@echo "    make frontend      Start Vite dev server on :5173"
 	@echo ""
 	@echo "  Quality"
 	@echo "    make test          Run pytest (requires make db)"
@@ -28,7 +30,21 @@ help:  ## Show this help message
 	@echo "    make docker-build  Build the production Docker image (invoice-copilot)"
 	@echo ""
 
-# ── Setup ────────────────────────────────────────────────────────────────────
+# ── Run everything in Docker (recommended) ───────────────────────────────────
+
+up:  ## Start Postgres + backend + frontend (containerised, hot-reload)
+	docker compose up --build
+
+down:  ## Stop and remove all containers
+	docker compose down
+
+logs:  ## Tail logs from all services
+	docker compose logs -f
+
+rebuild:  ## Rebuild images from scratch and restart
+	docker compose up -d --build --force-recreate
+
+# ── Native setup (optional) ──────────────────────────────────────────────────
 
 install:  ## Create backend .venv + install deps; install frontend node_modules
 	cd backend && python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
