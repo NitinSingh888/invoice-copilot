@@ -1,0 +1,4 @@
+vendor: Acme Corp
+amount: 9800
+po: PO-1
+invoice_number: A-1
