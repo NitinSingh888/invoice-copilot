@@ -1,0 +1,224 @@
+import { useState } from 'react'
+import { ExternalLink, Pencil, CheckCircle2, PauseCircle, ArrowRight } from 'lucide-react'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { VendorAvatar } from './VendorAvatar'
+import { invoiceAction } from '@/lib/api'
+import { formatMoney } from '@/lib/utils'
+import type { InvoiceOut, FindingDisplay, Role } from '@/lib/types'
+
+interface ApprovalCardProps {
+  invoice: InvoiceOut
+  findings: FindingDisplay[]
+  rationale: string
+  role: Role
+  onResolved: (invoice: InvoiceOut, action: string) => void
+  onTrailOpen: (id: string) => void
+}
+
+export function ApprovalCard({
+  invoice,
+  findings,
+  rationale,
+  role,
+  onResolved,
+  onTrailOpen,
+}: ApprovalCardProps) {
+  const [loading, setLoading] = useState<string | null>(null)
+  const [editing, setEditing] = useState(false)
+  const [editAmount, setEditAmount] = useState(invoice.amount)
+  const [editRoute, setEditRoute] = useState(invoice.route ?? '')
+
+  // Acme over-PO = route to Priya is primary
+  const isAcmeOverPO =
+    invoice.vendor.toLowerCase().includes('acme') &&
+    findings.some((f) => f.code === 'OVER_TOLERANCE')
+  const showRouteToPriya = isAcmeOverPO && role === 'maya'
+
+  async function doAction(action: 'approve' | 'hold' | 'edit' | 'route', extra?: Record<string, string>) {
+    setLoading(action)
+    try {
+      const updated = await invoiceAction(invoice.id, { action, ...extra })
+      onResolved(updated, action)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(null)
+    }
+  }
+
+  function handleApprove() {
+    doAction('approve')
+  }
+  function handleHold() {
+    doAction('hold')
+  }
+  function handleRouteToPriya() {
+    doAction('route', { route: 'priya' })
+  }
+  function handleEdit() {
+    if (!editing) {
+      setEditing(true)
+      return
+    }
+    const extra: Record<string, string> = { amount: editAmount }
+    if (editRoute) extra.route = editRoute
+    doAction('edit', extra)
+  }
+
+  return (
+    <Card className="border-border shadow-none">
+      <CardHeader className="pb-3">
+        <div className="flex items-start gap-3">
+          <VendorAvatar vendor={invoice.vendor} size="md" />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-semibold text-foreground">{invoice.vendor}</span>
+              <Badge variant="warning" className="text-[10px]">Approval needed</Badge>
+            </div>
+            <div className="flex items-center gap-1.5 mt-1">
+              <span className="text-lg font-mono font-semibold text-foreground tabular-nums">
+                {formatMoney(invoice.amount)}
+              </span>
+              <span className="text-[11px] font-mono text-muted-foreground">
+                {invoice.id}
+              </span>
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent className="space-y-3">
+        {/* Findings */}
+        <div>
+          <p className="text-[10px] font-semibold text-muted-foreground mb-1.5 tracking-wide">
+            WHAT I FOUND
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {findings.map((f) => (
+              <Badge key={f.code} variant={f.severity} className="text-[10px]">
+                {f.label}
+              </Badge>
+            ))}
+            {findings.length === 0 && (
+              <Badge variant="muted" className="text-[10px]">No issues detected</Badge>
+            )}
+          </div>
+        </div>
+
+        {/* Rationale */}
+        {rationale && (
+          <div className="bg-muted/50 rounded-md px-3 py-2">
+            <p className="text-xs text-muted-foreground leading-relaxed">{rationale}</p>
+          </div>
+        )}
+
+        {/* Inline edit */}
+        {editing && (
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[10px] text-muted-foreground mb-1 block">Amount</label>
+              <Input
+                value={editAmount}
+                onChange={(e) => setEditAmount(e.target.value)}
+                className="font-mono text-xs h-7"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] text-muted-foreground mb-1 block">Route to</label>
+              <Input
+                value={editRoute}
+                onChange={(e) => setEditRoute(e.target.value)}
+                placeholder="priya / finance"
+                className="text-xs h-7"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex items-center gap-2 flex-wrap pt-1">
+          {showRouteToPriya ? (
+            <Button
+              size="sm"
+              onClick={handleRouteToPriya}
+              disabled={loading !== null}
+              className="h-7 text-xs"
+            >
+              {loading === 'route' ? (
+                <span className="animate-pulse">Routing…</span>
+              ) : (
+                <>
+                  <ArrowRight className="h-3 w-3" />
+                  Route to Priya
+                </>
+              )}
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              onClick={handleApprove}
+              disabled={loading !== null}
+              className="h-7 text-xs"
+            >
+              {loading === 'approve' ? (
+                <span className="animate-pulse">Approving…</span>
+              ) : (
+                <>
+                  <CheckCircle2 className="h-3 w-3" />
+                  Approve
+                </>
+              )}
+            </Button>
+          )}
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleHold}
+            disabled={loading !== null}
+            className="h-7 text-xs"
+          >
+            {loading === 'hold' ? (
+              <span className="animate-pulse">Holding…</span>
+            ) : (
+              <>
+                <PauseCircle className="h-3 w-3" />
+                Hold
+              </>
+            )}
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleEdit}
+            disabled={loading !== null}
+            className="h-7 text-xs"
+          >
+            {loading === 'edit' ? (
+              <span className="animate-pulse">Saving…</span>
+            ) : (
+              <>
+                <Pencil className="h-3 w-3" />
+                {editing ? 'Save' : 'Edit'}
+              </>
+            )}
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onTrailOpen(invoice.id)}
+            className="h-7 text-xs ml-auto text-muted-foreground"
+          >
+            <ExternalLink className="h-3 w-3" />
+            Trail
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
