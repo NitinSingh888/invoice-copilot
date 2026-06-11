@@ -48,6 +48,24 @@ def handle(
     result: dict[str, Any] | None = None
     intent = reply.intent
 
+    # Deterministic override: a "review / show / look at / pull up / what about
+    # <entity>" message should resolve and return structured invoice data even if
+    # the LLM labelled it "explain" or "smalltalk" (the real model often maps
+    # "review" -> "explain"). Messages explicitly asking for the trail/audit/history
+    # keep their "explain" intent.
+    if intent in ("explain", "show_trail", "smalltalk", "review_invoice"):
+        wants_trail = bool(re.search(r"\b(trail|audit|history|log)\b", message, re.I))
+        wants_review = bool(
+            re.search(
+                r"\b(review|show|see|look|pull up|detail|about|check|info|status of)\b",
+                message,
+                re.I,
+            )
+        )
+        if not wants_trail and (wants_review or intent == "review_invoice"):
+            if _has_review_entity(db, message):
+                intent = "review_invoice"
+
     if intent == "process_batch":
         invoices = invoice_repo.list_by_status(db, "received")
         queued = needs = blocked = 0
@@ -111,6 +129,13 @@ def handle(
 # ---------------------------------------------------------------------------
 # Internal helpers for review_invoice
 # ---------------------------------------------------------------------------
+
+
+def _has_review_entity(db: Session, message: str) -> bool:
+    """True if the message references a resolvable invoice (INV-#### or a vendor)."""
+    if re.search(r"INV-\d+", message, re.IGNORECASE):
+        return True
+    return vendor_repo.resolve_from_text(db, message) is not None
 
 
 def _resolve_review_invoice(db: Session, message: str) -> dict[str, Any]:
