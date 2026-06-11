@@ -38,6 +38,7 @@ services:
     volumes:
       - ./backend/src:/app/src
       - ./backend/scripts:/app/scripts
+      - ./backend/data:/app/data
     ports:
       - "8123:8123"
     depends_on:
