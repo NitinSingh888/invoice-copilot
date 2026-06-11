@@ -24,10 +24,16 @@ import type {
   InvoiceOut,
   Role,
   ThreadMessage,
+  ReviewInvoiceResult,
 } from '@/lib/types'
+import { isReviewFound } from '@/lib/types'
 
 function isBatchResult(r: unknown): r is BatchResult {
   return !!r && typeof r === 'object' && 'queued' in r && 'needs' in r
+}
+
+function isReviewInvoiceResult(r: unknown): r is ReviewInvoiceResult {
+  return !!r && typeof r === 'object' && ('invoice' in r || 'not_found' in r)
 }
 
 const HEALTH_POLL_MS = 20_000
@@ -176,6 +182,17 @@ export default function App() {
         escalRef.current = live.filter((i) => i.status === 'needs').map((i) => i.id)
         await presentNextEscalation()
         toast.success(`Batch processed · ${queued} queued, ${needs} need review, ${blocked} blocked`)
+      } else if (res.intent === 'review_invoice' && isReviewInvoiceResult(res.result)) {
+        const result = res.result
+        if (isReviewFound(result)) {
+          push({ type: 'inspection', data: result })
+        } else {
+          const query = result.query ?? msg
+          push({
+            type: 'agent',
+            content: `I couldn't find an invoice matching "${query}". Try an invoice number like INV-4495 or a vendor name.`,
+          })
+        }
       }
     } catch (e) {
       push({ type: 'agent', content: `Something went wrong: ${(e as Error).message}` })
@@ -268,6 +285,7 @@ export default function App() {
             }
             onInvoiceClick={openTrail}
             onNavigateRules={() => setView('rules')}
+            onRefresh={() => void refreshInvoices()}
           />
         )}
         {view === 'rules' && <Rules />}

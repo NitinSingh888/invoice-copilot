@@ -78,10 +78,67 @@ export interface AuditTrailEntry {
   rationale: string
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// Chat / review_invoice result shapes
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface ReviewInvoiceFound {
+  invoice: {
+    id: string
+    vendor: string
+    amount: string
+    invoice_number: string | null
+    po_number: string | null
+    status: InvoiceStatus
+    verdict: string | null
+    confidence: number | null
+  }
+  findings: Finding[]
+  summary: string
+}
+
+export interface ReviewInvoiceNotFound {
+  not_found: true
+  query: string
+}
+
+export type ReviewInvoiceResult = ReviewInvoiceFound | ReviewInvoiceNotFound
+
+export function isReviewFound(r: ReviewInvoiceResult): r is ReviewInvoiceFound {
+  return !('not_found' in r)
+}
+
 export interface ChatResponse {
   reply: string
   intent: string
-  result: BatchResult | ExplainResult | null
+  result: BatchResult | ExplainResult | ReviewInvoiceResult | null
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Sample invoices
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface SampleInvoice {
+  label: string
+  expected: string
+  vendor: string
+  amount: string
+  invoice_number: string
+  po_number: string
+  confidence: number
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Upload result (same shape as CreateInvoiceResponse / ProcessResultOut)
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface ProcessResultOut {
+  invoice_id: string
+  verdict: string
+  route: string | null
+  reason: string
+  status: InvoiceStatus
+  findings: Finding[]
 }
 
 export interface AuditEvent {
@@ -145,6 +202,7 @@ export type ThreadMessage =
   | { type: 'approval'; invoice: InvoiceOut; findings: FindingDisplay[]; rationale: string }
   | { type: 'resolved'; invoice: InvoiceOut; action: string; byRole: Role }
   | { type: 'rule_proposal'; proposal: RuleProposeResponse }
+  | { type: 'inspection'; data: ReviewInvoiceFound }
 
 export interface FindingDisplay {
   code: string

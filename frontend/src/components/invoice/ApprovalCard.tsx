@@ -4,7 +4,9 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { VendorAvatar } from './VendorAvatar'
+import { FindingChip } from './FindingChip'
 import { invoiceAction } from '@/lib/api'
 import { formatMoney } from '@/lib/utils'
 import type { InvoiceOut, FindingDisplay, Role } from '@/lib/types'
@@ -98,9 +100,7 @@ export function ApprovalCard({
           </p>
           <div className="flex flex-wrap gap-1.5">
             {findings.map((f) => (
-              <Badge key={f.code} variant={f.severity} className="text-[10px]">
-                {f.label}
-              </Badge>
+              <FindingChip key={f.code} finding={f} />
             ))}
             {findings.length === 0 && (
               <Badge variant="muted" className="text-[10px]">No issues detected</Badge>
@@ -141,82 +141,107 @@ export function ApprovalCard({
         {/* Actions */}
         <div className="flex items-center gap-2 flex-wrap pt-1">
           {showRouteToPriya ? (
-            <Button
-              size="sm"
-              onClick={handleRouteToPriya}
-              disabled={loading !== null}
-              className="h-7 text-xs"
-            >
-              {loading === 'route' ? (
-                <span className="animate-pulse">Routing…</span>
-              ) : (
-                <>
-                  <ArrowRight className="h-3 w-3" />
-                  Route to Priya
-                </>
-              )}
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  onClick={handleRouteToPriya}
+                  disabled={loading !== null}
+                  className="h-7 text-xs"
+                >
+                  {loading === 'route' ? (
+                    <span className="animate-pulse">Routing…</span>
+                  ) : (
+                    <>
+                      <ArrowRight className="h-3 w-3" />
+                      Route to Priya
+                    </>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Send to a colleague to approve</TooltipContent>
+            </Tooltip>
           ) : (
-            <Button
-              size="sm"
-              onClick={handleApprove}
-              disabled={loading !== null}
-              className="h-7 text-xs"
-            >
-              {loading === 'approve' ? (
-                <span className="animate-pulse">Approving…</span>
-              ) : (
-                <>
-                  <CheckCircle2 className="h-3 w-3" />
-                  Approve
-                </>
-              )}
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  onClick={handleApprove}
+                  disabled={loading !== null}
+                  className="h-7 text-xs"
+                >
+                  {loading === 'approve' ? (
+                    <span className="animate-pulse">Approving…</span>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-3 w-3" />
+                      Approve
+                    </>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Approve &amp; queue for payment</TooltipContent>
+            </Tooltip>
           )}
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleHold}
-            disabled={loading !== null}
-            className="h-7 text-xs"
-          >
-            {loading === 'hold' ? (
-              <span className="animate-pulse">Holding…</span>
-            ) : (
-              <>
-                <PauseCircle className="h-3 w-3" />
-                Hold
-              </>
-            )}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleHold}
+                disabled={loading !== null}
+                className="h-7 text-xs"
+              >
+                {loading === 'hold' ? (
+                  <span className="animate-pulse">Holding…</span>
+                ) : (
+                  <>
+                    <PauseCircle className="h-3 w-3" />
+                    Hold
+                  </>
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Pause — needs more info</TooltipContent>
+          </Tooltip>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleEdit}
-            disabled={loading !== null}
-            className="h-7 text-xs"
-          >
-            {loading === 'edit' ? (
-              <span className="animate-pulse">Saving…</span>
-            ) : (
-              <>
-                <Pencil className="h-3 w-3" />
-                {editing ? 'Save' : 'Edit'}
-              </>
-            )}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleEdit}
+                disabled={loading !== null}
+                className="h-7 text-xs"
+              >
+                {loading === 'edit' ? (
+                  <span className="animate-pulse">Saving…</span>
+                ) : (
+                  <>
+                    <Pencil className="h-3 w-3" />
+                    {editing ? 'Save' : 'Edit'}
+                  </>
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Adjust amount or routing first</TooltipContent>
+          </Tooltip>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onTrailOpen(invoice.id)}
-            className="h-7 text-xs ml-auto text-muted-foreground"
-          >
-            <ExternalLink className="h-3 w-3" />
-            Trail
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onTrailOpen(invoice.id)}
+                className="h-7 text-xs ml-auto text-muted-foreground"
+              >
+                <ExternalLink className="h-3 w-3" />
+                Trail
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>See every step the agent took</TooltipContent>
+          </Tooltip>
         </div>
       </CardContent>
     </Card>

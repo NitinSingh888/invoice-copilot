@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import { Send, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -6,12 +6,14 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { InvoiceQueue } from '@/components/invoice/InvoiceQueue'
 import { ApprovalCard } from '@/components/invoice/ApprovalCard'
 import { LearnedRuleCard } from '@/components/invoice/LearnedRuleCard'
+import { InvoiceInspectionCard } from '@/components/invoice/InvoiceInspectionCard'
+import { IntroModal, HelpButton } from '@/components/invoice/IntroModal'
 import { VendorAvatar } from '@/components/invoice/VendorAvatar'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { formatMoney } from '@/lib/utils'
 import type { InvoiceOut, ThreadMessage, Role } from '@/lib/types'
 
-const SUGGESTIONS = ["Process today's invoices", 'Open the rules']
+const SUGGESTIONS = ["Process today's invoices", 'Review an invoice', 'Open the rules']
 
 interface InboxProps {
   invoices: InvoiceOut[]
@@ -31,6 +33,7 @@ interface InboxProps {
   onRuleDismiss: () => void
   onInvoiceClick: (id: string) => void
   onNavigateRules: () => void
+  onRefresh: () => void
 }
 
 export function Inbox({
@@ -51,10 +54,12 @@ export function Inbox({
   onRuleDismiss,
   onInvoiceClick,
   onNavigateRules,
+  onRefresh,
 }: InboxProps) {
   const threadEndRef = useRef<HTMLDivElement>(null)
   const intro = thread.length === 0
   const needsCount = invoices.filter((i) => i.status === 'needs').length
+  const [helpOpen, setHelpOpen] = useState(false)
 
   useEffect(() => {
     threadEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -74,6 +79,7 @@ export function Inbox({
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
+      <IntroModal open={helpOpen} onOpenChange={setHelpOpen} />
       <PageHeader
         title="Inbox"
         subtitle={needsCount > 0 ? `${needsCount} invoice${needsCount !== 1 ? 's' : ''} need your attention` : 'Agent workspace'}
@@ -82,6 +88,7 @@ export function Inbox({
         showSearch
         searchQuery={searchQuery}
         onSearchChange={onSearchChange}
+        actions={<HelpButton onClick={() => setHelpOpen(true)} />}
       />
 
       <div className="flex min-h-0 flex-1">
@@ -91,6 +98,7 @@ export function Inbox({
             invoices={filteredInvoices}
             loading={loading}
             onInvoiceClick={onInvoiceClick}
+            onRefresh={onRefresh}
           />
         </aside>
 
@@ -127,19 +135,30 @@ export function Inbox({
                     <Sparkles className="h-7 w-7" />
                   </div>
                   <h2 className="text-xl font-semibold tracking-tight">
-                    Maya has 60 invoices and 90 minutes.
+                    Ready to process your invoices
                   </h2>
                   <p className="mt-2 max-w-md text-sm text-muted-foreground">
-                    Hand the batch to Copilot — it clears the safe ones, asks about the rest,
-                    learns how you decide, and logs every move for audit.
+                    Hand the batch to Copilot — it matches POs, auto-clears safe invoices, and escalates the risky ones to you as approval cards. Every action is audit-logged.
                   </p>
-                  <Button
-                    className="mt-5 gap-2"
-                    onClick={() => onSend("Process today's invoices")}
-                  >
-                    <Send className="h-4 w-4" />
-                    Process today's invoices
-                  </Button>
+                  <div className="mt-5 flex items-center gap-3">
+                    <Button
+                      className="gap-2"
+                      onClick={() => onSend("Process today's invoices")}
+                    >
+                      <Send className="h-4 w-4" />
+                      Process today's invoices
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="gap-2"
+                      onClick={() => onSend('Review invoice INV-4495')}
+                    >
+                      Review an invoice
+                    </Button>
+                  </div>
+                  <p className="mt-4 text-xs text-muted-foreground">
+                    Or use the suggestion chips below, or <button type="button" className="underline hover:text-foreground" onClick={() => setHelpOpen(true)}>read the quick guide</button>.
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -168,7 +187,11 @@ export function Inbox({
                   {SUGGESTIONS.map((s) => (
                     <button
                       key={s}
-                      onClick={() => (s === 'Open the rules' ? onNavigateRules() : onSend(s))}
+                      onClick={() => {
+                        if (s === 'Open the rules') onNavigateRules()
+                        else if (s === 'Review an invoice') onSend('Review invoice INV-4495')
+                        else onSend(s)
+                      }}
                       className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
                     >
                       {s}
@@ -220,6 +243,7 @@ function ThreadItem({
   onTrail: (id: string) => void
   onRuleApproved: () => void
   onRuleDismiss: () => void
+  // onRefresh not needed here — handled at Inbox level
 }) {
   if (m.type === 'user') {
     return (
@@ -306,6 +330,18 @@ function ThreadItem({
           proposal={m.proposal}
           onApproved={onRuleApproved}
           onDismiss={onRuleDismiss}
+        />
+      </div>
+    )
+  }
+  if (m.type === 'inspection') {
+    return (
+      <div className="ml-8">
+        <InvoiceInspectionCard
+          data={m.data}
+          role={role}
+          onTrail={onTrail}
+          onResolved={onResolved}
         />
       </div>
     )

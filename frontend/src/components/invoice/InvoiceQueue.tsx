@@ -1,6 +1,7 @@
 import { Clock } from 'lucide-react'
 import { VendorAvatar } from './VendorAvatar'
 import { StatusBadge } from './StatusBadge'
+import { AddInvoiceDialog } from './AddInvoiceDialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatMoney, minutesSaved } from '@/lib/utils'
 import type { InvoiceOut, InvoiceStatus } from '@/lib/types'
@@ -9,6 +10,7 @@ interface InvoiceQueueProps {
   invoices: InvoiceOut[]
   loading: boolean
   onInvoiceClick: (id: string) => void
+  onRefresh: () => void
 }
 
 const STATUS_GROUPS: { statuses: InvoiceStatus[]; label: string }[] = [
@@ -60,7 +62,7 @@ function InvoiceRow({
   )
 }
 
-export function InvoiceQueue({ invoices, loading, onInvoiceClick }: InvoiceQueueProps) {
+export function InvoiceQueue({ invoices, loading, onInvoiceClick, onRefresh }: InvoiceQueueProps) {
   const visible = invoices.filter((i) => i.status !== 'cleared')
   const queued = invoices.filter((i) => i.status === 'queued').length
   const needs = invoices.filter((i) => i.status === 'needs').length
@@ -73,9 +75,12 @@ export function InvoiceQueue({ invoices, loading, onInvoiceClick }: InvoiceQueue
       <div className="px-3 py-3 border-b border-border">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-xs font-semibold text-foreground">Invoice Queue</h2>
-          <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-            <Clock className="h-3 w-3" />
-            <span>~{saved} min saved</span>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+              <Clock className="h-3 w-3" />
+              <span>~{saved} min saved</span>
+            </div>
+            <AddInvoiceDialog onAdded={onRefresh} />
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -123,8 +128,11 @@ export function InvoiceQueue({ invoices, loading, onInvoiceClick }: InvoiceQueue
             )
           })}
         {!loading && visible.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-32 text-center">
-            <p className="text-xs text-muted-foreground">Queue is empty</p>
+          <div className="flex flex-col items-center justify-center h-40 text-center px-4">
+            <p className="text-xs font-medium text-foreground mb-1">No invoices in queue</p>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              Click <strong>Add invoice</strong> above to upload a PDF or pick a sample, or tell Copilot to "Process today's invoices".
+            </p>
           </div>
         )}
       </div>

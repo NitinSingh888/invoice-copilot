@@ -80,13 +80,32 @@ export function formatMoney(amount: string): string {
 // Finding code → display
 // ────────────────────────────────────────────────────────────────────────────
 
+export const FINDING_EXPLANATIONS: Record<string, string> = {
+  OVER_TOLERANCE: 'Amount is over the allowed % above its purchase order. Needs human approval before payment.',
+  UNKNOWN_VENDOR: "Vendor isn't in the approved-vendor list yet. A human needs to OK first-time suppliers.",
+  NO_PO_MATCH: 'No matching purchase order was found. Could be a new vendor or a typo in the PO number.',
+  MISSING_PO: 'No purchase order number was provided. All payable invoices need a linked PO.',
+  DUPLICATE_EXACT: 'Same vendor + invoice number already paid. Blocked to prevent double-payment.',
+  DUPLICATE_SUSPECT: 'Same vendor + amount seen recently. May be a duplicate — verify before paying.',
+  PO_MATCH_OK: 'Invoice matched a purchase order within tolerance. Safe to queue for payment.',
+  MULTI_PO_MATCH: 'Multiple purchase orders match this invoice. Manual selection needed.',
+  UNDER_TOLERANCE: 'Amount is slightly under the PO — usually fine, but flagged for awareness.',
+  PARTIAL_PO: 'Only part of the PO is covered by this invoice. May be a partial delivery.',
+  VENDOR_BLOCKED: 'This vendor has been manually blocked. Contact finance before proceeding.',
+}
+
 const FINDING_MAP: Record<string, { label: string; severity: FindingDisplay['severity'] }> = {
   OVER_TOLERANCE: { label: 'Over PO tolerance', severity: 'warning' },
   UNKNOWN_VENDOR: { label: 'Vendor not approved', severity: 'warning' },
   NO_PO_MATCH: { label: 'No matching PO', severity: 'warning' },
   MISSING_PO: { label: 'No matching PO', severity: 'warning' },
   DUPLICATE_EXACT: { label: 'Exact duplicate', severity: 'destructive' },
+  DUPLICATE_SUSPECT: { label: 'Possible duplicate', severity: 'destructive' },
   PO_MATCH_OK: { label: 'Matched PO', severity: 'success' },
+  MULTI_PO_MATCH: { label: 'Multiple POs matched', severity: 'warning' },
+  UNDER_TOLERANCE: { label: 'Under PO tolerance', severity: 'success' },
+  PARTIAL_PO: { label: 'Partial PO', severity: 'warning' },
+  VENDOR_BLOCKED: { label: 'Vendor blocked', severity: 'destructive' },
 }
 
 export function displayFinding(code: string, detail: string): FindingDisplay {

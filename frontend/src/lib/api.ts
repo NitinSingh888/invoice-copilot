@@ -10,6 +10,8 @@ import type {
   RuleOut,
   RuleProposeResponse,
   DemoResetResponse,
+  SampleInvoice,
+  ProcessResultOut,
 } from './types'
 
 const BASE = '/api/v1'
@@ -86,6 +88,24 @@ export async function invoiceAction(
   body: ActionRequest,
 ): Promise<InvoiceOut> {
   return request(`/invoices/${id}/action`, { method: 'POST', body: JSON.stringify(body) }, true)
+}
+
+export async function getSamples(): Promise<SampleInvoice[]> {
+  return request('/invoices/samples')
+}
+
+export async function uploadInvoice(file: File): Promise<ProcessResultOut> {
+  const form = new FormData()
+  form.append('file', file)
+  const res = await fetch(`${BASE}/invoices/upload`, {
+    method: 'POST',
+    body: form,
+  })
+  if (!res.ok) {
+    const text = await res.text().catch(() => res.statusText)
+    throw new Error(`API ${res.status}: ${text}`)
+  }
+  return res.json() as Promise<ProcessResultOut>
 }
 
 // ────────────────────────────────────────────────────────────────────────────
