@@ -139,7 +139,7 @@ SEED_POS: list[PurchaseOrder] = [
         id="po-acme-22802",
         po_number="PO-22802",
         vendor="Acme Corp",
-        amount=Decimal("5385"),    # 4% under INV-4488 amount of 5600
+        amount=Decimal("5283"),    # ~6% under INV-4488 amount of 5600 (over tolerance)
     ),
     PurchaseOrder(
         id="po-acme-22815",

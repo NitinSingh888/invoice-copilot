@@ -15,7 +15,8 @@ interface LearnedRuleCardProps {
 
 export function LearnedRuleCard({ proposal, onApproved, onDismiss }: LearnedRuleCardProps) {
   const { candidate, threshold_pct, route } = proposal
-  const [editThreshold, setEditThreshold] = useState(String(threshold_pct))
+  // Stored as a fraction (0.08); shown/edited as a percent (8).
+  const [editThreshold, setEditThreshold] = useState(String(+(threshold_pct * 100).toFixed(2)))
   const [editRoute, setEditRoute] = useState(route ?? '')
   const [editing, setEditing] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -24,7 +25,7 @@ export function LearnedRuleCard({ proposal, onApproved, onDismiss }: LearnedRule
     setLoading(true)
     try {
       const rule = await activateRule({
-        threshold_pct: parseFloat(editThreshold) || threshold_pct,
+        threshold_pct: (parseFloat(editThreshold) || threshold_pct * 100) / 100,
         route: editRoute || null,
       })
       onApproved(rule)
@@ -92,7 +93,7 @@ export function LearnedRuleCard({ proposal, onApproved, onDismiss }: LearnedRule
             <span className="text-[10px] text-muted-foreground">From:</span>
             {candidate.example_ids.slice(0, 4).map((id) => (
               <Badge key={id} variant="secondary" className="text-[10px] font-mono">
-                INV-{id}
+                {id}
               </Badge>
             ))}
             {candidate.example_ids.length > 4 && (

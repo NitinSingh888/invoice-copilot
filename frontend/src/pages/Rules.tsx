@@ -40,7 +40,8 @@ function RuleCard({
           </span>
           <span className="text-foreground">
             {rule.vendor ? `Vendor is ${rule.vendor}` : 'Any vendor'}
-            {rule.max_over_pct != null && ` and invoice is over PO by ≤ ${rule.max_over_pct}%`}
+            {rule.max_over_pct != null &&
+              ` and invoice is over PO by ≤ ${+(parseFloat(String(rule.max_over_pct)) * 100).toFixed(2)}%`}
             {rule.min_amount && ` and amount ≥ $${rule.min_amount}`}
           </span>
         </div>
@@ -65,7 +66,7 @@ function RuleCard({
           <span className="text-[10px] text-muted-foreground">Sources:</span>
           {rule.source_correction_ids.map((id) => (
             <Badge key={id} variant="secondary" className="text-[10px] font-mono">
-              INV-{id}
+              {id}
             </Badge>
           ))}
         </div>

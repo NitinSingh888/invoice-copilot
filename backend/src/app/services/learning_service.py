@@ -110,6 +110,10 @@ def activate_rule(
         reasoning_note=reasoning_note,
         created_by=created_by,
     )
+    # Supersede any prior active rule for the same vendor (latest wins — no duplicates).
+    for existing in rule_repo.list_all(s):
+        if existing.status == "active" and existing.vendor == cand.vendor:
+            existing.status = "disabled"
     rule_repo.add(s, rule)
 
     audit_repo.append(

@@ -145,6 +145,33 @@ def test_activate_rule_persists_active_rule(db: Session) -> None:
     assert any(r.id == rule.id for r in active)
 
 
+def test_activate_rule_supersedes_prior_active_rule_for_vendor(db: Session) -> None:
+    """Re-approving for the same vendor disables the prior active rule — latest
+    wins, so there are never duplicate active rules for one vendor."""
+    for inv in ("i1", "i2", "i3"):
+        _add_correction(db, invoice_id=inv, over_pct="0.06")
+
+    p1 = learning_service.propose_rule(db)
+    assert p1 is not None
+    first = learning_service.activate_rule(
+        db, proposal=p1, threshold_pct=p1.threshold_pct, route=p1.route
+    )
+
+    p2 = learning_service.propose_rule(db)
+    assert p2 is not None
+    second = learning_service.activate_rule(
+        db, proposal=p2, threshold_pct=p2.threshold_pct, route=p2.route
+    )
+
+    assert first.id != second.id
+    active = rule_repo.list_active(db)
+    assert [r.id for r in active] == [second.id]
+
+    by_id = {r.id: r for r in rule_repo.list_all(db)}
+    assert by_id[first.id].status == "disabled"
+    assert by_id[second.id].status == "active"
+
+
 def test_activate_rule_writes_audit_event(db: Session) -> None:
     _add_correction(db, invoice_id="i1", over_pct="0.06")
     _add_correction(db, invoice_id="i2", over_pct="0.04")
