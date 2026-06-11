@@ -5,12 +5,13 @@ import { Sidebar, type View } from '@/components/layout/Sidebar'
 import { Dashboard } from '@/pages/Dashboard'
 import { Inbox } from '@/pages/Inbox'
 import { Rules } from '@/pages/Rules'
+import { AuditLog } from '@/pages/AuditLog'
 import { AuditSheet } from '@/components/invoice/AuditSheet'
-import { RulesSheet } from '@/components/invoice/RulesSheet'
 import {
   chat,
   demoReset,
   getAudit,
+  getHealth,
   getInvoice,
   listInvoices,
   proposeRule,
@@ -29,6 +30,8 @@ function isBatchResult(r: unknown): r is BatchResult {
   return !!r && typeof r === 'object' && 'queued' in r && 'needs' in r
 }
 
+const HEALTH_POLL_MS = 20_000
+
 export default function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>(
     () => (localStorage.getItem('ic-theme') as 'light' | 'dark') || 'light',
@@ -43,7 +46,13 @@ export default function App() {
   const [busy, setBusy] = useState(false)
   const [auditId, setAuditId] = useState<string | null>(null)
   const [auditOpen, setAuditOpen] = useState(false)
-  const [rulesOpen, setRulesOpen] = useState(false)
+
+  // health state
+  const [healthLive, setHealthLive] = useState<boolean | null>(null)
+  const [providerLabel, setProviderLabel] = useState('…')
+
+  // search query for Inbox
+  const [searchQuery, setSearchQuery] = useState('')
 
   const escalRef = useRef<string[]>([])
   const ruleShownRef = useRef(false)
@@ -53,6 +62,24 @@ export default function App() {
     document.documentElement.classList.toggle('dark', theme === 'dark')
     localStorage.setItem('ic-theme', theme)
   }, [theme])
+
+  // health check + polling
+  const checkHealth = useCallback(async () => {
+    try {
+      const h = await getHealth()
+      setHealthLive(h.live)
+      setProviderLabel(h.live ? `${h.provider} · live` : `${h.provider} · safe`)
+    } catch {
+      setHealthLive(false)
+      setProviderLabel('offline')
+    }
+  }, [])
+
+  useEffect(() => {
+    void checkHealth()
+    const id = setInterval(() => { void checkHealth() }, HEALTH_POLL_MS)
+    return () => clearInterval(id)
+  }, [checkHealth])
 
   const refreshInvoices = useCallback(async (): Promise<InvoiceOut[]> => {
     const rows = await listInvoices()
@@ -203,6 +230,8 @@ export default function App() {
         onRoleToggle={toggleRole}
         onReset={handleReset}
         resetting={resetting}
+        providerLabel={providerLabel}
+        providerLive={healthLive === true}
       />
 
       <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden">
@@ -222,6 +251,9 @@ export default function App() {
             input={input}
             busy={busy}
             role={role}
+            live={healthLive}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
             onInputChange={setInput}
             onSend={send}
             onResolved={onResolved}
@@ -235,14 +267,14 @@ export default function App() {
               setThread((t) => t.filter((x) => x.type !== 'rule_proposal'))
             }
             onInvoiceClick={openTrail}
-            onRulesOpen={() => setRulesOpen(true)}
+            onNavigateRules={() => setView('rules')}
           />
         )}
         {view === 'rules' && <Rules />}
+        {view === 'audit' && <AuditLog live={healthLive} />}
       </div>
 
       <AuditSheet invoiceId={auditId} open={auditOpen} onOpenChange={setAuditOpen} />
-      <RulesSheet open={rulesOpen} onOpenChange={setRulesOpen} />
       <Toaster richColors position="bottom-right" />
     </div>
   )

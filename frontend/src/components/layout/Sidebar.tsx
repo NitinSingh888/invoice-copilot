@@ -3,7 +3,7 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/comp
 import { cn } from '@/lib/utils'
 import type { Role } from '@/lib/types'
 
-export type View = 'dashboard' | 'inbox' | 'rules'
+export type View = 'dashboard' | 'inbox' | 'rules' | 'audit'
 
 interface SidebarProps {
   view: View
@@ -15,6 +15,8 @@ interface SidebarProps {
   onRoleToggle: () => void
   onReset: () => void
   resetting: boolean
+  providerLabel: string
+  providerLive: boolean
 }
 
 const NAV = [
@@ -33,6 +35,8 @@ export function Sidebar({
   onRoleToggle,
   onReset,
   resetting,
+  providerLabel,
+  providerLive,
 }: SidebarProps) {
   return (
     <TooltipProvider>
@@ -102,10 +106,19 @@ export function Sidebar({
           </div>
 
           <button
-            onClick={() => {}}
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all duration-150"
+            onClick={() => onViewChange('audit')}
+            className={cn(
+              'relative w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-all duration-150',
+              'group',
+              view === 'audit'
+                ? 'bg-accent text-accent-foreground'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/60',
+            )}
           >
-            <ScrollText className="h-4 w-4 shrink-0 text-muted-foreground" />
+            {view === 'audit' && (
+              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full bg-primary" />
+            )}
+            <ScrollText className={cn('h-4 w-4 shrink-0', view === 'audit' ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground')} />
             <span>Audit Log</span>
           </button>
         </nav>
@@ -159,10 +172,14 @@ export function Sidebar({
             </Tooltip>
           </div>
 
-          {/* Mock-safe pill */}
+          {/* Provider pill — driven from health endpoint */}
           <div className="flex justify-center">
-            <span className="text-[10px] font-mono text-muted-foreground border border-border rounded px-2 py-0.5">
-              mock-safe · v1
+            <span className="flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground border border-border rounded px-2 py-0.5">
+              <span className={cn(
+                'h-1.5 w-1.5 rounded-full shrink-0',
+                providerLive ? 'bg-[hsl(var(--success))]' : 'bg-muted-foreground',
+              )} />
+              {providerLabel}
             </span>
           </div>
         </div>

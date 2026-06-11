@@ -59,7 +59,7 @@ async function request<T>(
 // Health
 // ────────────────────────────────────────────────────────────────────────────
 
-export async function getHealth(): Promise<{ status: string }> {
+export async function getHealth(): Promise<{ status: string; provider: string; live: boolean }> {
   return request('/health')
 }
 
@@ -105,6 +105,10 @@ export async function chat(
 
 export async function getAudit(id: string): Promise<AuditResponse> {
   return request(`/audit/${id}`)
+}
+
+export async function getAuditLog(): Promise<AuditResponse> {
+  return request('/audit')
 }
 
 // ────────────────────────────────────────────────────────────────────────────

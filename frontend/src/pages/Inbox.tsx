@@ -20,6 +20,9 @@ interface InboxProps {
   input: string
   busy: boolean
   role: Role
+  live?: boolean | null
+  searchQuery: string
+  onSearchChange: (q: string) => void
   onInputChange: (v: string) => void
   onSend: (text: string) => void
   onResolved: (inv: InvoiceOut, action: string) => void
@@ -27,7 +30,7 @@ interface InboxProps {
   onRuleApproved: () => void
   onRuleDismiss: () => void
   onInvoiceClick: (id: string) => void
-  onRulesOpen: () => void
+  onNavigateRules: () => void
 }
 
 export function Inbox({
@@ -37,6 +40,9 @@ export function Inbox({
   input,
   busy,
   role,
+  live,
+  searchQuery,
+  onSearchChange,
   onInputChange,
   onSend,
   onResolved,
@@ -44,7 +50,7 @@ export function Inbox({
   onRuleApproved,
   onRuleDismiss,
   onInvoiceClick,
-  onRulesOpen,
+  onNavigateRules,
 }: InboxProps) {
   const threadEndRef = useRef<HTMLDivElement>(null)
   const intro = thread.length === 0
@@ -54,19 +60,35 @@ export function Inbox({
     threadEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [thread])
 
+  // Filter invoices by search query (vendor, id, po)
+  const query = searchQuery.trim().toLowerCase()
+  const filteredInvoices = query
+    ? invoices.filter(
+        (inv) =>
+          inv.vendor.toLowerCase().includes(query) ||
+          inv.id.toLowerCase().includes(query) ||
+          (inv.po_number ?? '').toLowerCase().includes(query) ||
+          (inv.invoice_number ?? '').toLowerCase().includes(query),
+      )
+    : invoices
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <PageHeader
         title="Inbox"
         subtitle={needsCount > 0 ? `${needsCount} invoice${needsCount !== 1 ? 's' : ''} need your attention` : 'Agent workspace'}
         savedCount={invoices.filter((i) => i.status === 'queued').length}
+        live={live}
+        showSearch
+        searchQuery={searchQuery}
+        onSearchChange={onSearchChange}
       />
 
       <div className="flex min-h-0 flex-1">
         {/* Queue panel */}
         <aside className="w-[300px] shrink-0 border-r border-border bg-muted/20">
           <InvoiceQueue
-            invoices={invoices}
+            invoices={filteredInvoices}
             loading={loading}
             onInvoiceClick={onInvoiceClick}
           />
@@ -86,8 +108,13 @@ export function Inbox({
               </div>
             </div>
             <div className="ml-auto flex items-center gap-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--success))] animate-pulse" />
-              <span className="text-xs text-muted-foreground">Connected</span>
+              <span className={[
+                'h-1.5 w-1.5 rounded-full',
+                live === null ? 'bg-muted-foreground' : live ? 'bg-[hsl(var(--success))] animate-pulse' : 'bg-amber-500',
+              ].join(' ')} />
+              <span className="text-xs text-muted-foreground">
+                {live === null ? 'Connecting…' : live ? 'Connected' : 'Offline'}
+              </span>
             </div>
           </div>
 
@@ -141,7 +168,7 @@ export function Inbox({
                   {SUGGESTIONS.map((s) => (
                     <button
                       key={s}
-                      onClick={() => (s === 'Open the rules' ? onRulesOpen() : onSend(s))}
+                      onClick={() => (s === 'Open the rules' ? onNavigateRules() : onSend(s))}
                       className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
                     >
                       {s}
