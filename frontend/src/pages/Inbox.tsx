@@ -58,7 +58,7 @@ export function Inbox({
 }: InboxProps) {
   const threadEndRef = useRef<HTMLDivElement>(null)
   const intro = thread.length === 0
-  const needsCount = invoices.filter((i) => i.status === 'needs').length
+  const receivedCount = invoices.filter((i) => i.status === 'received').length
   const [helpOpen, setHelpOpen] = useState(false)
 
   useEffect(() => {
@@ -82,7 +82,7 @@ export function Inbox({
       <IntroModal open={helpOpen} onOpenChange={setHelpOpen} />
       <PageHeader
         title="Inbox"
-        subtitle={needsCount > 0 ? `${needsCount} invoice${needsCount !== 1 ? 's' : ''} need your attention` : 'Agent workspace'}
+        subtitle="Your invoice queue — Copilot clears the safe ones and asks you about the rest"
         savedCount={invoices.filter((i) => i.status === 'queued').length}
         live={live}
         showSearch
@@ -135,29 +135,41 @@ export function Inbox({
                     <Sparkles className="h-7 w-7" />
                   </div>
                   <h2 className="text-xl font-semibold tracking-tight">
-                    Ready to process your invoices
+                    {receivedCount > 0
+                      ? `You have ${receivedCount} invoice${receivedCount !== 1 ? 's' : ''} to process today.`
+                      : 'Ready to process your invoices'}
                   </h2>
                   <p className="mt-2 max-w-md text-sm text-muted-foreground">
-                    Hand the batch to Copilot — it matches POs, auto-clears safe invoices, and escalates the risky ones to you as approval cards. Every action is audit-logged.
+                    Copilot reads each one, matches it to its purchase order, auto-clears the safe ones, and asks you about the risky ones — nothing is paid without passing the rules, and every step is logged.
                   </p>
-                  <div className="mt-5 flex items-center gap-3">
+                  <div className="mt-5 flex items-center gap-3 flex-wrap justify-center">
                     <Button
                       className="gap-2"
                       onClick={() => onSend("Process today's invoices")}
                     >
                       <Send className="h-4 w-4" />
-                      Process today's invoices
+                      {receivedCount > 0
+                        ? `Process today's ${receivedCount} invoice${receivedCount !== 1 ? 's' : ''}`
+                        : "Process today's invoices"}
                     </Button>
                     <Button
                       variant="outline"
                       className="gap-2"
-                      onClick={() => onSend('Review invoice INV-4495')}
+                      onClick={() => onSend('Review an invoice')}
                     >
                       Review an invoice
                     </Button>
                   </div>
                   <p className="mt-4 text-xs text-muted-foreground">
-                    Or use the suggestion chips below, or <button type="button" className="underline hover:text-foreground" onClick={() => setHelpOpen(true)}>read the quick guide</button>.
+                    Or use the suggestion chips below, or{' '}
+                    <button
+                      type="button"
+                      className="underline hover:text-foreground"
+                      onClick={() => setHelpOpen(true)}
+                    >
+                      read the quick guide
+                    </button>
+                    .
                   </p>
                 </div>
               ) : (

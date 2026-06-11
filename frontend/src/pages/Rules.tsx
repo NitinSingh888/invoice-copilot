@@ -101,7 +101,7 @@ export function Rules() {
     <div className="flex flex-col h-full overflow-y-auto scrollbar-thin">
       <PageHeader
         title="Rules"
-        subtitle="Learned from your approval patterns"
+        subtitle="Patterns Copilot learned from your decisions"
       />
 
       <div className="flex-1 p-6">

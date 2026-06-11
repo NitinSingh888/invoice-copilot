@@ -3,7 +3,9 @@ import { VendorAvatar } from './VendorAvatar'
 import { StatusBadge } from './StatusBadge'
 import { AddInvoiceDialog } from './AddInvoiceDialog'
 import { Skeleton } from '@/components/ui/skeleton'
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
 import { formatMoney, minutesSaved } from '@/lib/utils'
+import { invoiceFileUrl } from '@/lib/api'
 import type { InvoiceOut, InvoiceStatus } from '@/lib/types'
 
 interface InvoiceQueueProps {
@@ -13,13 +15,38 @@ interface InvoiceQueueProps {
   onRefresh: () => void
 }
 
-const STATUS_GROUPS: { statuses: InvoiceStatus[]; label: string }[] = [
-  { statuses: ['needs'], label: 'NEEDS YOU' },
-  { statuses: ['blocked'], label: 'BLOCKED' },
-  { statuses: ['queued'], label: 'QUEUED FOR PAYMENT RUN' },
-  { statuses: ['routed', 'held'], label: 'ROUTED / ON HOLD' },
-  { statuses: ['received'], label: 'RECEIVED' },
+const STATUS_GROUPS: { statuses: InvoiceStatus[]; label: string; hint: string }[] = [
+  {
+    statuses: ['needs'],
+    label: 'NEEDS YOU',
+    hint: 'your decision required — approve, hold, or route',
+  },
+  {
+    statuses: ['received'],
+    label: 'RECEIVED',
+    hint: 'waiting to be processed',
+  },
+  {
+    statuses: ['queued'],
+    label: 'QUEUED FOR PAYMENT RUN',
+    hint: 'cleared — scheduled for payment',
+  },
+  {
+    statuses: ['blocked'],
+    label: 'BLOCKED',
+    hint: 'stopped by policy (e.g. duplicate)',
+  },
+  {
+    statuses: ['routed', 'held'],
+    label: 'ROUTED / ON HOLD',
+    hint: 'sent to a colleague or paused pending more info',
+  },
 ]
+
+function truncate(s: string | null, max = 20): string {
+  if (!s) return ''
+  return s.length > max ? s.slice(0, max) + '…' : s
+}
 
 function InvoiceRow({
   invoice,
@@ -29,36 +56,95 @@ function InvoiceRow({
   onClick: () => void
 }) {
   return (
-    <button
-      onClick={onClick}
-      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/50 transition-colors rounded-md group text-left"
-    >
-      <VendorAvatar vendor={invoice.vendor} size="sm" />
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs font-medium text-foreground truncate">{invoice.vendor}</span>
+    <HoverCard openDelay={400} closeDelay={100}>
+      <HoverCardTrigger asChild>
+        <button
+          onClick={onClick}
+          className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/50 transition-colors rounded-md group text-left"
+        >
+          <VendorAvatar vendor={invoice.vendor} size="sm" />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-medium text-foreground truncate">{invoice.vendor}</span>
+            </div>
+            <div className="flex items-center gap-1 mt-0.5">
+              {invoice.invoice_number ? (
+                <span
+                  className="text-[10px] font-mono text-muted-foreground truncate max-w-[110px]"
+                  title={invoice.invoice_number}
+                >
+                  {truncate(invoice.invoice_number)}
+                </span>
+              ) : (
+                <span className="text-[10px] font-mono text-muted-foreground">{invoice.id}</span>
+              )}
+              {invoice.po_number && (
+                <>
+                  <span className="text-[10px] text-muted-foreground">·</span>
+                  <span
+                    className="text-[10px] font-mono text-muted-foreground truncate max-w-[80px]"
+                    title={invoice.po_number}
+                  >
+                    {truncate(invoice.po_number, 14)}
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-col items-end gap-1">
+            <span className="text-xs font-mono font-medium text-foreground tabular-nums">
+              {formatMoney(invoice.amount)}
+            </span>
+            <StatusBadge status={invoice.status} />
+          </div>
+        </button>
+      </HoverCardTrigger>
+      <HoverCardContent
+        side="right"
+        align="start"
+        className="w-[280px] p-0 overflow-hidden"
+      >
+        {/* Header */}
+        <div className="flex items-center gap-2.5 px-3 pt-3 pb-2 border-b border-border">
+          <VendorAvatar vendor={invoice.vendor} size="sm" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-foreground truncate">{invoice.vendor}</p>
+            <p className="text-[10px] font-mono text-muted-foreground">
+              {formatMoney(invoice.amount)}
+            </p>
+          </div>
+          <StatusBadge status={invoice.status} />
         </div>
-        <div className="flex items-center gap-1 mt-0.5">
-          <span className="text-[10px] font-mono text-muted-foreground">
-            {invoice.id}
-          </span>
-          {invoice.po_number && (
-            <>
-              <span className="text-[10px] text-muted-foreground">·</span>
-              <span className="text-[10px] font-mono text-muted-foreground">
-                {invoice.po_number}
-              </span>
-            </>
-          )}
-        </div>
-      </div>
-      <div className="flex flex-col items-end gap-1">
-        <span className="text-xs font-mono font-medium text-foreground tabular-nums">
-          {formatMoney(invoice.amount)}
-        </span>
-        <StatusBadge status={invoice.status} />
-      </div>
-    </button>
+        {/* Doc preview — only mount the iframe when the hover is open and source_file exists */}
+        {invoice.source_file ? (
+          <iframe
+            src={invoiceFileUrl(invoice.id)}
+            className="w-[280px] h-[340px] pointer-events-none block"
+            title={`Preview of ${invoice.vendor} invoice`}
+          />
+        ) : (
+          <div className="w-[280px] h-[160px] flex flex-col items-center justify-center gap-2 text-muted-foreground bg-muted/20 px-3">
+            {invoice.invoice_number && (
+              <p
+                className="text-[10px] font-mono text-center text-muted-foreground break-all"
+                title={invoice.invoice_number}
+              >
+                {truncate(invoice.invoice_number, 32)}
+              </p>
+            )}
+            {invoice.po_number && (
+              <p
+                className="text-[10px] font-mono text-center text-muted-foreground break-all"
+                title={invoice.po_number}
+              >
+                PO: {truncate(invoice.po_number, 28)}
+              </p>
+            )}
+            <p className="text-[11px] text-muted-foreground/60 mt-1">No document attached</p>
+          </div>
+        )}
+      </HoverCardContent>
+    </HoverCard>
   )
 }
 
@@ -107,7 +193,7 @@ export function InvoiceQueue({ invoices, loading, onInvoiceClick, onRefresh }: I
           </div>
         )}
         {!loading &&
-          STATUS_GROUPS.map(({ statuses, label }) => {
+          STATUS_GROUPS.map(({ statuses, label, hint }) => {
             const group = visible.filter((i) => statuses.includes(i.status as InvoiceStatus))
             if (group.length === 0) return null
             return (
@@ -116,6 +202,7 @@ export function InvoiceQueue({ invoices, loading, onInvoiceClick, onRefresh }: I
                   <span className="text-[10px] font-semibold text-muted-foreground tracking-wider">
                     {label}
                   </span>
+                  <p className="text-[10px] text-muted-foreground/60 mt-0.5 leading-tight">{hint}</p>
                 </div>
                 {group.map((invoice) => (
                   <InvoiceRow

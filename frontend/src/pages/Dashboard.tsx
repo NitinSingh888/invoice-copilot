@@ -102,7 +102,7 @@ export function Dashboard({ invoices, loading, onProcessBatch, onSwitchToInbox }
     <div className="flex flex-col h-full overflow-y-auto scrollbar-thin">
       <PageHeader
         title="Dashboard"
-        subtitle="Today's invoice processing summary"
+        subtitle="Today's results at a glance"
         savedCount={queued}
       />
 

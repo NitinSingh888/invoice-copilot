@@ -60,9 +60,14 @@ export function Sidebar({
               <path d="M17.5 20L19.2 21.7L22.5 18.5" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
-          <span className="text-sm font-semibold text-foreground tracking-tight leading-none">
-            Invoice Copilot
-          </span>
+          <div>
+            <span className="text-sm font-semibold text-foreground tracking-tight leading-none block">
+              Invoice Copilot
+            </span>
+            <span className="text-[10px] text-muted-foreground leading-none mt-0.5 block">
+              AI accounts-payable assistant
+            </span>
+          </div>
         </div>
 
         {/* Nav */}

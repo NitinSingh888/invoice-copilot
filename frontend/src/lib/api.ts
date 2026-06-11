@@ -164,3 +164,11 @@ export async function patchRule(
 export async function demoReset(): Promise<DemoResetResponse> {
   return request('/demo/reset', { method: 'POST' })
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// File preview
+// ────────────────────────────────────────────────────────────────────────────
+
+export function invoiceFileUrl(id: string): string {
+  return `${BASE}/invoices/${id}/file`
+}

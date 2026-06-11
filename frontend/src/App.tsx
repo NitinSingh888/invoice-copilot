@@ -7,6 +7,7 @@ import { Inbox } from '@/pages/Inbox'
 import { Rules } from '@/pages/Rules'
 import { AuditLog } from '@/pages/AuditLog'
 import { AuditSheet } from '@/components/invoice/AuditSheet'
+import { InvoiceDetailSheet } from '@/components/invoice/InvoiceDetailSheet'
 import {
   chat,
   demoReset,
@@ -43,7 +44,7 @@ export default function App() {
     () => (localStorage.getItem('ic-theme') as 'light' | 'dark') || 'light',
   )
   const [role, setRole] = useState<Role>('maya')
-  const [view, setView] = useState<View>('dashboard')
+  const [view, setView] = useState<View>('inbox')
   const [invoices, setInvoices] = useState<InvoiceOut[]>([])
   const [thread, setThread] = useState<ThreadMessage[]>([])
   const [input, setInput] = useState('')
@@ -52,6 +53,8 @@ export default function App() {
   const [busy, setBusy] = useState(false)
   const [auditId, setAuditId] = useState<string | null>(null)
   const [auditOpen, setAuditOpen] = useState(false)
+  const [detailId, setDetailId] = useState<string | null>(null)
+  const [detailOpen, setDetailOpen] = useState(false)
 
   // health state
   const [healthLive, setHealthLive] = useState<boolean | null>(null)
@@ -228,6 +231,11 @@ export default function App() {
     setAuditOpen(true)
   }
 
+  function openDetail(id: string) {
+    setDetailId(id)
+    setDetailOpen(true)
+  }
+
   const needsCount = invoices.filter((i) => i.status === 'needs').length
 
   return (
@@ -278,7 +286,7 @@ export default function App() {
             onRuleDismiss={() =>
               setThread((t) => t.filter((x) => x.type !== 'rule_proposal'))
             }
-            onInvoiceClick={openTrail}
+            onInvoiceClick={openDetail}
             onNavigateRules={() => setView('rules')}
             onRefresh={() => void refreshInvoices()}
           />
@@ -288,6 +296,19 @@ export default function App() {
       </div>
 
       <AuditSheet invoiceId={auditId} open={auditOpen} onOpenChange={setAuditOpen} />
+      <InvoiceDetailSheet
+        invoiceId={detailId}
+        open={detailOpen}
+        role={role}
+        onOpenChange={setDetailOpen}
+        onTrail={(id) => {
+          setDetailOpen(false)
+          openTrail(id)
+        }}
+        onResolved={(updated, action) => {
+          void onResolved(updated, action)
+        }}
+      />
       <Toaster richColors position="bottom-right" />
     </div>
   )

@@ -141,7 +141,7 @@ export function AuditLog({ live }: AuditLogProps) {
     <div className="flex flex-col h-full overflow-hidden">
       <PageHeader
         title="Audit Log"
-        subtitle="Recent processing events across all invoices"
+        subtitle="Every action, hash-chained and verifiable"
         live={live}
         actions={
           data ? (

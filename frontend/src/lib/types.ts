@@ -20,6 +20,7 @@ export interface InvoiceOut {
   status: InvoiceStatus
   verdict: string | null
   route: string | null
+  source_file: string | null
 }
 
 export interface Finding {
