@@ -21,6 +21,7 @@ export interface InvoiceOut {
   verdict: string | null
   route: string | null
   source_file: string | null
+  created_at: string
 }
 
 export interface Finding {

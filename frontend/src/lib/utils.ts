@@ -119,6 +119,58 @@ export function displayFinding(code: string, detail: string): FindingDisplay {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
+// Date helpers
+// ────────────────────────────────────────────────────────────────────────────
+
+/** Returns true when an ISO-8601 timestamp falls on the current local date. */
+export function isToday(isoString: string): boolean {
+  const d = new Date(isoString)
+  const now = new Date()
+  return (
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+  )
+}
+
+/**
+ * Format an ISO-8601 date string as a human-readable group header:
+ * "Yesterday", "Mon, Jun 9", etc.
+ */
+export function formatDayHeader(isoString: string): string {
+  const d = new Date(isoString)
+  const now = new Date()
+  const yesterday = new Date(now)
+  yesterday.setDate(now.getDate() - 1)
+
+  if (
+    d.getFullYear() === yesterday.getFullYear() &&
+    d.getMonth() === yesterday.getMonth() &&
+    d.getDate() === yesterday.getDate()
+  ) {
+    return 'Yesterday'
+  }
+
+  return d.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  })
+}
+
+/**
+ * Extract the local YYYY-MM-DD date key from an ISO-8601 string.
+ * Used to group invoices by day.
+ */
+export function localDateKey(isoString: string): string {
+  const d = new Date(isoString)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+// ────────────────────────────────────────────────────────────────────────────
 // Time saved estimate
 // ────────────────────────────────────────────────────────────────────────────
 

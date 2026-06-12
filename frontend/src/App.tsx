@@ -4,6 +4,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { Sidebar, type View } from '@/components/layout/Sidebar'
 import { Dashboard } from '@/pages/Dashboard'
 import { Inbox } from '@/pages/Inbox'
+import { History } from '@/pages/History'
 import { Rules } from '@/pages/Rules'
 import { Guide } from '@/pages/Guide'
 import { AuditLog } from '@/pages/AuditLog'
@@ -19,7 +20,7 @@ import {
   proposeRule,
   setRole as setApiRole,
 } from '@/lib/api'
-import { displayFinding, formatMoney } from '@/lib/utils'
+import { displayFinding, formatMoney, isToday } from '@/lib/utils'
 import type {
   BatchResult,
   ChatMessage,
@@ -102,7 +103,10 @@ export default function App() {
 
   const refreshInvoices = useCallback(async (): Promise<InvoiceOut[]> => {
     const rows = await listInvoices()
-    const live = rows.filter((i) => i.status !== 'cleared')
+    // Inbox shows only non-cleared invoices from today
+    const live = rows.filter(
+      (i) => i.status !== 'cleared' && isToday(i.created_at),
+    )
     setInvoices(live)
     return live
   }, [])
@@ -302,6 +306,9 @@ export default function App() {
             onIntroModalDismiss={() => setIntroSeen(true)}
             onTakeTour={startTour}
           />
+        )}
+        {view === 'history' && (
+          <History onInvoiceClick={openDetail} />
         )}
         {view === 'rules' && <Rules />}
         {view === 'audit' && <AuditLog live={healthLive} />}

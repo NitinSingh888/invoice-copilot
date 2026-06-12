@@ -1,9 +1,9 @@
-import { LayoutDashboard, Inbox, BookOpen, ScrollText, Sun, Moon, RotateCcw, GraduationCap } from 'lucide-react'
+import { LayoutDashboard, Inbox, BookOpen, ScrollText, Sun, Moon, RotateCcw, GraduationCap, History } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import type { Role } from '@/lib/types'
 
-export type View = 'dashboard' | 'inbox' | 'rules' | 'audit' | 'guide'
+export type View = 'dashboard' | 'inbox' | 'history' | 'rules' | 'audit' | 'guide'
 
 interface SidebarProps {
   view: View
@@ -22,6 +22,7 @@ interface SidebarProps {
 const NAV = [
   { id: 'dashboard' as View, label: 'Dashboard', Icon: LayoutDashboard },
   { id: 'inbox' as View, label: 'Inbox', Icon: Inbox },
+  { id: 'history' as View, label: 'History', Icon: History },
   { id: 'rules' as View, label: 'Rules', Icon: BookOpen },
 ]
 
