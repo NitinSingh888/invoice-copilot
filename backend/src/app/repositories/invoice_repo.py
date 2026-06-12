@@ -51,6 +51,20 @@ def list_by_status(s: Session, status: str, *, org_id: str | None = None) -> lis
     return list(q.all())
 
 
+def list_today(s: Session, *, org_id: str | None = None) -> list[Invoice]:
+    """Invoices created today (UTC) — i.e. the live working queue, excluding
+    the multi-day history. Used as the default scope for conversational queries."""
+    from datetime import timezone
+
+    start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    q = s.query(Invoice).filter(
+        Invoice.is_deleted.is_(False), Invoice.created_at >= start
+    )
+    if org_id is not None:
+        q = q.filter(Invoice.org_id == org_id)
+    return list(q.all())
+
+
 def set_status(s: Session, invoice_id: str, status: str, **fields: Any) -> Invoice:
     inv = s.get(Invoice, invoice_id)
     if inv is None:

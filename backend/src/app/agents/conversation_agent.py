@@ -21,6 +21,56 @@ from app.services import (
 
 _LIST_CAP = 25  # max rows for a "review / list" result
 
+_DEFAULT_SMALLTALK = (
+    "I'm your Invoice Copilot — I read each invoice, match it to its PO, auto-clear "
+    'the safe ones, and ask you about the rest. Try "process today\'s invoices", '
+    '"review the Acme invoice", or "how many need review?".'
+)
+
+
+def _scope_base(db: Session, message: str, *, org_id: str | None) -> list[Invoice]:
+    """Default a query to TODAY's working queue (what the user is looking at); broaden
+    to all invoices (incl. multi-day history) only when the message asks for it."""
+    if re.search(
+        r"\b(all|every|everything|entire|history|historic|past|previous|prior|ever|so far)\b",
+        message,
+        re.IGNORECASE,
+    ):
+        return invoice_repo.list_all(db, org_id=org_id)
+    return invoice_repo.list_today(db, org_id=org_id)
+
+
+def _smalltalk_reply(
+    client: LLMClient, db: Session, msgs: list[ChatMessage], org_id: str | None
+) -> str:
+    """A real, contextual answer for general questions — not a canned line."""
+    from collections import Counter
+
+    today = invoice_repo.list_today(db, org_id=org_id)
+    counts = Counter(i.status for i in today)
+    context = {
+        "assistant": "Invoice Copilot, an AI accounts-payable assistant",
+        "today_queue": {
+            "total": len(today),
+            "received_unprocessed": counts.get("received", 0),
+            "needs_review": counts.get("needs", 0),
+            "queued_for_payment": counts.get("queued", 0),
+            "blocked": counts.get("blocked", 0),
+        },
+        "guidance": (
+            "Answer the user's actual question briefly and helpfully. If they ask why the "
+            "queue shows 0 queued/cleared, explain that nothing in today's batch has been "
+            "processed yet (all 'received'), and that broad totals include past days shown "
+            "in History; suggest they say 'process today's invoices'."
+        ),
+    }
+    try:
+        reply = client.converse(history=msgs, context=context)
+        text = (reply.text or "").strip()
+        return text or _DEFAULT_SMALLTALK
+    except Exception:
+        return _DEFAULT_SMALLTALK
+
 
 def handle(
     client: LLMClient,
@@ -50,7 +100,7 @@ def handle(
     # Smalltalk — nothing to execute                                       #
     # ------------------------------------------------------------------ #
     if cmd.action == "smalltalk":
-        return ("I'm your Invoice Copilot. How can I help?", "smalltalk", None)
+        return (_smalltalk_reply(client, db, msgs, org_id), "smalltalk", None)
 
     # ------------------------------------------------------------------ #
     # PROCESS                                                              #
@@ -128,7 +178,7 @@ def handle(
             )
 
         # Has filters → list mode
-        base_all = invoice_repo.list_all(db, org_id=org_id)
+        base_all = _scope_base(db, message, org_id=org_id)
         candidates = _filter_invoices(db, cmd, base=base_all, org_id=org_id)
         # A single match — or an "explain/why" question — shows the full review
         # card, whose summary explains the reason (e.g. "explain why SAECO was
@@ -171,7 +221,7 @@ def handle(
     # COUNT / SUM                                                          #
     # ------------------------------------------------------------------ #
     if cmd.action in ("count", "sum"):
-        base_all = invoice_repo.list_all(db, org_id=org_id)
+        base_all = _scope_base(db, message, org_id=org_id)
         candidates = _filter_invoices(db, cmd, base=base_all, org_id=org_id)
         label = _filter_label(cmd) or "all"
         if cmd.action == "count":
@@ -226,7 +276,7 @@ def handle(
     # Legacy single-invoice intents delegated from old converse flow      #
     # (kept for backward-compat with tests that still use them)           #
     # ------------------------------------------------------------------ #
-    return ("I'm your Invoice Copilot. How can I help?", "smalltalk", None)
+    return (_smalltalk_reply(client, db, msgs, org_id), "smalltalk", None)
 
 
 # ---------------------------------------------------------------------------
