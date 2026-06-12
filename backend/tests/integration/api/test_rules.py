@@ -121,3 +121,82 @@ def test_patch_rule_disable(client_with_corrections: TestClient) -> None:
 def test_patch_rule_not_found(client: TestClient) -> None:
     resp = client.patch("/api/v1/rules/does-not-exist", json={"status": "disabled"})
     assert resp.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# POST /rules — manual rule creation
+# ---------------------------------------------------------------------------
+
+
+def test_create_rule_returns_201_active(client: TestClient) -> None:
+    """POST /rules creates an active rule that appears in GET /rules."""
+    resp = client.post(
+        "/api/v1/rules",
+        json={"vendor": "Beta LLC", "finding_code": "OVER_TOLERANCE", "route": "Priya"},
+    )
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["status"] == "active"
+    assert data["vendor"] == "Beta LLC"
+    assert data["finding_code"] == "OVER_TOLERANCE"
+    assert data["route"] == "Priya"
+    assert data["source_correction_ids"] == []
+    assert data["reasoning_note"] is not None
+    assert "manually" in data["reasoning_note"]
+
+    # Should appear in GET /rules
+    list_resp = client.get("/api/v1/rules")
+    assert list_resp.status_code == 200
+    ids = [r["id"] for r in list_resp.json()]
+    assert data["id"] in ids
+
+
+def test_create_rule_finding_code_defaults_to_over_tolerance(client: TestClient) -> None:
+    """Omitting finding_code defaults to OVER_TOLERANCE."""
+    resp = client.post(
+        "/api/v1/rules",
+        json={"vendor": "Gamma Inc", "route": "approve"},
+    )
+    assert resp.status_code == 201
+    assert resp.json()["finding_code"] == "OVER_TOLERANCE"
+
+
+def test_create_rule_supersedes_prior_active_same_vendor_and_code(
+    client: TestClient,
+) -> None:
+    """A second POST for the same (vendor, finding_code) supersedes the first."""
+    payload = {"vendor": "Delta Co", "finding_code": "OVER_TOLERANCE", "route": "hold"}
+
+    first_resp = client.post("/api/v1/rules", json=payload)
+    assert first_resp.status_code == 201
+    first_id = first_resp.json()["id"]
+
+    second_resp = client.post("/api/v1/rules", json=payload)
+    assert second_resp.status_code == 201
+    second_id = second_resp.json()["id"]
+
+    assert first_id != second_id
+
+    all_rules = {r["id"]: r for r in client.get("/api/v1/rules").json()}
+    assert all_rules[first_id]["status"] == "disabled"
+    assert all_rules[second_id]["status"] == "active"
+
+
+def test_create_rule_different_finding_code_coexists(client: TestClient) -> None:
+    """Two rules for the same vendor but different finding_codes both stay active."""
+    client.post(
+        "/api/v1/rules",
+        json={"vendor": "Epsilon Ltd", "finding_code": "OVER_TOLERANCE", "route": "Priya"},
+    )
+    client.post(
+        "/api/v1/rules",
+        json={"vendor": "Epsilon Ltd", "finding_code": "DUPLICATE_SUSPECT", "route": "hold"},
+    )
+
+    active_rules = [
+        r
+        for r in client.get("/api/v1/rules").json()
+        if r["vendor"] == "Epsilon Ltd" and r["status"] == "active"
+    ]
+    codes = {r["finding_code"] for r in active_rules}
+    assert codes == {"OVER_TOLERANCE", "DUPLICATE_SUSPECT"}

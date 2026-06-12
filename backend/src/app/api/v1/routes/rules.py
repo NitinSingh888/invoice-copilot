@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
@@ -9,7 +9,7 @@ from app.api.deps import get_db, get_llm
 from app.clients.llm.base import LLMClient
 from app.core.exceptions import AppError, NotFoundError
 from app.repositories import rule_repo
-from app.schemas.rule import ActivateRuleIn, PatternOut, RuleOut, RuleProposalOut, RuleStatusIn
+from app.schemas.rule import ActivateRuleIn, CreateRuleIn, PatternOut, RuleOut, RuleProposalOut, RuleStatusIn
 from app.services import learning_service
 
 router = APIRouter()
@@ -18,6 +18,24 @@ router = APIRouter()
 @router.get("", response_model=list[RuleOut])
 def list_rules(db: Session = Depends(get_db)) -> list[RuleOut]:
     return [RuleOut.model_validate(r) for r in rule_repo.list_all(db)]
+
+
+@router.post("", status_code=201, response_model=RuleOut)
+def create_rule(
+    body: CreateRuleIn,
+    db: Session = Depends(get_db),
+    x_role: str = Header(default="user"),
+) -> RuleOut:
+    rule = learning_service.create_rule(
+        db,
+        vendor=body.vendor,
+        finding_code=body.finding_code,
+        max_over_pct=body.max_over_pct,
+        min_amount=body.min_amount,
+        route=body.route,
+        created_by=x_role,
+    )
+    return RuleOut.model_validate(rule)
 
 
 @router.post("/propose", response_model=None)
