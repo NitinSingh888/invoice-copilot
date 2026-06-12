@@ -1,0 +1,23 @@
+from __future__ import annotations
+
+from sqlalchemy.orm import Session
+
+from app.db.models.user import User
+
+
+def add(s: Session, user: User) -> User:
+    s.add(user)
+    s.flush()
+    return user
+
+
+def get(s: Session, user_id: str) -> User | None:
+    return s.get(User, user_id)
+
+
+def get_by_email(s: Session, email: str) -> User | None:
+    return s.query(User).filter(User.email == email).first()
+
+
+def get_by_verification_token(s: Session, token: str) -> User | None:
+    return s.query(User).filter(User.verification_token == token).first()

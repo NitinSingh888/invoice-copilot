@@ -22,9 +22,10 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     init_db(engine)
     try:
-        from app.seed import seed
+        from app.seed import seed, seed_demo_user
 
         with SessionLocal() as s:
+            seed_demo_user(s)
             seed(s)
             s.commit()
     except Exception:

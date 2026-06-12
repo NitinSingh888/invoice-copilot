@@ -1,4 +1,4 @@
-import { LayoutDashboard, Inbox, BookOpen, ScrollText, Sun, Moon, RotateCcw, GraduationCap, History } from 'lucide-react'
+import { LayoutDashboard, Inbox, BookOpen, ScrollText, Sun, Moon, RotateCcw, GraduationCap, History, LogOut } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import type { Role } from '@/lib/types'
@@ -17,6 +17,8 @@ interface SidebarProps {
   resetting: boolean
   providerLabel: string
   providerLive: boolean
+  userEmail?: string
+  onLogout?: () => void
 }
 
 const NAV = [
@@ -38,6 +40,8 @@ export function Sidebar({
   resetting,
   providerLabel,
   providerLive,
+  userEmail,
+  onLogout,
 }: SidebarProps) {
   return (
     <TooltipProvider>
@@ -199,6 +203,32 @@ export function Sidebar({
               <TooltipContent side="top">Reset demo</TooltipContent>
             </Tooltip>
           </div>
+
+          {/* Logged-in user + logout */}
+          {userEmail && (
+            <div className="flex items-center gap-1.5 px-1">
+              <span
+                className="flex-1 truncate text-[10px] text-muted-foreground font-mono"
+                title={userEmail}
+              >
+                {userEmail}
+              </span>
+              {onLogout && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={onLogout}
+                      className="flex items-center justify-center p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-150"
+                      aria-label="Log out"
+                    >
+                      <LogOut className="h-3.5 w-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">Log out</TooltipContent>
+                </Tooltip>
+              )}
+            </div>
+          )}
 
           {/* Provider pill — driven from health endpoint */}
           <div className="flex justify-center">

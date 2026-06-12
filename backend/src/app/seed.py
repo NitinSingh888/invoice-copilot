@@ -47,6 +47,7 @@ from app.db.models.correction import Correction
 from app.db.models.invoice import Invoice
 from app.db.models.purchase_order import PurchaseOrder
 from app.db.models.rule import Rule
+from app.db.models.user import User
 from app.db.models.vendor import Vendor
 
 logger = logging.getLogger(__name__)
@@ -479,6 +480,27 @@ def is_empty(s: Session) -> bool:
     return (
         s.query(Invoice).filter(Invoice.status == "received").count() == 0
     )
+
+
+def seed_demo_user(s: Session) -> None:
+    """Ensure a verified demo user exists: demo@zamp.ai / demo1234.
+
+    Idempotent — only creates the user if it doesn't already exist.
+    """
+    from app.repositories import user_repo
+    from app.services.auth_service import hash_password
+
+    email = "demo@zamp.ai"
+    if user_repo.get_by_email(s, email) is None:
+        user = User(
+            id="usr-demo0001",
+            email=email,
+            password_hash=hash_password("demo1234"),
+            is_verified=True,
+            verification_token=None,
+        )
+        s.add(user)
+        s.flush()
 
 
 def seed(s: Session, *, force: bool = False) -> int:

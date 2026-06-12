@@ -129,6 +129,23 @@ def handle(
         # Has filters → list mode
         base_all = invoice_repo.list_all(db)
         candidates = _filter_invoices(db, cmd, base=base_all)
+        # A single match — or an "explain/why" question — shows the full review
+        # card, whose summary explains the reason (e.g. "explain why SAECO was
+        # blocked"). For "why" with several matches, pick the one whose state the
+        # user is asking about (blocked → needs → held → routed).
+        wants_explain = bool(re.search(r"\b(why|explain|reason)\b", message, re.IGNORECASE))
+        if candidates and (len(candidates) == 1 or wants_explain):
+            target = candidates[0]
+            if wants_explain:
+                for st in ("blocked", "needs", "held", "routed"):
+                    match = [c for c in candidates if c.status == st]
+                    if match:
+                        target = match[0]
+                        break
+            review_result = _build_review_result(db, target)
+            inv0 = review_result["invoice"]
+            text = f"Here's {inv0.get('invoice_number') or inv0.get('id')} from {inv0.get('vendor')}:"
+            return (text, "review_invoice", review_result)
         label = _filter_label(cmd) or "all"
         full_count = len(candidates)
         page = candidates[:_LIST_CAP]

@@ -12,6 +12,7 @@ import { AuditSheet } from '@/components/invoice/AuditSheet'
 import { InvoiceDetailSheet } from '@/components/invoice/InvoiceDetailSheet'
 import {
   chat,
+  clearToken,
   demoReset,
   getAudit,
   getHealth,
@@ -60,14 +61,25 @@ function isBulkConfirmResult(r: unknown): r is BulkConfirmResult {
 const HEALTH_POLL_MS = 20_000
 const INTRO_SEEN_KEY = 'ic_intro_seen'
 
-export default function App() {
+interface AppProps {
+  userEmail: string
+}
+
+export default function App({ userEmail }: AppProps) {
   const [theme, setTheme] = useState<'light' | 'dark'>(
     () => (localStorage.getItem('ic-theme') as 'light' | 'dark') || 'light',
   )
   const [role, setRole] = useState<Role>('maya')
   const [view, setView] = useState<View>('inbox')
   const [invoices, setInvoices] = useState<InvoiceOut[]>([])
-  const [thread, setThread] = useState<ThreadMessage[]>([])
+  const [thread, setThread] = useState<ThreadMessage[]>(() => {
+    try {
+      const saved = localStorage.getItem('ic_thread')
+      return saved ? (JSON.parse(saved) as ThreadMessage[]) : []
+    } catch {
+      return []
+    }
+  })
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(true)
   const [resetting, setResetting] = useState(false)
@@ -128,17 +140,26 @@ export default function App() {
     return live
   }, [])
 
-  // initial load
+  // initial load — load PERSISTED state (the backend seeds on boot; refresh
+  // preserves processed/pending status). Use the Reset button to start fresh.
   useEffect(() => {
     void (async () => {
       try {
-        await demoReset()
         await refreshInvoices()
       } finally {
         setLoading(false)
       }
     })()
   }, [refreshInvoices])
+
+  // Persist the conversation so a refresh keeps it.
+  useEffect(() => {
+    try {
+      localStorage.setItem('ic_thread', JSON.stringify(thread))
+    } catch {
+      /* ignore quota errors */
+    }
+  }, [thread])
 
   const push = (m: ThreadMessage) => setThread((t) => [...t, m])
 
@@ -152,6 +173,11 @@ export default function App() {
       setApiRole(next)
       return next
     })
+  }
+
+  function handleLogout() {
+    clearToken()
+    window.dispatchEvent(new Event('ic-unauthorized'))
   }
 
   async function handleReset() {
@@ -299,6 +325,8 @@ export default function App() {
         resetting={resetting}
         providerLabel={providerLabel}
         providerLive={healthLive === true}
+        userEmail={userEmail}
+        onLogout={handleLogout}
       />
 
       <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden">

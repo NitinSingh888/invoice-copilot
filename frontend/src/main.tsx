@@ -5,11 +5,14 @@ import '@fontsource-variable/geist/index.css'
 import '@fontsource-variable/geist-mono/index.css'
 import './index.css'
 import App from './App.tsx'
+import { AuthGate } from '@/components/auth/AuthGate'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <TooltipProvider delayDuration={400}>
-      <App />
+      <AuthGate>
+        {(email) => <App userEmail={email} />}
+      </AuthGate>
     </TooltipProvider>
   </StrictMode>,
 )

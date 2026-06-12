@@ -2,17 +2,23 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 
-from fastapi import Header
+from fastapi import Depends, Header, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.clients.llm.base import LLMClient
 from app.clients.llm.factory import build_llm_client
 from app.core.config import get_settings
 from app.core.security import current_role
+from app.db.models.user import User
 from app.db.session import SessionLocal
+from app.repositories import user_repo
+from app.services import auth_service
 
 # Module-level cache — one client per process lifetime.
 _llm_client: LLMClient | None = None
+
+_bearer = HTTPBearer(auto_error=False)
 
 
 def get_llm() -> LLMClient:
@@ -36,3 +42,30 @@ def get_db() -> Iterator[Session]:
 
 def get_role(x_role: str | None = Header(default=None)) -> str:
     return current_role(x_role)
+
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
+    db: Session = Depends(get_db),
+) -> User:
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    user_id = auth_service.decode_token(credentials.credentials)
+    user = user_repo.get(db, user_id)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    if not user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Email not verified",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return user
