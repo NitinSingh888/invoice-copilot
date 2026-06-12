@@ -9,6 +9,8 @@ class PurchaseOrder:
     vendor: str
     amount: Decimal
     remaining_balance: Decimal | None = None
+    # DB primary key — used to persist matched_po_id FK on the invoice row.
+    po_id: str | None = None
 
 @dataclass(frozen=True)
 class InvoiceData:

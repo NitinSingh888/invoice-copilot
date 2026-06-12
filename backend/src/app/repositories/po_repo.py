@@ -22,4 +22,5 @@ def to_domain(po: PurchaseOrder) -> matching_domain.PurchaseOrder:
         vendor=po.vendor,
         amount=po.amount,
         remaining_balance=po.remaining_balance,
+        po_id=po.id,
     )

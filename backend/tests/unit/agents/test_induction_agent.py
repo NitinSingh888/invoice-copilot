@@ -82,10 +82,15 @@ def test_reasoning_is_deterministic(client: MockClient) -> None:
 
 def test_activate_rule_stores_reasoning(client: MockClient, _engine: Engine) -> None:
     from app.services import learning_service
+    from app.db.models.invoice import Invoice
 
     TestingSession = sessionmaker(bind=_engine, expire_on_commit=False)
 
     with TestingSession() as s:
+        # Flush invoices first so FK constraints are satisfied.
+        for i in range(3):
+            s.add(Invoice(id=f"inv-ind-{i}", vendor="Acme Corp", amount=Decimal("100")))
+        s.flush()
         for i, over_pct in enumerate(["0.06", "0.04", "0.07"]):
             s.add(
                 Correction(
@@ -120,10 +125,15 @@ def test_activate_rule_without_reasoning_uses_default(
     client: MockClient, _engine: Engine
 ) -> None:
     from app.services import learning_service
+    from app.db.models.invoice import Invoice
 
     TestingSession = sessionmaker(bind=_engine, expire_on_commit=False)
 
     with TestingSession() as s:
+        # Flush invoices first so FK constraints are satisfied.
+        for i in range(3):
+            s.add(Invoice(id=f"inv-def-{i}", vendor="Acme Corp", amount=Decimal("100")))
+        s.flush()
         for i, over_pct in enumerate(["0.06", "0.04", "0.07"]):
             s.add(
                 Correction(

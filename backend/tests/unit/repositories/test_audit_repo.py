@@ -1,12 +1,23 @@
 from __future__ import annotations
 
+from decimal import Decimal
+
 from sqlalchemy.orm import Session
 
+from app.db.models.invoice import Invoice
 from app.domain.audit.chain import GENESIS
 from app.repositories import audit_repo
 
 
+def _add_invoice(db: Session, inv_id: str) -> None:
+    """Helper: insert a minimal invoice row to satisfy the FK."""
+    db.add(Invoice(id=inv_id, vendor="Test", amount=Decimal("100")))
+    db.flush()
+
+
 def test_chain_prev_hashes(db: Session) -> None:
+    _add_invoice(db, "INV-1")
+    _add_invoice(db, "INV-2")
     ev0 = audit_repo.append(db, invoice_id="INV-1", actor="sys", module="extractor", action="EXTRACT")
     ev1 = audit_repo.append(db, invoice_id="INV-1", actor="sys", module="matcher", action="MATCH")
     ev2 = audit_repo.append(db, invoice_id="INV-2", actor="human", module="review", action="APPROVE")
@@ -17,6 +28,8 @@ def test_chain_prev_hashes(db: Session) -> None:
 
 
 def test_verify_intact_chain(db: Session) -> None:
+    _add_invoice(db, "INV-1")
+    _add_invoice(db, "INV-2")
     audit_repo.append(db, invoice_id="INV-1", actor="sys", module="extractor", action="EXTRACT")
     audit_repo.append(db, invoice_id="INV-1", actor="sys", module="matcher", action="MATCH")
     audit_repo.append(db, invoice_id="INV-2", actor="human", module="review", action="APPROVE")
@@ -25,6 +38,8 @@ def test_verify_intact_chain(db: Session) -> None:
 
 
 def test_list_for_invoice_filters(db: Session) -> None:
+    _add_invoice(db, "INV-1")
+    _add_invoice(db, "INV-2")
     audit_repo.append(db, invoice_id="INV-1", actor="sys", module="extractor", action="EXTRACT")
     audit_repo.append(db, invoice_id="INV-1", actor="sys", module="matcher", action="MATCH")
     audit_repo.append(db, invoice_id="INV-2", actor="human", module="review", action="APPROVE")
@@ -37,6 +52,7 @@ def test_list_for_invoice_filters(db: Session) -> None:
 
 
 def test_all_events_order(db: Session) -> None:
+    # invoice_id is nullable — no parent needed
     audit_repo.append(db, actor="a", module="m", action="A1")
     audit_repo.append(db, actor="a", module="m", action="A2")
     evs = audit_repo.all_events(db)
@@ -44,6 +60,8 @@ def test_all_events_order(db: Session) -> None:
 
 
 def test_verify_detects_tampered_field(db: Session) -> None:
+    _add_invoice(db, "INV-1")
+    _add_invoice(db, "INV-2")
     audit_repo.append(db, invoice_id="INV-1", actor="sys", module="extractor", action="EXTRACT")
     audit_repo.append(db, invoice_id="INV-1", actor="sys", module="matcher", action="MATCH")
     audit_repo.append(db, invoice_id="INV-2", actor="human", module="review", action="APPROVE")
@@ -62,6 +80,7 @@ def test_verify_empty_chain(db: Session) -> None:
 
 
 def test_append_with_inputs_outputs(db: Session) -> None:
+    _add_invoice(db, "INV-10")
     ev = audit_repo.append(
         db,
         invoice_id="INV-10",
@@ -81,6 +100,7 @@ def test_append_with_inputs_outputs(db: Session) -> None:
 
 
 def test_verify_detects_tampered_prev_hash(db: Session) -> None:
+    _add_invoice(db, "INV-1")
     audit_repo.append(db, invoice_id="INV-1", actor="sys", module="m", action="A")
     audit_repo.append(db, invoice_id="INV-1", actor="sys", module="m", action="B")
 

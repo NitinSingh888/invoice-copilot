@@ -33,7 +33,7 @@ def get_by_invoice_number(s: Session, invoice_number: str) -> Invoice | None:
 
 
 def list_all(s: Session) -> list[Invoice]:
-    return list(s.query(Invoice).all())
+    return list(s.query(Invoice).filter(Invoice.is_deleted.is_(False)).all())
 
 
 def list_by_status(s: Session, status: str) -> list[Invoice]:

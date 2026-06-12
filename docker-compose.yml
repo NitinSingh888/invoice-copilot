@@ -39,6 +39,8 @@ services:
       - ./backend/src:/app/src
       - ./backend/scripts:/app/scripts
       - ./backend/data:/app/data
+      - ./backend/alembic.ini:/app/alembic.ini
+      - ./backend/migrations:/app/migrations
     ports:
       - "8123:8123"
     depends_on:

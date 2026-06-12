@@ -67,9 +67,9 @@ def test_list_by_status(db: Session) -> None:
 
 def test_set_status(db: Session) -> None:
     invoice_repo.add(db, _inv("i1", status="received"))
-    updated = invoice_repo.set_status(db, "i1", "cleared", verdict="ok", route="auto")
+    updated = invoice_repo.set_status(db, "i1", "cleared", verdict="AUTO_CLEAR", route="auto")
     assert updated.status == "cleared"
-    assert updated.verdict == "ok"
+    assert updated.verdict == "AUTO_CLEAR"
     assert updated.route == "auto"
 
 
