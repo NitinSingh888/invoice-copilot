@@ -35,11 +35,24 @@ export function History({ onInvoiceClick }: HistoryProps) {
       .finally(() => setLoading(false))
   }, [])
 
-  // Filter: exclude today's invoices and cold-start placeholders (no source_file)
+  // History = a record of completed work: every past invoice, PLUS today's
+  // already-decided ones (approved/queued, routed, held, rejected, blocked,
+  // cleared). Today's still-pending invoices (received / needs you) stay in the
+  // Inbox. Cold-start placeholders (no source_file) are excluded.
+  const DECIDED = new Set([
+    'queued',
+    'cleared',
+    'routed',
+    'held',
+    'rejected',
+    'blocked',
+  ])
   const pastInvoices = useMemo(
     () =>
       allInvoices.filter(
-        (inv) => !isToday(inv.created_at) && inv.source_file !== null,
+        (inv) =>
+          inv.source_file !== null &&
+          (!isToday(inv.created_at) || DECIDED.has(inv.status)),
       ),
     [allInvoices],
   )

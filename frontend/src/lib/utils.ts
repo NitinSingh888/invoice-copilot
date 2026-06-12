@@ -146,6 +146,14 @@ export function formatDayHeader(isoString: string): string {
   yesterday.setDate(now.getDate() - 1)
 
   if (
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+  ) {
+    return 'Today'
+  }
+
+  if (
     d.getFullYear() === yesterday.getFullYear() &&
     d.getMonth() === yesterday.getMonth() &&
     d.getDate() === yesterday.getDate()
