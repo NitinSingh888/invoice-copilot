@@ -1,9 +1,9 @@
-"""Demo seed dataset — built from REAL invoice PDFs.
+"""Demo seed dataset — built from REAL invoice PDFs + corpus images.
 
-Extracted fields are cached in ``data/extracted_samples.json``; no LLM is
-called at seed time.
+Extracted fields are cached in ``data/extracted_samples.json`` (10 PDFs) and
+``data/corpus_extracted.json`` (100 JPG images).  No LLM is called at seed time.
 
-Intended pipeline outcomes for the 10 received invoices:
+Intended pipeline outcomes for the 10 PDF received invoices (unchanged):
 
 AUTO_CLEAR (4):
     inv-azure      Azure Interior        $279.84  HIGH   PO match, approved vendor
@@ -22,12 +22,22 @@ ESCALATE low-confidence / unknown vendor (3):
 
 BLOCK duplicate (1):
     inv-saeco      SAECO                 $49.99   MED    exact duplicate (prior cleared)
+
+Corpus TODAY batch (~12 invoices, status=received):
+    inv-c000 … inv-c011  — no PO, LOW confidence → ESCALATE (MISSING_PO / LOW)
+
+Corpus HISTORY (~88 invoices, status pre-set, created_at backdated 1-10 days):
+    Deterministic status split: ~65% cleared, ~12% queued, ~8% blocked,
+    ~10% needs, ~5% routed.
 """
 
 from __future__ import annotations
 
+import json
 import logging
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
+from pathlib import Path
 
 from sqlalchemy.orm import Session
 
@@ -42,7 +52,14 @@ from app.db.models.vendor import Vendor
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# SEED_VENDORS
+# Data paths
+# ---------------------------------------------------------------------------
+
+_DATA_DIR = Path(__file__).parent.parent.parent / "data"
+_CORPUS_JSON = _DATA_DIR / "corpus_extracted.json"
+
+# ---------------------------------------------------------------------------
+# SEED_VENDORS  (10 PDF curated batch — unchanged)
 # ---------------------------------------------------------------------------
 
 SEED_VENDORS: list[Vendor] = [
@@ -118,10 +135,6 @@ SEED_VENDORS: list[Vendor] = [
 
 # ---------------------------------------------------------------------------
 # SEED_POS
-# Amounts for AUTO_CLEAR POs: exactly equal to invoice amount (within tolerance).
-# Amounts for ESCALATE over-PO: set ~7% BELOW invoice amount (over tolerance).
-# SAECO PO exists but duplicate check fires first.
-# AWS, Free SAS, OYO: no PO referenced on their invoices.
 # ---------------------------------------------------------------------------
 
 SEED_POS: list[PurchaseOrder] = [
@@ -175,7 +188,7 @@ SEED_POS: list[PurchaseOrder] = [
 ]
 
 # ---------------------------------------------------------------------------
-# The received batch of 10 real invoices
+# The received PDF batch of 10 real invoices (unchanged)
 # ---------------------------------------------------------------------------
 
 SEED_INVOICES: list[Invoice] = [
@@ -287,7 +300,6 @@ SEED_INVOICES: list[Invoice] = [
 
 # ---------------------------------------------------------------------------
 # Prior cleared invoice for the SAECO DUPLICATE_EXACT hard-stop.
-# Same vendor + same invoice_number as inv-saeco.
 # ---------------------------------------------------------------------------
 _SAECO_PRIOR = Invoice(
     id="inv-saeco-prior",
@@ -301,8 +313,7 @@ _SAECO_PRIOR = Invoice(
 )
 
 # ---------------------------------------------------------------------------
-# Cold-start history vendors — each needs at least cold_start_n cleared invoices
-# so the pipeline passes the cold-start check and AUTO_CLEARs them.
+# Cold-start history vendors
 # ---------------------------------------------------------------------------
 _AUTO_CLEAR_VENDORS = [
     "Azure Interior",
@@ -315,6 +326,33 @@ _AUTO_CLEAR_VENDORS = [
 _ESCALATE_OVER_PO_VENDORS = [
     "Coolblue B.V.",
 ]
+
+# ---------------------------------------------------------------------------
+# Corpus constants
+# ---------------------------------------------------------------------------
+
+# First 12 corpus entries (indices 0-11) → TODAY batch (status=received)
+_CORPUS_TODAY_COUNT = 12
+
+# History status bands — assigned deterministically by (index % _BAND_TOTAL)
+# 65% cleared, 12% queued, 8% blocked, 10% needs, 5% routed
+# Using a 20-slot cycle: 13 cleared, 2 queued, 2 needs, 2 blocked, 1 routed
+_HISTORY_STATUS_CYCLE = (
+    ["cleared"] * 13
+    + ["queued"] * 2
+    + ["needs"] * 2
+    + ["blocked"] * 2
+    + ["routed"] * 1
+)
+
+# Map pre-set status → verdict string (for display in history)
+_STATUS_VERDICT: dict[str, str | None] = {
+    "cleared": "AUTO_CLEAR",
+    "queued": "AUTO_CLEAR",
+    "needs": "ESCALATE",
+    "blocked": "BLOCK",
+    "routed": "ESCALATE",
+}
 
 
 def _make_cold_start_invoices(cold_start_n: int) -> list[Invoice]:
@@ -331,9 +369,104 @@ def _make_cold_start_invoices(cold_start_n: int) -> list[Invoice]:
                     vendor=vendor,
                     amount=Decimal("1000.00"),
                     confidence="HIGH",
+                    # no source_file — padding rows hidden from History view
                 )
             )
     return rows
+
+
+def _load_corpus() -> list[dict]:  # type: ignore[type-arg]
+    """Load corpus_extracted.json.  Returns an empty list if the file is missing."""
+    if not _CORPUS_JSON.exists():
+        logger.warning("corpus_extracted.json not found at %s", _CORPUS_JSON)
+        return []
+    with _CORPUS_JSON.open() as fh:
+        return json.load(fh)  # type: ignore[no-any-return]
+
+
+def _make_corpus_invoices(
+    corpus: list[dict],  # type: ignore[type-arg]
+    now: datetime,
+) -> tuple[list[Invoice], list[Vendor]]:
+    """Build corpus Invoice rows + deduplicated Vendor rows.
+
+    Returns
+    -------
+    (invoices, vendors)
+        ``invoices`` = all 100 corpus Invoice objects
+        ``vendors``  = one Vendor per unique canonical_name (approved, status=approved)
+    """
+    invoices: list[Invoice] = []
+    seen_vendors: dict[str, Vendor] = {}
+
+    for i, entry in enumerate(corpus):
+        file_stem = Path(entry["file"]).stem  # e.g. "inv-c000"
+        inv_id = f"inv-{file_stem}"  # → "inv-inv-c000" is ugly; stem IS "inv-c000"
+        # file is already "inv-c000.jpg" → stem is "inv-c000"
+        inv_id = file_stem  # "inv-c000", "inv-c001", …
+
+        vendor_name: str = entry["vendor"]
+        amount = Decimal(str(entry["amount"]))
+        invoice_number: str | None = entry.get("invoice_number")
+        confidence: str = entry.get("confidence", "LOW")
+        source_file: str = entry["file"]
+
+        # Register vendor (deduped by canonical_name)
+        if vendor_name not in seen_vendors:
+            v_key = (
+                vendor_name.lower()
+                .replace(" ", "-")
+                .replace(",", "")
+                .replace(".", "")
+                .replace("/", "-")
+            )
+            seen_vendors[vendor_name] = Vendor(
+                id=f"v-corpus-{v_key[:40]}",
+                canonical_name=vendor_name,
+                aliases=[],
+                status="approved",
+                default_approver="Priya",
+            )
+
+        if i < _CORPUS_TODAY_COUNT:
+            # TODAY batch — status=received, created_at=now
+            inv = Invoice(
+                id=inv_id,
+                invoice_number=invoice_number,
+                status="received",
+                vendor=vendor_name,
+                amount=amount,
+                po_number=None,  # corpus invoices have no PO
+                confidence=confidence,
+                source_file=source_file,
+                created_at=now,
+            )
+        else:
+            # HISTORY — deterministic backdated created_at and pre-set status
+            hist_idx = i - _CORPUS_TODAY_COUNT  # 0 … 87
+            days_back = 1 + (hist_idx % 10)
+            hours_back = hist_idx % 9
+            created_at = now - timedelta(days=days_back, hours=hours_back)
+
+            status = _HISTORY_STATUS_CYCLE[hist_idx % len(_HISTORY_STATUS_CYCLE)]
+            verdict = _STATUS_VERDICT[status]
+
+            inv = Invoice(
+                id=inv_id,
+                invoice_number=invoice_number,
+                status=status,
+                verdict=verdict,
+                vendor=vendor_name,
+                amount=amount,
+                po_number=None,
+                confidence=confidence,
+                source_file=source_file,
+                created_at=created_at,
+            )
+
+        invoices.append(inv)
+
+    return invoices, list(seen_vendors.values())
 
 
 # ---------------------------------------------------------------------------
@@ -349,7 +482,7 @@ def is_empty(s: Session) -> bool:
 
 
 def seed(s: Session, *, force: bool = False) -> int:
-    """Insert the demo dataset from real invoice PDFs.
+    """Insert the demo dataset from real invoice PDFs + corpus images.
 
     Parameters
     ----------
@@ -379,8 +512,9 @@ def seed(s: Session, *, force: bool = False) -> int:
         return 0
 
     settings = get_settings()
+    now = datetime.now(timezone.utc)
 
-    # 1. Vendors
+    # 1. Core PDF vendors
     for vendor in SEED_VENDORS:
         s.merge(vendor)
 
@@ -395,12 +529,29 @@ def seed(s: Session, *, force: bool = False) -> int:
     # 4. SAECO prior cleared (exact-duplicate prerequisite)
     s.merge(_SAECO_PRIOR)
 
+    # 5. Corpus invoices (today + history) + their vendors
+    corpus = _load_corpus()
+    corpus_invoices, corpus_vendors = _make_corpus_invoices(corpus, now)
+
+    # Collect canonical names already registered by SEED_VENDORS
+    existing_names = {v.canonical_name for v in SEED_VENDORS}
+    for cv in corpus_vendors:
+        if cv.canonical_name not in existing_names:
+            s.merge(cv)
+            existing_names.add(cv.canonical_name)
+
     s.flush()
 
-    # 5. The received batch
+    # 6. The received PDF batch
     for inv in SEED_INVOICES:
+        s.merge(inv)
+
+    # 7. Corpus invoices (today + history)
+    for inv in corpus_invoices:
         s.merge(inv)
 
     s.flush()
 
-    return len(SEED_INVOICES)
+    # Count received = 10 PDFs + corpus today invoices
+    received_count = len(SEED_INVOICES) + min(_CORPUS_TODAY_COUNT, len(corpus))
+    return received_count

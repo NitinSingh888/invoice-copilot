@@ -133,6 +133,27 @@ def test_get_invoice_file_unknown_id_returns_404(demo_seeded_client: TestClient)
     assert "not found" in resp.json()["detail"]
 
 
+def test_get_corpus_image_file_returns_200(demo_seeded_client: TestClient) -> None:
+    """Corpus image invoice (inv-c000.jpg) → GET /file returns 200."""
+    resp = demo_seeded_client.get("/api/v1/invoices/inv-c000/file")
+    assert resp.status_code == 200
+
+
+def test_corpus_history_invoice_has_old_created_at(demo_seeded_client: TestClient) -> None:
+    """A corpus history invoice must have a created_at older than its today sibling."""
+    from datetime import datetime
+
+    # inv-c000 is today; inv-c012 is history (day 1 back)
+    today_resp = demo_seeded_client.get("/api/v1/invoices/inv-c000")
+    hist_resp = demo_seeded_client.get("/api/v1/invoices/inv-c012")
+    assert today_resp.status_code == 200
+    assert hist_resp.status_code == 200
+
+    today_ts = datetime.fromisoformat(today_resp.json()["created_at"])
+    hist_ts = datetime.fromisoformat(hist_resp.json()["created_at"])
+    assert hist_ts < today_ts
+
+
 def test_get_invoice_file_no_file_returns_404(client: TestClient, db: Session) -> None:
     """Invoice with no source_file set → 404."""
     from app.db.models.invoice import Invoice as InvoiceModel
