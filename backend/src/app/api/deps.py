@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Depends, Header, HTTPException, Query, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
@@ -46,15 +46,20 @@ def get_role(x_role: str | None = Header(default=None)) -> str:
 
 def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
+    token: str | None = Query(default=None),
     db: Session = Depends(get_db),
 ) -> User:
-    if credentials is None:
+    # Prefer the Authorization header; fall back to a ?token= query param so that
+    # browser-native requests that can't set headers (an <iframe>/<img> document
+    # preview) can still authenticate. The org check still applies downstream.
+    raw = credentials.credentials if credentials is not None else token
+    if not raw:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    user_id = auth_service.decode_token(credentials.credentials)
+    user_id = auth_service.decode_token(raw)
     user = user_repo.get(db, user_id)
     if user is None:
         raise HTTPException(

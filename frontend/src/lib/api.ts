@@ -293,7 +293,12 @@ export async function demoReset(): Promise<DemoResetResponse> {
 // ────────────────────────────────────────────────────────────────────────────
 
 export function invoiceFileUrl(id: string): string {
-  return `${BASE}/invoices/${id}/file`
+  // <iframe>/<img> can't send the Authorization header, so pass the JWT as a
+  // query param; the /file endpoint accepts it as a fallback and still enforces
+  // org ownership.
+  const t = getToken()
+  const q = t ? `?token=${encodeURIComponent(t)}` : ''
+  return `${BASE}/invoices/${id}/file${q}`
 }
 
 // ────────────────────────────────────────────────────────────────────────────
