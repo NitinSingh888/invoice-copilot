@@ -145,43 +145,45 @@ def handle(
 # ---------------------------------------------------------------------------
 
 
+def _resolve_target(db: Session, message: str) -> Invoice | None:
+    """Resolve the invoice a "review/show <X>" message refers to — by internal id,
+    by invoice_number in ANY format (e.g. '72128555', 'INV/2023/03/0008'), or by a
+    vendor name mentioned in the text."""
+    # id / number-like tokens: alphanumerics (with -, /, _, .) of length >= 4.
+    tokens = re.findall(r"[A-Za-z0-9][A-Za-z0-9/_.-]{3,}", message)
+    for tok in tokens:
+        for cand in (tok, tok.lower(), tok.upper()):
+            inv = invoice_repo.get(db, cand)
+            if inv is not None:
+                return inv
+        inv = invoice_repo.get_by_invoice_number(db, tok)
+        if inv is not None:
+            return inv
+    # Fall back to a vendor name in the message → that vendor's most relevant invoice.
+    vendor = vendor_repo.resolve_from_text(db, message)
+    if vendor is not None:
+        candidates = (
+            db.query(Invoice)
+            .filter(Invoice.vendor == vendor.canonical_name)
+            .order_by(Invoice.created_at.desc())
+            .all()
+        )
+        priority = [c for c in candidates if c.status in ("needs", "blocked")]
+        return priority[0] if priority else (candidates[0] if candidates else None)
+    return None
+
+
 def _has_review_entity(db: Session, message: str) -> bool:
-    """True if the message references a resolvable invoice (INV-#### or a vendor)."""
-    if re.search(r"INV-\d+", message, re.IGNORECASE):
-        return True
-    return vendor_repo.resolve_from_text(db, message) is not None
+    """True if the message references a resolvable invoice (id / number / vendor)."""
+    return _resolve_target(db, message) is not None
 
 
 def _resolve_review_invoice(db: Session, message: str) -> dict[str, Any]:
     """Deterministically resolve and return a structured invoice review."""
     settings = get_settings()
-
-    # 1. Try to extract an explicit INV-#### from the message.
-    inv_id_match = re.search(r"(INV-\d+)", message, re.IGNORECASE)
-    inv: Invoice | None = None
-    query_entity: str = message.strip()
-
-    if inv_id_match:
-        inv_id = inv_id_match.group(1).upper()
-        query_entity = inv_id
-        inv = invoice_repo.get(db, inv_id)
-    else:
-        # 2. Try to find a vendor name substring in the message.
-        vendor = vendor_repo.resolve_from_text(db, message)
-        if vendor is not None:
-            query_entity = vendor.canonical_name
-            # Prefer invoice in needs/blocked status, else most recent.
-            candidates = (
-                db.query(Invoice)
-                .filter(Invoice.vendor == vendor.canonical_name)
-                .order_by(Invoice.created_at.desc())
-                .all()
-            )
-            priority = [c for c in candidates if c.status in ("needs", "blocked")]
-            inv = priority[0] if priority else (candidates[0] if candidates else None)
-
+    inv = _resolve_target(db, message)
     if inv is None:
-        return {"not_found": True, "query": query_entity}
+        return {"not_found": True, "query": message.strip()[:60]}
 
     # 3. Recompute findings via policy service (uses enrichment).
     inv_data = invoice_repo.to_domain(inv)

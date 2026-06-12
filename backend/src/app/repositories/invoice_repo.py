@@ -22,6 +22,16 @@ def get(s: Session, invoice_id: str) -> Invoice | None:
     return s.get(Invoice, invoice_id)
 
 
+def get_by_invoice_number(s: Session, invoice_number: str) -> Invoice | None:
+    """Find an invoice by its (vendor-assigned) invoice_number — any format."""
+    return (
+        s.query(Invoice)
+        .filter(Invoice.invoice_number == invoice_number)
+        .order_by(Invoice.created_at.desc())
+        .first()
+    )
+
+
 def list_all(s: Session) -> list[Invoice]:
     return list(s.query(Invoice).all())
 
