@@ -25,6 +25,7 @@ const STATUS_ICONS: Record<InvoiceStatus, React.ReactNode> = {
   routed: <ArrowRight className="h-3 w-3" />,
   held: <PauseCircle className="h-3 w-3" />,
   cleared: <Clock className="h-3 w-3" />,
+  rejected: <XCircle className="h-3 w-3" />,
 }
 
 const STATUS_TOOLTIPS: Record<InvoiceStatus, string> = {
@@ -35,6 +36,7 @@ const STATUS_TOOLTIPS: Record<InvoiceStatus, string> = {
   routed: 'Routed — sent to a colleague for approval',
   held: 'On hold — paused pending more information',
   cleared: 'Cleared — payment has been executed',
+  rejected: 'Rejected — declined with reason',
 }
 
 const VARIANT_MAP: Record<

@@ -1,16 +1,23 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { authMe, clearToken, getToken } from '@/lib/api'
 import { AuthScreen } from './AuthScreen'
+import type { OrgRole } from '@/lib/types'
+
+export interface UserInfo {
+  email: string
+  orgName: string | null
+  orgRole: OrgRole | null
+}
 
 interface AuthGateProps {
-  children: (email: string) => ReactNode
+  children: (user: UserInfo) => ReactNode
 }
 
 type State = 'checking' | 'authenticated' | 'unauthenticated'
 
 export function AuthGate({ children }: AuthGateProps) {
   const [state, setState] = useState<State>('checking')
-  const [userEmail, setUserEmail] = useState('')
+  const [userInfo, setUserInfo] = useState<UserInfo>({ email: '', orgName: null, orgRole: null })
 
   useEffect(() => {
     let cancelled = false
@@ -24,7 +31,11 @@ export function AuthGate({ children }: AuthGateProps) {
       try {
         const me = await authMe()
         if (!cancelled) {
-          setUserEmail(me.email)
+          setUserInfo({
+            email: me.email,
+            orgName: me.org_name ?? null,
+            orgRole: (me.role as OrgRole | null) ?? null,
+          })
           setState('authenticated')
         }
       } catch {
@@ -40,15 +51,25 @@ export function AuthGate({ children }: AuthGateProps) {
   useEffect(() => {
     function onUnauthorized() {
       clearToken()
-      setUserEmail('')
+      setUserInfo({ email: '', orgName: null, orgRole: null })
       setState('unauthenticated')
     }
     window.addEventListener('ic-unauthorized', onUnauthorized)
     return () => window.removeEventListener('ic-unauthorized', onUnauthorized)
   }, [])
 
-  function handleAuthenticated(email: string) {
-    setUserEmail(email)
+  async function handleAuthenticated(email: string) {
+    // Fetch full me info after login
+    try {
+      const me = await authMe()
+      setUserInfo({
+        email: me.email,
+        orgName: me.org_name ?? null,
+        orgRole: (me.role as OrgRole | null) ?? null,
+      })
+    } catch {
+      setUserInfo({ email, orgName: null, orgRole: null })
+    }
     setState('authenticated')
   }
 
@@ -79,7 +100,6 @@ export function AuthGate({ children }: AuthGateProps) {
     return <AuthScreen onAuthenticated={handleAuthenticated} />
   }
 
-  // Pass logout + email down to children via render prop
-  return <>{children(userEmail)}</>
+  // Pass user info down to children via render prop
+  return <>{children(userInfo)}</>
 }
-

@@ -1,5 +1,7 @@
 import type {
   InvoiceOut,
+  InvoiceComment,
+  OrgMember,
   CreateInvoiceRequest,
   CreateInvoiceResponse,
   ActionRequest,
@@ -93,7 +95,8 @@ async function request<T>(
 
 export interface SignupResponse {
   message: string
-  verify_token: string
+  status: 'active' | 'pending'
+  verify_token?: string
 }
 
 export interface VerifyResponse {
@@ -108,6 +111,9 @@ export interface LoginResponse {
 export interface MeResponse {
   email: string
   is_verified: boolean
+  org_id: string | null
+  org_name: string | null
+  role: 'admin' | 'member' | null
 }
 
 async function authRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -133,10 +139,10 @@ async function authRequest<T>(path: string, options: RequestInit = {}): Promise<
   return res.json() as Promise<T>
 }
 
-export async function authSignup(email: string, password: string): Promise<SignupResponse> {
+export async function authSignup(email: string, password: string, orgName: string): Promise<SignupResponse> {
   return authRequest<SignupResponse>('/auth/signup', {
     method: 'POST',
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, org_name: orgName }),
   })
 }
 
@@ -288,4 +294,51 @@ export async function demoReset(): Promise<DemoResetResponse> {
 
 export function invoiceFileUrl(id: string): string {
   return `${BASE}/invoices/${id}/file`
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Comments
+// ────────────────────────────────────────────────────────────────────────────
+
+export async function getComments(invoiceId: string): Promise<InvoiceComment[]> {
+  return request(`/invoices/${invoiceId}/comments`)
+}
+
+export async function addComment(invoiceId: string, body: string): Promise<InvoiceComment> {
+  return request(
+    `/invoices/${invoiceId}/comments`,
+    { method: 'POST', body: JSON.stringify({ body }) },
+    true,
+  )
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Reject with reason
+// ────────────────────────────────────────────────────────────────────────────
+
+export async function rejectInvoice(invoiceId: string, reason: string): Promise<InvoiceOut> {
+  return request(
+    `/invoices/${invoiceId}/action`,
+    { method: 'POST', body: JSON.stringify({ action: 'reject', reason }) },
+    true,
+  )
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Org / admin
+// ────────────────────────────────────────────────────────────────────────────
+
+export async function getOrgMembers(): Promise<OrgMember[]> {
+  return authRequest<OrgMember[]>('/auth/org/members')
+}
+
+export async function getPendingMembers(): Promise<OrgMember[]> {
+  return authRequest<OrgMember[]>('/auth/org/pending')
+}
+
+export async function verifyMember(userId: string): Promise<void> {
+  await authRequest<unknown>('/auth/org/verify-user', {
+    method: 'POST',
+    body: JSON.stringify({ user_id: userId }),
+  })
 }

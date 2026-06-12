@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { authLogin, authSignup, authVerify, setToken } from '@/lib/api'
 
-type Mode = 'login' | 'signup' | 'verify'
+type Mode = 'login' | 'signup' | 'verify' | 'pending'
 
 interface AuthScreenProps {
   onAuthenticated: (email: string) => void
@@ -27,6 +27,7 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [orgName, setOrgName] = useState('')
 
   // verify state (returned from signup)
   const [verifyToken, setVerifyToken] = useState('')
@@ -55,7 +56,7 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps) {
     } catch (err) {
       const status = getApiStatus(err)
       if (status === 403) {
-        setError("Your email isn't verified yet. Sign up again to get a verify button, or check for your verification link.")
+        setError('Your account is pending admin approval.')
       } else if (status === 401) {
         setError('Wrong email or password.')
       } else {
@@ -78,12 +79,45 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps) {
       setError('Password must be at least 6 characters.')
       return
     }
+    if (!orgName.trim()) {
+      setError('Organization name is required.')
+      return
+    }
     setBusy(true)
     try {
-      const res = await authSignup(email.trim(), password)
-      setVerifyToken(res.verify_token)
-      setSignupEmail(email.trim())
-      setMode('verify')
+      const res = await authSignup(email.trim(), password, orgName.trim())
+      if (res.status === 'active') {
+        // Founder of a new org — can log in right away
+        setInfo('Account created — you can log in now.')
+        const savedEmail = email.trim()
+        setPassword('')
+        setConfirmPassword('')
+        setOrgName('')
+        setTimeout(() => {
+          setInfo('')
+          setEmail(savedEmail)
+          switchMode('login')
+        }, 1500)
+      } else if (res.status === 'pending') {
+        // Joined an existing org — needs admin approval
+        switchMode('pending')
+      } else if (res.verify_token) {
+        // Legacy verify flow (fallback)
+        setVerifyToken(res.verify_token)
+        setSignupEmail(email.trim())
+        setMode('verify')
+      } else {
+        setInfo('Account created — you can log in now.')
+        const savedEmail = email.trim()
+        setPassword('')
+        setConfirmPassword('')
+        setOrgName('')
+        setTimeout(() => {
+          setInfo('')
+          setEmail(savedEmail)
+          switchMode('login')
+        }, 1500)
+      }
     } catch (err) {
       const status = getApiStatus(err)
       if (status === 409) {
@@ -214,6 +248,20 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps) {
                   />
                 </div>
                 <div className="space-y-1.5">
+                  <Label htmlFor="signup-org">Organization</Label>
+                  <Input
+                    id="signup-org"
+                    type="text"
+                    autoComplete="organization"
+                    placeholder="Acme Corp"
+                    value={orgName}
+                    onChange={(e) => setOrgName(e.target.value)}
+                    required
+                    disabled={busy}
+                    className="h-9"
+                  />
+                </div>
+                <div className="space-y-1.5">
                   <Label htmlFor="signup-password">Password</Label>
                   <Input
                     id="signup-password"
@@ -244,7 +292,10 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps) {
                 {error && (
                   <p className="text-xs text-destructive leading-snug">{error}</p>
                 )}
-                <Button type="submit" className="w-full" disabled={busy}>
+                {info && (
+                  <p className="text-xs text-[hsl(var(--success,142_71%_45%))] leading-snug">{info}</p>
+                )}
+                <Button type="submit" className="w-full" disabled={busy || !!info}>
                   {busy ? 'Creating account…' : 'Sign up'}
                 </Button>
               </form>
@@ -273,13 +324,31 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps) {
                   <p className="text-xs text-destructive leading-snug">{error}</p>
                 )}
                 {info && (
-                  <p className="text-xs text-[hsl(var(--success))] leading-snug">{info}</p>
+                  <p className="text-xs text-[hsl(var(--success,142_71%_45%))] leading-snug">{info}</p>
                 )}
                 <Button type="submit" className="w-full" disabled={busy || !!info}>
                   {busy ? 'Verifying…' : 'Verify email'}
                 </Button>
               </form>
               <p className="text-xs text-muted-foreground text-center mt-4">
+                <button
+                  type="button"
+                  onClick={() => switchMode('login')}
+                  className="text-primary hover:underline font-medium"
+                >
+                  Back to log in
+                </button>
+              </p>
+            </>
+          )}
+
+          {mode === 'pending' && (
+            <>
+              <h2 className="text-sm font-semibold text-foreground mb-3">Account pending approval</h2>
+              <p className="text-xs text-muted-foreground leading-relaxed mb-4">
+                Your account is pending your organization admin&apos;s approval. You&apos;ll get access once they approve you.
+              </p>
+              <p className="text-xs text-muted-foreground text-center">
                 <button
                   type="button"
                   onClick={() => switchMode('login')}

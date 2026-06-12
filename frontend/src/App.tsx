@@ -28,6 +28,7 @@ import type {
   ChatMessage,
   InvoiceOut,
   Role,
+  OrgRole,
   ThreadMessage,
   ReviewInvoiceResult,
   ListResult,
@@ -63,9 +64,11 @@ const INTRO_SEEN_KEY = 'ic_intro_seen'
 
 interface AppProps {
   userEmail: string
+  orgName?: string | null
+  orgRole?: OrgRole | null
 }
 
-export default function App({ userEmail }: AppProps) {
+export default function App({ userEmail, orgName, orgRole }: AppProps) {
   const [theme, setTheme] = useState<'light' | 'dark'>(
     () => (localStorage.getItem('ic-theme') as 'light' | 'dark') || 'light',
   )
@@ -326,6 +329,8 @@ export default function App({ userEmail }: AppProps) {
         providerLabel={providerLabel}
         providerLive={healthLive === true}
         userEmail={userEmail}
+        orgName={orgName}
+        orgRole={orgRole}
         onLogout={handleLogout}
       />
 

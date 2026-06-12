@@ -37,6 +37,11 @@ const STATUS_GROUPS: { statuses: InvoiceStatus[]; label: string; hint: string }[
     hint: 'stopped by policy (e.g. duplicate)',
   },
   {
+    statuses: ['rejected'],
+    label: 'REJECTED',
+    hint: 'declined with reason',
+  },
+  {
     statuses: ['routed', 'held'],
     label: 'ROUTED / ON HOLD',
     hint: 'sent to a colleague or paused pending more info',

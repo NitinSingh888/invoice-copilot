@@ -10,6 +10,7 @@ export type InvoiceStatus =
   | 'routed'
   | 'held'
   | 'cleared'
+  | 'rejected'
 
 export interface InvoiceOut {
   id: string
@@ -22,6 +23,27 @@ export interface InvoiceOut {
   route: string | null
   source_file: string | null
   created_at: string
+  decided_by: string | null
+  decided_at: string | null
+  decision_reason: string | null
+  updated_at: string | null
+}
+
+export interface InvoiceComment {
+  id: string
+  invoice_id: string
+  author: string
+  body: string
+  created_at: string
+}
+
+export type OrgRole = 'admin' | 'member'
+
+export interface OrgMember {
+  id: string
+  email: string
+  role: OrgRole
+  is_verified: boolean
 }
 
 export interface Finding {
@@ -49,7 +71,7 @@ export interface CreateInvoiceResponse {
 }
 
 export interface ActionRequest {
-  action: 'approve' | 'hold' | 'edit' | 'route'
+  action: 'approve' | 'hold' | 'edit' | 'route' | 'reject'
   amount?: string
   route?: string
   reason?: string
