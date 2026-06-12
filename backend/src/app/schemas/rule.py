@@ -41,3 +41,11 @@ class ActivateRuleIn(BaseModel):
 
 class RuleStatusIn(BaseModel):
     status: Literal["active", "disabled"]
+
+
+class CreateRuleIn(BaseModel):
+    vendor: str
+    finding_code: str = "OVER_TOLERANCE"
+    max_over_pct: Decimal | None = None
+    min_amount: Decimal | None = None
+    route: str

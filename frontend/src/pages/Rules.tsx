@@ -1,11 +1,24 @@
 import { useEffect, useState } from 'react'
-import { BookOpen, ToggleLeft } from 'lucide-react'
+import { BookOpen, Plus, ToggleLeft } from 'lucide-react'
+import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { PageHeader } from '@/components/layout/PageHeader'
-import { listRules, patchRule } from '@/lib/api'
+import { listRules, patchRule, createRule } from '@/lib/api'
 import type { RuleOut } from '@/lib/types'
+
+// ─── RuleCard ────────────────────────────────────────────────────────────────
 
 function RuleCard({
   rule,
@@ -75,9 +88,213 @@ function RuleCard({
   )
 }
 
+// ─── CreateRuleDialog ────────────────────────────────────────────────────────
+
+type Condition = 'over_pct' | 'any'
+type RouteOption = 'priya' | 'hold' | 'auto_approve'
+
+interface CreateRuleDialogProps {
+  open: boolean
+  onOpenChange: (v: boolean) => void
+  onCreated: (rule: RuleOut) => void
+}
+
+function CreateRuleDialog({ open, onOpenChange, onCreated }: CreateRuleDialogProps) {
+  const [vendor, setVendor] = useState('')
+  const [condition, setCondition] = useState<Condition>('over_pct')
+  const [overPct, setOverPct] = useState('5')
+  const [route, setRoute] = useState<RouteOption>('priya')
+  const [submitting, setSubmitting] = useState(false)
+
+  function reset() {
+    setVendor('')
+    setCondition('over_pct')
+    setOverPct('5')
+    setRoute('priya')
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!vendor.trim()) {
+      toast.error('Vendor name is required')
+      return
+    }
+    setSubmitting(true)
+    try {
+      const body = {
+        vendor: vendor.trim(),
+        finding_code: condition === 'over_pct' ? 'OVER_TOLERANCE' : undefined,
+        max_over_pct:
+          condition === 'over_pct' ? parseFloat(overPct) / 100 : null,
+        route:
+          route === 'priya'
+            ? 'priya'
+            : route === 'hold'
+            ? 'hold'
+            : 'auto_approve',
+      }
+      const created = await createRule(body)
+      toast.success(`Rule created for ${vendor.trim()}`)
+      onCreated(created)
+      reset()
+      onOpenChange(false)
+    } catch (err) {
+      toast.error(`Failed to create rule: ${(err as Error).message}`)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  function handleOpenChange(v: boolean) {
+    if (!v) reset()
+    onOpenChange(v)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-base">Create rule</DialogTitle>
+          <DialogDescription>
+            Tell Copilot how to handle invoices from a specific vendor automatically.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Vendor */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground" htmlFor="rule-vendor">
+              Vendor
+            </label>
+            <Input
+              id="rule-vendor"
+              placeholder="e.g. Acme Corp"
+              value={vendor}
+              onChange={(e) => setVendor(e.target.value)}
+              required
+            />
+          </div>
+
+          {/* Condition */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground" htmlFor="rule-condition">
+              Condition
+            </label>
+            <select
+              id="rule-condition"
+              value={condition}
+              onChange={(e) => setCondition(e.target.value as Condition)}
+              className="w-full h-9 rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            >
+              <option value="over_pct">Invoice is over its PO by more than X%</option>
+              <option value="any">Any invoice from this vendor</option>
+            </select>
+          </div>
+
+          {/* Percent input — only when condition = over_pct */}
+          {condition === 'over_pct' && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-foreground" htmlFor="rule-pct">
+                Over-PO threshold (%)
+              </label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="rule-pct"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  value={overPct}
+                  onChange={(e) => setOverPct(e.target.value)}
+                  className="w-24"
+                />
+                <span className="text-sm text-muted-foreground">percent</span>
+              </div>
+            </div>
+          )}
+
+          {/* Then */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground" htmlFor="rule-then">
+              Then
+            </label>
+            <select
+              id="rule-then"
+              value={route}
+              onChange={(e) => setRoute(e.target.value as RouteOption)}
+              className="w-full h-9 rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            >
+              <option value="priya">Route to Priya</option>
+              <option value="hold">Hold</option>
+              <option value="auto_approve">Auto-approve</option>
+            </select>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleOpenChange(false)}
+              disabled={submitting}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? 'Creating…' : 'Create rule'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ─── Empty state ─────────────────────────────────────────────────────────────
+
+function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 text-center max-w-sm mx-auto">
+      <div className="h-14 w-14 rounded-xl bg-muted flex items-center justify-center mb-4">
+        <BookOpen className="h-7 w-7 text-muted-foreground" />
+      </div>
+      <h3 className="text-base font-semibold text-foreground">No rules yet</h3>
+      <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+        Rules let Copilot handle repeat decisions automatically. Two ways to get one:
+      </p>
+      <ol className="text-sm text-muted-foreground mt-3 space-y-2 text-left w-full">
+        <li className="flex gap-2.5">
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary mt-0.5">
+            1
+          </span>
+          <span>
+            <strong className="text-foreground">Copilot learns</strong> — correct it the same
+            way 3× and it proposes a rule you approve.
+          </span>
+        </li>
+        <li className="flex gap-2.5">
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary mt-0.5">
+            2
+          </span>
+          <span>
+            <strong className="text-foreground">Create one</strong> — click{' '}
+            <em>Create rule</em> to define a rule from scratch.
+          </span>
+        </li>
+      </ol>
+      <Button className="mt-6 gap-2" onClick={onCreateClick}>
+        <Plus className="h-4 w-4" />
+        Create rule
+      </Button>
+    </div>
+  )
+}
+
+// ─── Rules page ──────────────────────────────────────────────────────────────
+
 export function Rules() {
   const [rules, setRules] = useState<RuleOut[]>([])
   const [loading, setLoading] = useState(true)
+  const [createOpen, setCreateOpen] = useState(false)
 
   useEffect(() => {
     setLoading(true)
@@ -95,6 +312,10 @@ export function Rules() {
       .catch(console.error)
   }
 
+  function handleCreated(rule: RuleOut) {
+    setRules((prev) => [rule, ...prev])
+  }
+
   const active = rules.filter((r) => r.status === 'active').length
 
   return (
@@ -102,6 +323,12 @@ export function Rules() {
       <PageHeader
         title="Rules"
         subtitle="Patterns Copilot learned from your decisions"
+        actions={
+          <Button size="sm" className="gap-1.5 h-8 text-xs" onClick={() => setCreateOpen(true)}>
+            <Plus className="h-3.5 w-3.5" />
+            Create rule
+          </Button>
+        }
       />
 
       <div className="flex-1 p-6">
@@ -127,15 +354,7 @@ export function Rules() {
 
         {/* Empty state */}
         {!loading && rules.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="h-14 w-14 rounded-xl bg-muted flex items-center justify-center mb-4">
-              <BookOpen className="h-7 w-7 text-muted-foreground" />
-            </div>
-            <h3 className="text-base font-semibold text-foreground">No rules yet</h3>
-            <p className="text-sm text-muted-foreground mt-2 max-w-sm">
-              No rules yet — correct the agent a few times and it'll propose one.
-            </p>
-          </div>
+          <EmptyState onCreateClick={() => setCreateOpen(true)} />
         )}
 
         {/* Rules grid */}
@@ -147,6 +366,12 @@ export function Rules() {
           </div>
         )}
       </div>
+
+      <CreateRuleDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onCreated={handleCreated}
+      />
     </div>
   )
 }

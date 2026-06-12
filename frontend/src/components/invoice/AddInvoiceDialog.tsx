@@ -31,6 +31,7 @@ export function AddInvoiceDialog({ onAdded }: AddInvoiceDialogProps) {
         size="sm"
         variant="outline"
         className="h-7 text-xs gap-1.5"
+        data-tour="add-invoice"
         onClick={() => setOpen(true)}
       >
         <Plus className="h-3 w-3" />

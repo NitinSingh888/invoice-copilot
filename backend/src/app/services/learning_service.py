@@ -139,6 +139,62 @@ def activate_rule(
     return rule
 
 
+def create_rule(
+    s: Session,
+    *,
+    vendor: str,
+    finding_code: str = "OVER_TOLERANCE",
+    max_over_pct: Decimal | None = None,
+    min_amount: Decimal | None = None,
+    route: str,
+    created_by: str = "user",
+) -> Rule:
+    """Manually create an active Rule, superseding any prior active rule for the
+    same (vendor, finding_code) pair, and emit a ``rule_created`` audit event."""
+    rule_id = f"R-{uuid4().hex[:8]}"
+
+    reasoning_note = f"Created manually by {created_by}."
+
+    rule = Rule(
+        id=rule_id,
+        vendor=vendor,
+        finding_code=finding_code,
+        max_over_pct=max_over_pct,
+        route=route,
+        status="active",
+        min_amount=min_amount,
+        source_correction_ids=[],
+        reasoning_note=reasoning_note,
+        created_by=created_by,
+    )
+
+    # Supersede prior active rules matching BOTH vendor AND finding_code
+    for existing in rule_repo.list_all(s):
+        if (
+            existing.status == "active"
+            and existing.vendor == vendor
+            and existing.finding_code == finding_code
+        ):
+            existing.status = "disabled"
+
+    rule_repo.add(s, rule)
+
+    audit_repo.append(
+        s,
+        actor=created_by,
+        module="learning",
+        action="rule_created",
+        outputs={
+            "rule_id": rule_id,
+            "vendor": vendor,
+            "finding_code": finding_code,
+            "route": route,
+        },
+    )
+
+    return rule
+
+
 def set_rule_status(
     s: Session,
     rule_id: str,

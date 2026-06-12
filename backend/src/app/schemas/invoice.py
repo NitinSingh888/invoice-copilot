@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+from datetime import datetime
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_serializer
 
 from app.schemas.common import FindingOut
 
@@ -30,6 +31,11 @@ class InvoiceOut(BaseModel):
     verdict: str | None
     route: str | None
     source_file: str | None = None
+    created_at: datetime
+
+    @field_serializer("created_at")
+    def serialize_created_at(self, value: datetime) -> str:
+        return value.isoformat()
 
     @property
     def has_file(self) -> bool:

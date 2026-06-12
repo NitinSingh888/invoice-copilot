@@ -183,3 +183,37 @@ def test_invoice_out_source_file_none_for_no_file(client: TestClient, db: Sessio
     resp = client.get("/api/v1/invoices/inv-nf-2")
     assert resp.status_code == 200
     assert resp.json()["source_file"] is None
+
+
+# ---------------------------------------------------------------------------
+# InvoiceOut.created_at — ISO-8601 string
+# ---------------------------------------------------------------------------
+
+
+def test_invoice_out_exposes_created_at(client: TestClient, db: Session) -> None:
+    """GET /invoices/{id} includes a non-empty ISO-8601 created_at string."""
+    from app.db.models.invoice import Invoice as InvoiceModel
+    from decimal import Decimal
+
+    inv = InvoiceModel(
+        id="inv-ts-1",
+        invoice_number="TS-001",
+        status="received",
+        vendor="Timestamp Vendor",
+        amount=Decimal("500.00"),
+        confidence="HIGH",
+    )
+    db.add(inv)
+    db.commit()
+
+    resp = client.get("/api/v1/invoices/inv-ts-1")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "created_at" in data
+    created_at = data["created_at"]
+    assert isinstance(created_at, str)
+    assert len(created_at) > 0
+    # Validate it is parseable as ISO-8601
+    from datetime import datetime
+    parsed = datetime.fromisoformat(created_at)
+    assert parsed is not None

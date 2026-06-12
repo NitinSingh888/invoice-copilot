@@ -5,6 +5,7 @@ import { Sidebar, type View } from '@/components/layout/Sidebar'
 import { Dashboard } from '@/pages/Dashboard'
 import { Inbox } from '@/pages/Inbox'
 import { Rules } from '@/pages/Rules'
+import { Guide } from '@/pages/Guide'
 import { AuditLog } from '@/pages/AuditLog'
 import { AuditSheet } from '@/components/invoice/AuditSheet'
 import { InvoiceDetailSheet } from '@/components/invoice/InvoiceDetailSheet'
@@ -28,6 +29,7 @@ import type {
   ReviewInvoiceResult,
 } from '@/lib/types'
 import { isReviewFound } from '@/lib/types'
+import { useTour } from '@/hooks/useTour'
 
 function isBatchResult(r: unknown): r is BatchResult {
   return !!r && typeof r === 'object' && 'queued' in r && 'needs' in r
@@ -38,6 +40,7 @@ function isReviewInvoiceResult(r: unknown): r is ReviewInvoiceResult {
 }
 
 const HEALTH_POLL_MS = 20_000
+const INTRO_SEEN_KEY = 'ic_intro_seen'
 
 export default function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>(
@@ -62,6 +65,13 @@ export default function App() {
 
   // search query for Inbox
   const [searchQuery, setSearchQuery] = useState('')
+
+  // Track whether intro modal has been dismissed (for tour auto-launch)
+  const [introSeen, setIntroSeen] = useState(
+    () => !!localStorage.getItem(INTRO_SEEN_KEY),
+  )
+
+  const { startTour } = useTour(introSeen)
 
   const escalRef = useRef<string[]>([])
   const ruleShownRef = useRef(false)
@@ -289,10 +299,13 @@ export default function App() {
             onInvoiceClick={openDetail}
             onNavigateRules={() => setView('rules')}
             onRefresh={() => void refreshInvoices()}
+            onIntroModalDismiss={() => setIntroSeen(true)}
+            onTakeTour={startTour}
           />
         )}
         {view === 'rules' && <Rules />}
         {view === 'audit' && <AuditLog live={healthLive} />}
+        {view === 'guide' && <Guide />}
       </div>
 
       <AuditSheet invoiceId={auditId} open={auditOpen} onOpenChange={setAuditOpen} />

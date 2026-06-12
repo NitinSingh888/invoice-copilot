@@ -7,7 +7,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { InboxIcon, CheckCircle2, UserCheck, Shield, HelpCircle } from 'lucide-react'
+import { InboxIcon, CheckCircle2, UserCheck, Shield, HelpCircle, Map } from 'lucide-react'
 
 const STORAGE_KEY = 'ic_intro_seen'
 
@@ -42,9 +42,13 @@ interface IntroModalProps {
   /** Controlled open/closed for the re-open via Help button */
   open?: boolean
   onOpenChange?: (v: boolean) => void
+  /** Called when the modal is dismissed (first-run or re-run) */
+  onDismiss?: () => void
+  /** Called when user clicks "Take the tour" in the footer */
+  onTakeTour?: () => void
 }
 
-export function IntroModal({ open: controlledOpen, onOpenChange }: IntroModalProps) {
+export function IntroModal({ open: controlledOpen, onOpenChange, onDismiss, onTakeTour }: IntroModalProps) {
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
@@ -62,6 +66,12 @@ export function IntroModal({ open: controlledOpen, onOpenChange }: IntroModalPro
     localStorage.setItem(STORAGE_KEY, '1')
     setOpen(false)
     onOpenChange?.(false)
+    onDismiss?.()
+  }
+
+  function handleTakeTour() {
+    dismiss()
+    onTakeTour?.()
   }
 
   return (
@@ -90,9 +100,21 @@ export function IntroModal({ open: controlledOpen, onOpenChange }: IntroModalPro
           ))}
         </div>
 
-        <Button onClick={dismiss} className="w-full mt-1">
-          Got it — let's go
-        </Button>
+        <div className="flex flex-col gap-2 mt-1">
+          <Button onClick={dismiss} className="w-full">
+            Got it — let's go
+          </Button>
+          {onTakeTour && (
+            <Button
+              variant="outline"
+              className="w-full gap-2"
+              onClick={handleTakeTour}
+            >
+              <Map className="h-4 w-4" />
+              Take the tour
+            </Button>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   )
@@ -103,6 +125,7 @@ export function HelpButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       type="button"
+      data-tour="help-btn"
       onClick={onClick}
       className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
       title="How Invoice Copilot works"

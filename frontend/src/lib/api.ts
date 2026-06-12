@@ -12,6 +12,7 @@ import type {
   DemoResetResponse,
   SampleInvoice,
   ProcessResultOut,
+  CreateRuleBody,
 } from './types'
 
 const BASE = '/api/v1'
@@ -155,6 +156,10 @@ export async function patchRule(
   status: 'active' | 'disabled',
 ): Promise<RuleOut> {
   return request(`/rules/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) })
+}
+
+export async function createRule(body: CreateRuleBody): Promise<RuleOut> {
+  return request('/rules', { method: 'POST', body: JSON.stringify(body) })
 }
 
 // ────────────────────────────────────────────────────────────────────────────
