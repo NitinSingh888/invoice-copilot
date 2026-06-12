@@ -26,5 +26,8 @@ COPY backend/src ./src
 COPY backend/scripts ./scripts
 RUN pip install .
 COPY --from=frontend /fe/dist /app/static
+# Ship the sample invoice PDFs inside the image so the /file preview route
+# works without a bind-mount in production (S3 migration TBD).
+COPY backend/data/sample_invoices /app/data/sample_invoices
 EXPOSE 8000
 CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

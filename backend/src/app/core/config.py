@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     cold_start_n: int = 2
     storage_dir: str = "./storage"
 
+    # Path to the directory containing sample invoice PDFs.
+    # Set IC_SAMPLE_INVOICES_DIR to override (e.g. a Docker volume mount path).
+    sample_invoices_dir: str = ""
+
     # LLM provider settings
     llm_provider: str = "mock"
     anthropic_api_key: str | None = None

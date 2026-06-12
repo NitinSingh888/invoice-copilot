@@ -104,14 +104,81 @@ def test_get_samples_have_required_fields(seeded_client: TestClient) -> None:
         assert "invoice_number" in sample
         assert "label" in sample
         assert "expected" in sample
+        # Every sample must now include a source_file for PDF preview
+        assert "source_file" in sample
+        assert sample["source_file"] is not None
+        assert sample["source_file"].endswith(".pdf")
 
 
-def test_get_samples_invoice_numbers_fresh(seeded_client: TestClient) -> None:
-    """Non-duplicate sample invoice numbers should be in the INV-9001..9004 range."""
+def test_get_samples_invoice_numbers_are_new(seeded_client: TestClient) -> None:
+    """Non-duplicate samples use new invoice numbers distinct from the seed batch."""
     resp = seeded_client.get("/api/v1/invoices/samples")
     non_duplicate_samples = [
         s for s in resp.json()
         if s["label"] != "Exact duplicate"  # duplicate intentionally reuses a real invoice_number
     ]
-    for sample in non_duplicate_samples:
-        assert sample["invoice_number"].startswith("INV-9")
+    # Each should have a unique, non-empty invoice_number
+    invoice_numbers = [s["invoice_number"] for s in non_duplicate_samples]
+    assert len(invoice_numbers) == len(set(invoice_numbers)), "Duplicate invoice numbers in samples"
+    for inv_num in invoice_numbers:
+        assert inv_num, "Invoice number must not be empty"
+
+
+def test_get_samples_known_invoice_numbers(seeded_client: TestClient) -> None:
+    """Verify the specific invoice numbers specified in the samples."""
+    resp = seeded_client.get("/api/v1/invoices/samples")
+    samples = {s["label"]: s for s in resp.json()}
+    assert samples["Clean auto-clear"]["invoice_number"] == "INV/2025/NEW/0001"
+    assert samples["Over-PO escalation"]["invoice_number"] == "CB-NEW-0001"
+    assert samples["Unknown vendor / no PO"]["invoice_number"] == "IBZY-NEW-01"
+    assert samples["Exact duplicate"]["invoice_number"] == "VF1005193039SCONL0303006280999"
+
+
+def test_get_samples_source_files(seeded_client: TestClient) -> None:
+    """Verify sample source_file mappings."""
+    resp = seeded_client.get("/api/v1/invoices/samples")
+    samples = {s["label"]: s for s in resp.json()}
+    assert samples["Clean auto-clear"]["source_file"] == "AzureInterior.pdf"
+    assert samples["Over-PO escalation"]["source_file"] == "coolblue1.pdf"
+    assert samples["Unknown vendor / no PO"]["source_file"] == "oyo.pdf"
+    assert samples["Exact duplicate"]["source_file"] == "saeco.pdf"
+
+
+def test_post_sample_with_source_file_serves_pdf(demo_seeded_client: TestClient) -> None:
+    """POST a sample invoice with source_file → GET /file returns 200 application/pdf."""
+    # Use the "Clean auto-clear" sample payload
+    payload = {
+        "vendor": "Azure Interior",
+        "amount": "279.84",
+        "invoice_number": "INV/2025/NEW/0001",
+        "po_number": "CUSTREF123",
+        "confidence": "HIGH",
+        "source_file": "AzureInterior.pdf",
+    }
+    post_resp = demo_seeded_client.post("/api/v1/invoices", json=payload)
+    assert post_resp.status_code == 201
+    invoice_id = post_resp.json()["invoice_id"]
+
+    file_resp = demo_seeded_client.get(f"/api/v1/invoices/{invoice_id}/file")
+    assert file_resp.status_code == 200
+    assert file_resp.headers["content-type"].startswith("application/pdf")
+    assert file_resp.content[:4] == b"%PDF"
+
+
+def test_post_sample_source_file_in_invoice_out(demo_seeded_client: TestClient) -> None:
+    """After POSTing with source_file, GET /invoices/{id} returns source_file."""
+    payload = {
+        "vendor": "OYO / Oravel Stays Private Limited",
+        "amount": "1939",
+        "invoice_number": "IBZY-NEW-01",
+        "po_number": None,
+        "confidence": "LOW",
+        "source_file": "oyo.pdf",
+    }
+    post_resp = demo_seeded_client.post("/api/v1/invoices", json=payload)
+    assert post_resp.status_code == 201
+    invoice_id = post_resp.json()["invoice_id"]
+
+    get_resp = demo_seeded_client.get(f"/api/v1/invoices/{invoice_id}")
+    assert get_resp.status_code == 200
+    assert get_resp.json()["source_file"] == "oyo.pdf"

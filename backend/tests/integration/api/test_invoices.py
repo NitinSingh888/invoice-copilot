@@ -1,10 +1,7 @@
 from __future__ import annotations
 
-import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
-
-from app.seed import seed
 
 
 # ---------------------------------------------------------------------------
@@ -113,14 +110,6 @@ def test_invoice_action_route(seeded_client: TestClient) -> None:
 # ---------------------------------------------------------------------------
 # GET /invoices/{id}/file — document preview endpoint
 # ---------------------------------------------------------------------------
-
-
-@pytest.fixture
-def demo_seeded_client(client: TestClient, db: Session) -> TestClient:
-    """Client with the full demo seed loaded (real invoice PDFs)."""
-    seed(db)
-    db.commit()
-    return client
 
 
 def test_get_invoice_file_returns_200_pdf(demo_seeded_client: TestClient) -> None:

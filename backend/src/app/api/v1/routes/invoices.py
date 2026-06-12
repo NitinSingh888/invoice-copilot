@@ -24,10 +24,12 @@ from app.services import enrichment_service, execution_service, learning_service
 
 router = APIRouter()
 
-# Directory containing the seed PDFs (relative to the project root)
-# File is at: backend/src/app/api/v1/routes/invoices.py
-# parents[5] = backend/
-_SAMPLE_INVOICES_DIR = Path(__file__).parents[5] / "data" / "sample_invoices"
+# Directory containing the seed PDFs.
+# Override with IC_SAMPLE_INVOICES_DIR for alternative mount paths.
+_DEFAULT_SAMPLE_INVOICES_DIR = Path(__file__).parents[5] / "data" / "sample_invoices"
+_SAMPLE_INVOICES_DIR = Path(
+    os.environ.get("IC_SAMPLE_INVOICES_DIR", str(_DEFAULT_SAMPLE_INVOICES_DIR))
+)
 # Directory for user-uploaded files
 _UPLOADS_DIR = Path(__file__).parents[5] / "data" / "uploads"
 
@@ -49,6 +51,10 @@ def create_invoice(
     inv = invoice_repo.get(db, result.invoice_id)
     if inv is None:
         raise NotFoundError(f"invoice {result.invoice_id} not found after processing")
+    # Persist the source_file so the /file route can serve it for preview
+    if body.source_file and not inv.source_file:
+        inv.source_file = body.source_file
+        db.flush()
     return ProcessResultOut(
         invoice_id=result.invoice_id,
         verdict=result.decision.verdict.value,
@@ -130,27 +136,30 @@ def get_sample_invoices() -> list[dict[str, object]]:
             "expected": "AUTO_CLEAR — approved vendor, amount matches PO exactly",
             "vendor": "Azure Interior",
             "amount": "279.84",
-            "invoice_number": "INV-9001",
+            "invoice_number": "INV/2025/NEW/0001",
             "po_number": "CUSTREF123",
             "confidence": "HIGH",
+            "source_file": "AzureInterior.pdf",
         },
         {
             "label": "Over-PO escalation",
             "expected": "ESCALATE — known vendor but amount ~7 % over its PO",
             "vendor": "Coolblue B.V.",
-            "amount": "767.23",  # ~14 % over PO-12572103 (670.99)
-            "invoice_number": "INV-9002",
+            "amount": "717.97",
+            "invoice_number": "CB-NEW-0001",
             "po_number": "12572103",
             "confidence": "HIGH",
+            "source_file": "coolblue1.pdf",
         },
         {
             "label": "Unknown vendor / no PO",
-            "expected": "ESCALATE — vendor not in registry, no PO referenced",
-            "vendor": "Phantom Supplies Inc",
-            "amount": "4750",
-            "invoice_number": "INV-9003",
+            "expected": "ESCALATE — unknown vendor (new in registry), no PO referenced",
+            "vendor": "OYO / Oravel Stays Private Limited",
+            "amount": "1939",
+            "invoice_number": "IBZY-NEW-01",
             "po_number": None,
-            "confidence": "MED",
+            "confidence": "LOW",
+            "source_file": "oyo.pdf",
         },
         {
             "label": "Exact duplicate",
@@ -160,6 +169,7 @@ def get_sample_invoices() -> list[dict[str, object]]:
             "invoice_number": "VF1005193039SCONL0303006280999",  # same as cleared inv-saeco-prior
             "po_number": "SCONL000000444",
             "confidence": "MED",
+            "source_file": "saeco.pdf",
         },
     ]
 
