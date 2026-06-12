@@ -20,9 +20,10 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 import app.db.models  # noqa: F401 — populate Base.metadata
-from app.api.deps import get_db, get_llm
+from app.api.deps import get_current_user, get_db, get_llm
 from app.clients.llm.mock_client import MockClient
 from app.db.base import Base
+from app.db.models.user import User
 from app.main import app
 
 TEST_DATABASE_URL = os.environ.get(
@@ -82,6 +83,11 @@ def client(_engine: Engine) -> Generator[TestClient, None, None]:
     Each request gets its own session (committed on success), so the app behaves
     exactly as in production. Created WITHOUT the lifespan context manager so the
     seed-on-boot hook does not run — tests seed explicitly.
+
+    get_current_user is overridden with a pre-verified test user so that all
+    existing tests continue to work without sending a Bearer token. Tests that
+    exercise the auth flow directly should NOT rely on this override (they use
+    the real dependency via a plain TestClient or override it themselves).
     """
     TestingSession = sessionmaker(bind=_engine, expire_on_commit=False)
 
@@ -96,16 +102,27 @@ def client(_engine: Engine) -> Generator[TestClient, None, None]:
         finally:
             session.close()
 
+    # A synthetic verified user injected into every protected request.
+    _test_user = User(
+        id="usr-test0001",
+        email="test@example.com",
+        password_hash="",
+        is_verified=True,
+        verification_token=None,
+    )
+
     app.dependency_overrides[get_db] = override_get_db
     # Force the deterministic mock LLM so tests never hit a real provider,
     # regardless of any IC_LLM_PROVIDER / API keys in a developer's .env.
     app.dependency_overrides[get_llm] = lambda: MockClient()
+    app.dependency_overrides[get_current_user] = lambda: _test_user
     test_client = TestClient(app)
     try:
         yield test_client
     finally:
         app.dependency_overrides.pop(get_db, None)
         app.dependency_overrides.pop(get_llm, None)
+        app.dependency_overrides.pop(get_current_user, None)
 
 
 @pytest.fixture

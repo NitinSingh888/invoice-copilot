@@ -21,6 +21,11 @@ class Settings(BaseSettings):
     cold_start_n: int = 2
     storage_dir: str = "./storage"
 
+    # JWT / auth settings
+    jwt_secret: str = "dev-insecure-change-me"
+    jwt_expire_minutes: int = 1440
+    jwt_algorithm: str = "HS256"
+
     # Path to the directory containing sample invoice PDFs.
     # Set IC_SAMPLE_INVOICES_DIR to override (e.g. a Docker volume mount path).
     sample_invoices_dir: str = ""
