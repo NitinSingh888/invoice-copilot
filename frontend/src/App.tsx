@@ -67,7 +67,14 @@ export default function App() {
   const [role, setRole] = useState<Role>('maya')
   const [view, setView] = useState<View>('inbox')
   const [invoices, setInvoices] = useState<InvoiceOut[]>([])
-  const [thread, setThread] = useState<ThreadMessage[]>([])
+  const [thread, setThread] = useState<ThreadMessage[]>(() => {
+    try {
+      const saved = localStorage.getItem('ic_thread')
+      return saved ? (JSON.parse(saved) as ThreadMessage[]) : []
+    } catch {
+      return []
+    }
+  })
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(true)
   const [resetting, setResetting] = useState(false)
@@ -128,17 +135,26 @@ export default function App() {
     return live
   }, [])
 
-  // initial load
+  // initial load — load PERSISTED state (the backend seeds on boot; refresh
+  // preserves processed/pending status). Use the Reset button to start fresh.
   useEffect(() => {
     void (async () => {
       try {
-        await demoReset()
         await refreshInvoices()
       } finally {
         setLoading(false)
       }
     })()
   }, [refreshInvoices])
+
+  // Persist the conversation so a refresh keeps it.
+  useEffect(() => {
+    try {
+      localStorage.setItem('ic_thread', JSON.stringify(thread))
+    } catch {
+      /* ignore quota errors */
+    }
+  }, [thread])
 
   const push = (m: ThreadMessage) => setThread((t) => [...t, m])
 
