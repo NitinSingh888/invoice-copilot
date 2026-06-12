@@ -185,6 +185,7 @@ function SamplesTab({ onSuccess }: { onSuccess: () => void }) {
         invoice_number: s.invoice_number,
         po_number: s.po_number,
         confidence: s.confidence,
+        source_file: s.source_file,
       })
       toast.success(`Added ${s.invoice_number} · received`)
       onSuccess()

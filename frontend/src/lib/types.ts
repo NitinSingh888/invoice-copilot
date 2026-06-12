@@ -35,6 +35,7 @@ export interface CreateInvoiceRequest {
   invoice_number: string
   po_number?: string
   confidence?: number
+  source_file?: string
 }
 
 export interface CreateInvoiceResponse {
@@ -127,6 +128,7 @@ export interface SampleInvoice {
   invoice_number: string
   po_number: string
   confidence: number
+  source_file: string
 }
 
 // ────────────────────────────────────────────────────────────────────────────
