@@ -111,10 +111,52 @@ export function isReviewFound(r: ReviewInvoiceResult): r is ReviewInvoiceFound {
   return !('not_found' in r)
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// New conversational-command result shapes
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface ListResultItem {
+  id: string
+  vendor: string
+  amount: string
+  invoice_number: string | null
+  status: InvoiceStatus
+  po_number: string | null
+}
+
+export interface ListResult {
+  list: ListResultItem[]
+  label: string
+  count: number
+}
+
+export interface AggregateResult {
+  aggregate: {
+    label: string
+    value: string
+  }
+}
+
+export interface BulkConfirmResult {
+  bulk: {
+    action: 'approve' | 'hold' | 'route'
+    ids: string[]
+    count: number
+    total: string
+    label: string
+    route_to: string | null
+  }
+}
+
+export interface BulkActionResponse {
+  applied: number
+  results: { id: string; status: InvoiceStatus }[]
+}
+
 export interface ChatResponse {
   reply: string
   intent: string
-  result: BatchResult | ExplainResult | ReviewInvoiceResult | null
+  result: BatchResult | ExplainResult | ReviewInvoiceResult | ListResult | AggregateResult | BulkConfirmResult | null
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -207,6 +249,8 @@ export interface CreateRuleBody {
 // UI-level types
 // ────────────────────────────────────────────────────────────────────────────
 
+export type BulkConfirmState = 'idle' | 'loading' | 'done' | 'dismissed'
+
 export type ThreadMessage =
   | { type: 'user'; content: string }
   | { type: 'agent'; content: string }
@@ -215,6 +259,9 @@ export type ThreadMessage =
   | { type: 'resolved'; invoice: InvoiceOut; action: string; byRole: Role }
   | { type: 'rule_proposal'; proposal: RuleProposeResponse }
   | { type: 'inspection'; data: ReviewInvoiceFound }
+  | { type: 'list'; data: ListResult }
+  | { type: 'aggregate'; data: AggregateResult['aggregate'] }
+  | { type: 'bulk_confirm'; data: BulkConfirmResult['bulk']; state: BulkConfirmState; applied?: number }
 
 export interface FindingDisplay {
   code: string

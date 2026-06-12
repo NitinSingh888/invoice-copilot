@@ -20,6 +20,7 @@ import {
   proposeRule,
   setRole as setApiRole,
 } from '@/lib/api'
+
 import { displayFinding, formatMoney, isToday } from '@/lib/utils'
 import type {
   BatchResult,
@@ -28,6 +29,10 @@ import type {
   Role,
   ThreadMessage,
   ReviewInvoiceResult,
+  ListResult,
+  AggregateResult,
+  BulkConfirmResult,
+  BulkConfirmState,
 } from '@/lib/types'
 import { isReviewFound } from '@/lib/types'
 import { useTour } from '@/hooks/useTour'
@@ -38,6 +43,18 @@ function isBatchResult(r: unknown): r is BatchResult {
 
 function isReviewInvoiceResult(r: unknown): r is ReviewInvoiceResult {
   return !!r && typeof r === 'object' && ('invoice' in r || 'not_found' in r)
+}
+
+function isListResult(r: unknown): r is ListResult {
+  return !!r && typeof r === 'object' && 'list' in r && Array.isArray((r as ListResult).list)
+}
+
+function isAggregateResult(r: unknown): r is AggregateResult {
+  return !!r && typeof r === 'object' && 'aggregate' in r
+}
+
+function isBulkConfirmResult(r: unknown): r is BulkConfirmResult {
+  return !!r && typeof r === 'object' && 'bulk' in r
 }
 
 const HEALTH_POLL_MS = 20_000
@@ -205,6 +222,12 @@ export default function App() {
         if (isReviewFound(res.result)) {
           push({ type: 'inspection', data: res.result })
         }
+      } else if (res.intent === 'list' && isListResult(res.result)) {
+        push({ type: 'list', data: res.result })
+      } else if (res.intent === 'aggregate' && isAggregateResult(res.result)) {
+        push({ type: 'aggregate', data: res.result.aggregate })
+      } else if (res.intent === 'bulk_confirm' && isBulkConfirmResult(res.result)) {
+        push({ type: 'bulk_confirm', data: res.result.bulk, state: 'idle' })
       }
     } catch (e) {
       push({ type: 'agent', content: `Something went wrong: ${(e as Error).message}` })
@@ -248,6 +271,16 @@ export default function App() {
   function openDetail(id: string) {
     setDetailId(id)
     setDetailOpen(true)
+  }
+
+  function handleBulkStateChange(idx: number, state: BulkConfirmState, applied?: number) {
+    setThread((t) =>
+      t.map((m, i) =>
+        i === idx && m.type === 'bulk_confirm'
+          ? { ...m, state, applied }
+          : m,
+      ),
+    )
   }
 
   const needsCount = invoices.filter((i) => i.status === 'needs').length
@@ -303,6 +336,8 @@ export default function App() {
             onInvoiceClick={openDetail}
             onNavigateRules={() => setView('rules')}
             onRefresh={() => void refreshInvoices()}
+            onBulkConfirmed={() => void refreshInvoices()}
+            onBulkStateChange={handleBulkStateChange}
             onIntroModalDismiss={() => setIntroSeen(true)}
             onTakeTour={startTour}
           />

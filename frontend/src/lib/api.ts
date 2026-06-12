@@ -13,6 +13,7 @@ import type {
   SampleInvoice,
   ProcessResultOut,
   CreateRuleBody,
+  BulkActionResponse,
 } from './types'
 
 const BASE = '/api/v1'
@@ -89,6 +90,18 @@ export async function invoiceAction(
   body: ActionRequest,
 ): Promise<InvoiceOut> {
   return request(`/invoices/${id}/action`, { method: 'POST', body: JSON.stringify(body) }, true)
+}
+
+export async function bulkAction(
+  ids: string[],
+  action: 'approve' | 'hold' | 'route',
+  route?: string | null,
+): Promise<BulkActionResponse> {
+  return request(
+    '/invoices/bulk-action',
+    { method: 'POST', body: JSON.stringify({ ids, action, route: route ?? null }) },
+    true,
+  )
 }
 
 export async function getSamples(): Promise<SampleInvoice[]> {

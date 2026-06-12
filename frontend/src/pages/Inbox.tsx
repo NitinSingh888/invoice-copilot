@@ -7,13 +7,20 @@ import { InvoiceQueue } from '@/components/invoice/InvoiceQueue'
 import { ApprovalCard } from '@/components/invoice/ApprovalCard'
 import { LearnedRuleCard } from '@/components/invoice/LearnedRuleCard'
 import { InvoiceInspectionCard } from '@/components/invoice/InvoiceInspectionCard'
+import { InvoiceListCard } from '@/components/invoice/InvoiceListCard'
+import { BulkConfirmCard } from '@/components/invoice/BulkConfirmCard'
 import { IntroModal, HelpButton } from '@/components/invoice/IntroModal'
 import { VendorAvatar } from '@/components/invoice/VendorAvatar'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { formatMoney } from '@/lib/utils'
-import type { InvoiceOut, ThreadMessage, Role } from '@/lib/types'
+import type { InvoiceOut, ThreadMessage, Role, BulkConfirmState } from '@/lib/types'
 
-const SUGGESTIONS = ["Process today's invoices", 'Review an invoice', 'Open the rules']
+const SUGGESTIONS = [
+  "Process today's invoices",
+  'How many need review?',
+  'Review vendor Acme invoices',
+  'Open the rules',
+]
 
 interface InboxProps {
   invoices: InvoiceOut[]
@@ -34,6 +41,8 @@ interface InboxProps {
   onInvoiceClick: (id: string) => void
   onNavigateRules: () => void
   onRefresh: () => void
+  onBulkConfirmed: () => void
+  onBulkStateChange: (idx: number, state: BulkConfirmState, applied?: number) => void
   /** Called when IntroModal is dismissed — used to trigger the tour auto-launch */
   onIntroModalDismiss?: () => void
   /** Called when user wants to start / replay the tour */
@@ -59,6 +68,8 @@ export function Inbox({
   onInvoiceClick,
   onNavigateRules,
   onRefresh,
+  onBulkConfirmed,
+  onBulkStateChange,
   onIntroModalDismiss,
   onTakeTour,
 }: InboxProps) {
@@ -204,12 +215,16 @@ export function Inbox({
                   {thread.map((m, i) => (
                     <ThreadItem
                       key={i}
+                      idx={i}
                       m={m}
                       role={role}
                       onResolved={onResolved}
                       onTrail={onTrail}
                       onRuleApproved={onRuleApproved}
                       onRuleDismiss={onRuleDismiss}
+                      onInvoiceClick={onInvoiceClick}
+                      onBulkConfirmed={onBulkConfirmed}
+                      onBulkStateChange={onBulkStateChange}
                     />
                   ))}
                   <div ref={threadEndRef} />
@@ -228,7 +243,6 @@ export function Inbox({
                       key={s}
                       onClick={() => {
                         if (s === 'Open the rules') onNavigateRules()
-                        else if (s === 'Review an invoice') onSend('Review invoice INV-4495')
                         else onSend(s)
                       }}
                       className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
@@ -270,19 +284,26 @@ export function Inbox({
 
 function ThreadItem({
   m,
+  idx,
   role,
   onResolved,
   onTrail,
   onRuleApproved,
   onRuleDismiss,
+  onInvoiceClick,
+  onBulkConfirmed,
+  onBulkStateChange,
 }: {
   m: ThreadMessage
+  idx: number
   role: Role
   onResolved: (inv: InvoiceOut, action: string) => void
   onTrail: (id: string) => void
   onRuleApproved: () => void
   onRuleDismiss: () => void
-  // onRefresh not needed here — handled at Inbox level
+  onInvoiceClick: (id: string) => void
+  onBulkConfirmed: () => void
+  onBulkStateChange: (idx: number, state: BulkConfirmState, applied?: number) => void
 }) {
   if (m.type === 'user') {
     return (
@@ -381,6 +402,37 @@ function ThreadItem({
           role={role}
           onTrail={onTrail}
           onResolved={onResolved}
+        />
+      </div>
+    )
+  }
+  if (m.type === 'list') {
+    return (
+      <div className="ml-8">
+        <InvoiceListCard data={m.data} onRowClick={onInvoiceClick} />
+      </div>
+    )
+  }
+  if (m.type === 'aggregate') {
+    return (
+      <div className="ml-8 rounded-lg border border-border bg-card px-5 py-4 shadow-none">
+        <div className="text-3xl font-semibold tabular-nums text-foreground">{m.data.value}</div>
+        <div className="mt-1 text-sm text-muted-foreground">{m.data.label}</div>
+      </div>
+    )
+  }
+  if (m.type === 'bulk_confirm') {
+    return (
+      <div className="ml-8">
+        <BulkConfirmCard
+          data={m.data}
+          state={m.state}
+          applied={m.applied}
+          onConfirm={(applied) => {
+            onBulkStateChange(idx, 'done', applied)
+            onBulkConfirmed()
+          }}
+          onCancel={() => onBulkStateChange(idx, 'dismissed')}
         />
       </div>
     )
