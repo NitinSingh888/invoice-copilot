@@ -17,6 +17,7 @@ import type {
 } from './types'
 
 const BASE = '/api/v1'
+const TOKEN_KEY = 'ic_token'
 
 let currentRole: Role = 'maya'
 
@@ -26,6 +27,22 @@ export function setRole(role: Role) {
 
 export function getRole(): Role {
   return currentRole
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Token helpers
+// ────────────────────────────────────────────────────────────────────────────
+
+export function setToken(token: string) {
+  localStorage.setItem(TOKEN_KEY, token)
+}
+
+export function clearToken() {
+  localStorage.removeItem(TOKEN_KEY)
+}
+
+export function getToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY)
 }
 
 async function request<T>(
@@ -42,10 +59,21 @@ async function request<T>(
     headers['X-Role'] = currentRole
   }
 
+  const token = getToken()
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+
   const res = await fetch(`${BASE}${path}`, {
     ...options,
     headers,
   })
+
+  if (res.status === 401) {
+    clearToken()
+    window.dispatchEvent(new Event('ic-unauthorized'))
+    throw new Error('Unauthorized')
+  }
 
   if (res.status === 204) {
     return null as T
@@ -57,6 +85,77 @@ async function request<T>(
   }
 
   return res.json() as Promise<T>
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Auth
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface SignupResponse {
+  message: string
+  verify_token: string
+}
+
+export interface VerifyResponse {
+  verified: boolean
+}
+
+export interface LoginResponse {
+  access_token: string
+  token_type: string
+}
+
+export interface MeResponse {
+  email: string
+  is_verified: boolean
+}
+
+async function authRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string>),
+  }
+
+  const token = getToken()
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+
+  const res = await fetch(`/api/v1${path}`, { ...options, headers })
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => res.statusText)
+    const err = new Error(`API ${res.status}: ${text}`) as Error & { status: number }
+    err.status = res.status
+    throw err
+  }
+
+  return res.json() as Promise<T>
+}
+
+export async function authSignup(email: string, password: string): Promise<SignupResponse> {
+  return authRequest<SignupResponse>('/auth/signup', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  })
+}
+
+export async function authVerify(token: string): Promise<VerifyResponse> {
+  return authRequest<VerifyResponse>('/auth/verify', {
+    method: 'POST',
+    body: JSON.stringify({ token }),
+  })
+}
+
+export async function authLogin(email: string, password: string): Promise<LoginResponse> {
+  return authRequest<LoginResponse>('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  })
+}
+
+export async function authMe(): Promise<MeResponse> {
+  return authRequest<MeResponse>('/auth/me')
 }
 
 // ────────────────────────────────────────────────────────────────────────────

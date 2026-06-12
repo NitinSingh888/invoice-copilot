@@ -12,6 +12,7 @@ import { AuditSheet } from '@/components/invoice/AuditSheet'
 import { InvoiceDetailSheet } from '@/components/invoice/InvoiceDetailSheet'
 import {
   chat,
+  clearToken,
   demoReset,
   getAudit,
   getHealth,
@@ -60,7 +61,11 @@ function isBulkConfirmResult(r: unknown): r is BulkConfirmResult {
 const HEALTH_POLL_MS = 20_000
 const INTRO_SEEN_KEY = 'ic_intro_seen'
 
-export default function App() {
+interface AppProps {
+  userEmail: string
+}
+
+export default function App({ userEmail }: AppProps) {
   const [theme, setTheme] = useState<'light' | 'dark'>(
     () => (localStorage.getItem('ic-theme') as 'light' | 'dark') || 'light',
   )
@@ -168,6 +173,11 @@ export default function App() {
       setApiRole(next)
       return next
     })
+  }
+
+  function handleLogout() {
+    clearToken()
+    window.dispatchEvent(new Event('ic-unauthorized'))
   }
 
   async function handleReset() {
@@ -315,6 +325,8 @@ export default function App() {
         resetting={resetting}
         providerLabel={providerLabel}
         providerLive={healthLive === true}
+        userEmail={userEmail}
+        onLogout={handleLogout}
       />
 
       <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden">
