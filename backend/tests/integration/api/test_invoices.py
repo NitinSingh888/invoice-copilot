@@ -143,14 +143,14 @@ def test_corpus_history_invoice_has_old_created_at(demo_seeded_client: TestClien
     """A corpus history invoice must have a created_at older than its today sibling."""
     from datetime import datetime
 
-    # inv-c000 is today; inv-c012 is history (day 1 back)
-    today_resp = demo_seeded_client.get("/api/v1/invoices/inv-c000")
-    hist_resp = demo_seeded_client.get("/api/v1/invoices/inv-c012")
-    assert today_resp.status_code == 200
-    assert hist_resp.status_code == 200
+    rows = demo_seeded_client.get("/api/v1/invoices").json()
+    corpus = [r for r in rows if (r.get("source_file") or "").lower().endswith(".jpg")]
+    today = [r for r in corpus if r["status"] == "received"]
+    history = [r for r in corpus if r["status"] != "received"]
+    assert today and history
 
-    today_ts = datetime.fromisoformat(today_resp.json()["created_at"])
-    hist_ts = datetime.fromisoformat(hist_resp.json()["created_at"])
+    today_ts = datetime.fromisoformat(today[0]["created_at"])
+    hist_ts = datetime.fromisoformat(history[0]["created_at"])
     assert hist_ts < today_ts
 
 

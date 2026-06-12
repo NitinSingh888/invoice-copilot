@@ -162,11 +162,22 @@ export function InvoiceDetailSheet({
               {loading ? (
                 <Skeleton className="w-full h-[70vh] rounded-lg" />
               ) : invoice?.source_file ? (
-                <iframe
-                  src={invoiceFileUrl(invoice.id)}
-                  className="w-full h-[70vh] rounded-lg border border-border bg-muted"
-                  title={`Invoice from ${invoice?.vendor ?? ''}`}
-                />
+                invoice.source_file.toLowerCase().endsWith('.pdf') ? (
+                  <iframe
+                    src={invoiceFileUrl(invoice.id)}
+                    className="w-full h-[70vh] rounded-lg border border-border bg-muted"
+                    title={`Invoice from ${invoice?.vendor ?? ''}`}
+                  />
+                ) : (
+                  // Image: fit to width (zoomed out) in a scrollable frame.
+                  <div className="w-full h-[70vh] overflow-auto rounded-lg border border-border bg-muted/40">
+                    <img
+                      src={invoiceFileUrl(invoice.id)}
+                      alt={`Invoice from ${invoice?.vendor ?? ''}`}
+                      className="w-full h-auto block"
+                    />
+                  </div>
+                )
               ) : (
                 <div className="w-full h-40 rounded-lg border border-dashed border-border bg-muted/30 flex flex-col items-center justify-center gap-2 text-muted-foreground">
                   <FileText className="h-8 w-8 opacity-40" />

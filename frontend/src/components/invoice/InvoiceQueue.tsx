@@ -117,11 +117,21 @@ function InvoiceRow({
         </div>
         {/* Doc preview — only mount the iframe when the hover is open and source_file exists */}
         {invoice.source_file ? (
-          <iframe
-            src={invoiceFileUrl(invoice.id)}
-            className="w-[280px] h-[340px] pointer-events-none block"
-            title={`Preview of ${invoice.vendor} invoice`}
-          />
+          invoice.source_file.toLowerCase().endsWith('.pdf') ? (
+            <iframe
+              src={invoiceFileUrl(invoice.id)}
+              className="w-[280px] h-[340px] pointer-events-none block"
+              title={`Preview of ${invoice.vendor} invoice`}
+            />
+          ) : (
+            <div className="w-[280px] h-[340px] overflow-hidden bg-muted/40">
+              <img
+                src={invoiceFileUrl(invoice.id)}
+                alt={`Preview of ${invoice.vendor} invoice`}
+                className="w-[280px] h-auto block"
+              />
+            </div>
+          )
         ) : (
           <div className="w-[280px] h-[160px] flex flex-col items-center justify-center gap-2 text-muted-foreground bg-muted/20 px-3">
             {invoice.invoice_number && (

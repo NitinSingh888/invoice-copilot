@@ -56,7 +56,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 _DATA_DIR = Path(__file__).parent.parent.parent / "data"
-_CORPUS_JSON = _DATA_DIR / "corpus_extracted.json"
+_CORPUS_JSON = _DATA_DIR / "corpus_unique.json"  # deduped: one entry per invoice_number
 
 # ---------------------------------------------------------------------------
 # SEED_VENDORS  (10 PDF curated batch — unchanged)
