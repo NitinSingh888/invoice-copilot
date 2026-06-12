@@ -4,6 +4,7 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
+from app.db.models.invoice import Invoice
 from app.repositories import audit_repo, rule_repo
 from app.services import learning_service
 
@@ -11,6 +12,13 @@ from app.services import learning_service
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+def _ensure_invoice(s: Session, inv_id: str) -> None:
+    """Create a minimal invoice row if one does not already exist."""
+    if s.get(Invoice, inv_id) is None:
+        s.add(Invoice(id=inv_id, vendor="Test", amount=Decimal("100")))
+        s.flush()
+
 
 def _add_correction(
     s: Session,
@@ -22,6 +30,7 @@ def _add_correction(
     over_pct: str,
     reason: str | None = None,
 ) -> None:
+    _ensure_invoice(s, invoice_id)
     learning_service.record_correction(
         s,
         invoice_id=invoice_id,
@@ -39,6 +48,7 @@ def _add_correction(
 
 
 def test_record_correction_persists_row(db: Session) -> None:
+    _ensure_invoice(db, "inv-1")
     corr = learning_service.record_correction(
         db,
         invoice_id="inv-1",
@@ -59,6 +69,7 @@ def test_record_correction_persists_row(db: Session) -> None:
 
 
 def test_record_correction_reason_optional(db: Session) -> None:
+    _ensure_invoice(db, "inv-2")
     corr = learning_service.record_correction(
         db,
         invoice_id="inv-2",
@@ -93,6 +104,7 @@ def test_propose_rule_returns_proposal_with_ceil_threshold(db: Session) -> None:
 def test_propose_rule_route_for_non_route_action(db: Session) -> None:
     """When user_action is 'approve', route should be 'approve' (not 'Priya')."""
     for i in range(3):
+        _ensure_invoice(db, f"inv-{i}")
         learning_service.record_correction(
             db,
             invoice_id=f"inv-{i}",
@@ -181,6 +193,7 @@ def test_activate_rule_different_finding_codes_both_stay_active(db: Session) -> 
     same vendor should leave both active (no supersede)."""
     # Add 3 corrections for OVER_TOLERANCE
     for i in range(3):
+        _ensure_invoice(db, f"ot-{i}")
         learning_service.record_correction(
             db,
             invoice_id=f"ot-{i}",
@@ -199,6 +212,7 @@ def test_activate_rule_different_finding_codes_both_stay_active(db: Session) -> 
 
     # Add 3 corrections for DUPLICATE_SUSPECT
     for i in range(3):
+        _ensure_invoice(db, f"dup-{i}")
         learning_service.record_correction(
             db,
             invoice_id=f"dup-{i}",

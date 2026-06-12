@@ -17,7 +17,8 @@ from app.core.config import get_settings
 from app.core.exceptions import NotFoundError
 from app.domain.policy.findings import Severity
 from app.domain.policy.matching import InvoiceData
-from app.repositories import invoice_repo
+from app.repositories import comment_repo, invoice_repo
+from app.schemas.comment import CommentIn, CommentOut
 from app.schemas.common import FindingOut
 from app.schemas.invoice import (
     ActionIn,
@@ -312,5 +313,41 @@ def invoice_action(
         if body.route is not None:
             fields["route"] = body.route
 
+    # For reject, pass the mandatory reason into decision_reason.
+    if body.action == "reject" and body.reason:
+        fields["decision_reason"] = body.reason
+
     inv2 = execution_service.execute(db, invoice_id, body.action, actor=role, **fields)
     return InvoiceOut.model_validate(inv2)
+
+
+# ---------------------------------------------------------------------------
+# Comments
+# ---------------------------------------------------------------------------
+
+
+@router.post("/{invoice_id}/comments", status_code=201, response_model=CommentOut)
+def add_comment(
+    invoice_id: str,
+    body: CommentIn,
+    db: Session = Depends(get_db),
+    role: str = Depends(get_role),
+) -> CommentOut:
+    """Add a comment to an invoice.  Returns 404 when the invoice does not exist."""
+    inv = invoice_repo.get(db, invoice_id)
+    if inv is None:
+        raise NotFoundError(f"invoice {invoice_id} not found")
+    comment = comment_repo.add(db, invoice_id=invoice_id, author=role, body=body.body)
+    return CommentOut.model_validate(comment)
+
+
+@router.get("/{invoice_id}/comments", response_model=list[CommentOut])
+def list_comments(
+    invoice_id: str,
+    db: Session = Depends(get_db),
+) -> list[CommentOut]:
+    """List comments for an invoice (oldest first).  Returns 404 for unknown invoices."""
+    inv = invoice_repo.get(db, invoice_id)
+    if inv is None:
+        raise NotFoundError(f"invoice {invoice_id} not found")
+    return [CommentOut.model_validate(c) for c in comment_repo.list_for_invoice(db, invoice_id)]

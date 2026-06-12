@@ -131,7 +131,8 @@ def process_invoice(
     # ------------------------------------------------------------------ #
     # Stage 5 — Persist verdict on the Invoice row                        #
     # ------------------------------------------------------------------ #
-    matched_po_id = enr.po_match.po.po_number if enr.po_match.po is not None else None
+    # Use the PO's primary key (not po_number) for the FK-constrained matched_po_id column.
+    matched_po_id = enr.po_match.po.po_id if enr.po_match.po is not None else None
 
     if decision.verdict is Verdict.AUTO_CLEAR:
         # Status will be set to "queued" by execution_service below.

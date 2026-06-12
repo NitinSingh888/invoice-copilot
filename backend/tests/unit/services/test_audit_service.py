@@ -1,11 +1,20 @@
 from __future__ import annotations
 
+from decimal import Decimal
+
 from sqlalchemy.orm import Session
 
+from app.db.models.invoice import Invoice
 from app.services import audit_service
 
 
+def _add_invoice(db: Session, inv_id: str) -> None:
+    db.add(Invoice(id=inv_id, vendor="Test", amount=Decimal("100")))
+    db.flush()
+
+
 def test_record_returns_audit_event(db: Session) -> None:
+    _add_invoice(db, "inv-1")
     event = audit_service.record(
         db,
         invoice_id="inv-1",
@@ -21,6 +30,8 @@ def test_record_returns_audit_event(db: Session) -> None:
 
 
 def test_trail_returns_events_for_invoice(db: Session) -> None:
+    _add_invoice(db, "inv-1")
+    _add_invoice(db, "inv-2")
     audit_service.record(db, invoice_id="inv-1", actor="maya", module="m", action="a1")
     audit_service.record(db, invoice_id="inv-2", actor="bob", module="m", action="a2")
     audit_service.record(db, invoice_id="inv-1", actor="maya", module="m", action="a3")
@@ -32,6 +43,7 @@ def test_trail_returns_events_for_invoice(db: Session) -> None:
 
 
 def test_verify_valid_chain(db: Session) -> None:
+    _add_invoice(db, "inv-1")
     audit_service.record(db, invoice_id="inv-1", actor="sys", module="m", action="first")
     audit_service.record(db, invoice_id="inv-1", actor="sys", module="m", action="second")
     assert audit_service.verify(db) is True

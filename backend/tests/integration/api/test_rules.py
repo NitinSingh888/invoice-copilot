@@ -17,6 +17,12 @@ from app.db.models.correction import Correction
 @pytest.fixture()
 def client_with_corrections(client: TestClient, db: Session) -> TestClient:
     """client with 3 Correction rows committed to the test DB."""
+    from app.db.models.invoice import Invoice
+
+    # Parent invoices must exist before corrections due to FK constraint.
+    for i in range(3):
+        db.add(Invoice(id=f"inv-seed-{i}", vendor="Acme Corp", amount=Decimal("100")))
+    db.flush()
     for i, over_pct in enumerate(["0.06", "0.04", "0.07"]):
         db.add(
             Correction(

@@ -13,14 +13,19 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api.v1.router import api_router
 from app.core.exceptions import AppError, NotFoundError
-from app.db.session import SessionLocal, engine, init_db
+from app.db.session import SessionLocal, run_migrations
 
 logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    init_db(engine)
+    # Run Alembic migrations to head before serving any requests.
+    try:
+        run_migrations()
+    except Exception:
+        logger.exception("DB migration failed — continuing anyway (may be stale schema)")
+
     try:
         from app.seed import seed, seed_demo_user
 

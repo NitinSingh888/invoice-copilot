@@ -76,6 +76,10 @@ def test_rule_roundtrip(db: Session) -> None:
 
 
 def test_correction_roundtrip(db: Session) -> None:
+    # FK: correction.invoice_id → invoices.id — parent must exist first.
+    db.add(Invoice(id="inv1", vendor="ACME", amount=Decimal("9500.00")))
+    db.flush()
+
     c = Correction(
         id="corr1",
         invoice_id="inv1",
@@ -93,6 +97,10 @@ def test_correction_roundtrip(db: Session) -> None:
 
 
 def test_audit_event_roundtrip(db: Session) -> None:
+    # FK: audit_event.invoice_id → invoices.id — parent must exist first.
+    db.add(Invoice(id="inv1", vendor="ACME", amount=Decimal("9500.00")))
+    db.flush()
+
     ae = AuditEvent(
         invoice_id="inv1",
         actor="system",

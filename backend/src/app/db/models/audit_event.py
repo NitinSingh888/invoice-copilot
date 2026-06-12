@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from sqlalchemy import DateTime, JSON, func
+from sqlalchemy import DateTime, ForeignKey, JSON, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -13,9 +13,15 @@ class AuditEvent(Base):
     __tablename__ = "audit_events"
 
     seq: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    invoice_id: Mapped[str | None] = mapped_column(index=True, default=None)
+    invoice_id: Mapped[str | None] = mapped_column(
+        ForeignKey("invoices.id", name="fk_audit_events_invoice_id", ondelete="SET NULL"),
+        index=True,
+        default=None,
+    )
     ts: Mapped[datetime] = mapped_column(
-        DateTime, server_default=func.now(), default=lambda: datetime.now(timezone.utc)
+        DateTime(timezone=True),
+        server_default=func.now(),
+        default=lambda: datetime.now(timezone.utc),
     )
     actor: Mapped[str]
     module: Mapped[str]
