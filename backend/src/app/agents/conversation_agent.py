@@ -172,8 +172,15 @@ def handle(
     # APPROVE / HOLD / ROUTE — bulk confirm (no execution)                #
     # ------------------------------------------------------------------ #
     if cmd.action in ("approve", "hold", "route"):
-        base_all = invoice_repo.list_all(db)
-        candidates = _filter_invoices(db, cmd, base=base_all)
+        # Bulk actions only target ACTIONABLE invoices (awaiting a decision) —
+        # never re-touch already-cleared history — unless the user names a status.
+        if cmd.status:
+            base = invoice_repo.list_by_status(db, cmd.status)
+        else:
+            base = invoice_repo.list_by_status(db, "received") + invoice_repo.list_by_status(
+                db, "needs"
+            )
+        candidates = _filter_invoices(db, cmd, base=base)
         label = _filter_label(cmd) or "matching"
         ids = [inv.id for inv in candidates]
         total_amount = sum(
