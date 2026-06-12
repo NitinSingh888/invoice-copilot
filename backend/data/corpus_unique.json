@@ -1,0 +1,802 @@
+[
+  {
+    "file": "inv-c000.jpg",
+    "vendor": "Andrews, Kirby and Valdez",
+    "amount": "6204.19",
+    "po_number": null,
+    "invoice_number": "51109338",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c002.jpg",
+    "vendor": "Fitzpatrick and Sons",
+    "amount": "6860.45",
+    "po_number": null,
+    "invoice_number": "12847181",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c004.jpg",
+    "vendor": "Palmer Ltd",
+    "amount": "44745.59",
+    "po_number": null,
+    "invoice_number": "19471831",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c006.jpg",
+    "vendor": "Reyes, Holloway and Lee",
+    "amount": "819.06",
+    "po_number": null,
+    "invoice_number": "16273983",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c008.jpg",
+    "vendor": "Johnson-Martin",
+    "amount": "797.91",
+    "po_number": null,
+    "invoice_number": "89969473",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c010.jpg",
+    "vendor": "Obrien Group",
+    "amount": "732.34",
+    "po_number": null,
+    "invoice_number": "72128555",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c012.jpg",
+    "vendor": "Wood, Simpson and Summers",
+    "amount": "5138.35",
+    "po_number": null,
+    "invoice_number": "11580833",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c014.jpg",
+    "vendor": "Hall-Boyd",
+    "amount": "12973.88",
+    "po_number": null,
+    "invoice_number": "74589240",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c016.jpg",
+    "vendor": "Padilla-Miller",
+    "amount": "124.79",
+    "po_number": null,
+    "invoice_number": "81978187",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c018.jpg",
+    "vendor": "Michael, Farrell and Lee",
+    "amount": "6573.33",
+    "po_number": null,
+    "invoice_number": "99314100",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c020.jpg",
+    "vendor": "Torres and Sons",
+    "amount": "91.27",
+    "po_number": null,
+    "invoice_number": "68688408",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c022.jpg",
+    "vendor": "Nicholson, Miller and Webster",
+    "amount": "5459.75",
+    "po_number": null,
+    "invoice_number": "13407985",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c024.jpg",
+    "vendor": "Schmidt LLC",
+    "amount": "237.29",
+    "po_number": null,
+    "invoice_number": "57986024",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c026.jpg",
+    "vendor": "Tran, Hurst and Rodgers",
+    "amount": "24.95",
+    "po_number": null,
+    "invoice_number": "77596491",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c028.jpg",
+    "vendor": "Porter-Perkins",
+    "amount": "1469.45",
+    "po_number": null,
+    "invoice_number": "46506594",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c030.jpg",
+    "vendor": "Austin and Sons",
+    "amount": "316.10",
+    "po_number": null,
+    "invoice_number": "44456646",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c032.jpg",
+    "vendor": "Dominguez, Jackson and Steele",
+    "amount": "442.07",
+    "po_number": null,
+    "invoice_number": "98858130",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c034.jpg",
+    "vendor": "Lopez, Murray and Johnston",
+    "amount": "518.80",
+    "po_number": null,
+    "invoice_number": "36187296",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c036.jpg",
+    "vendor": "Lozano, Wang and Smith",
+    "amount": "188.11",
+    "po_number": null,
+    "invoice_number": "56908352",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c038.jpg",
+    "vendor": "Kerr, Ryan and Gomez",
+    "amount": "327.08",
+    "po_number": null,
+    "invoice_number": "15001300",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c040.jpg",
+    "vendor": "Bennett, Chavez and Vazquez",
+    "amount": "4958.16",
+    "po_number": null,
+    "invoice_number": "96430839",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c042.jpg",
+    "vendor": "Holmes-Whitney",
+    "amount": "47320.32",
+    "po_number": null,
+    "invoice_number": "37877758",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c044.jpg",
+    "vendor": "Harris LLC",
+    "amount": "18281.24",
+    "po_number": null,
+    "invoice_number": "33102457",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c046.jpg",
+    "vendor": "Johnson, Barrett and King",
+    "amount": "98.95",
+    "po_number": null,
+    "invoice_number": "65028137",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c048.jpg",
+    "vendor": "Smith, Schaefer and Gonzalez",
+    "amount": "7920.00",
+    "po_number": null,
+    "invoice_number": "22083742",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c050.jpg",
+    "vendor": "Sims-Olson",
+    "amount": "9256.59",
+    "po_number": null,
+    "invoice_number": "51295021",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c052.jpg",
+    "vendor": "Proctor, Levy and Willis",
+    "amount": "838.68",
+    "po_number": null,
+    "invoice_number": "44848471",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c054.jpg",
+    "vendor": "George, Casey and Harris",
+    "amount": "1140.24",
+    "po_number": null,
+    "invoice_number": "32830026",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c056.jpg",
+    "vendor": "Fitzgerald Group",
+    "amount": "7920.58",
+    "po_number": null,
+    "invoice_number": "54661411",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c058.jpg",
+    "vendor": "Dalton, Chambers and Howard",
+    "amount": "2934.70",
+    "po_number": null,
+    "invoice_number": "58379529",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c060.jpg",
+    "vendor": "Garrett, Gonzales and Hurley",
+    "amount": "29.67",
+    "po_number": null,
+    "invoice_number": "20434959",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c062.jpg",
+    "vendor": "Coleman Inc",
+    "amount": "21151.66",
+    "po_number": null,
+    "invoice_number": "10942693",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c064.jpg",
+    "vendor": "Cook Ltd",
+    "amount": "329.84",
+    "po_number": null,
+    "invoice_number": "97388190",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c066.jpg",
+    "vendor": "Hines Ltd",
+    "amount": "373.98",
+    "po_number": null,
+    "invoice_number": "60456703",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c068.jpg",
+    "vendor": "Campos LLC",
+    "amount": "722.11",
+    "po_number": null,
+    "invoice_number": "78605417",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c070.jpg",
+    "vendor": "Campbell-Thomas",
+    "amount": "8479.08",
+    "po_number": null,
+    "invoice_number": "94786467",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c072.jpg",
+    "vendor": "Carter Inc",
+    "amount": "151.38",
+    "po_number": null,
+    "invoice_number": "61669642",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c074.jpg",
+    "vendor": "Floyd-Figueroa",
+    "amount": "2022.82",
+    "po_number": null,
+    "invoice_number": "37060863",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c076.jpg",
+    "vendor": "Cruz-Carter",
+    "amount": "3004.96",
+    "po_number": null,
+    "invoice_number": "35593328",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c078.jpg",
+    "vendor": "West Group",
+    "amount": "191.26",
+    "po_number": null,
+    "invoice_number": "74980573",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c080.jpg",
+    "vendor": "Davis, Thomas and Larson",
+    "amount": "194521.70",
+    "po_number": null,
+    "invoice_number": "69875170",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c082.jpg",
+    "vendor": "Potter-Gordon",
+    "amount": "15574.11",
+    "po_number": null,
+    "invoice_number": "86736203",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c084.jpg",
+    "vendor": "Williamson-Hernandez",
+    "amount": "2804.92",
+    "po_number": null,
+    "invoice_number": "37107781",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c086.jpg",
+    "vendor": "Wright, Gonzalez and Gomez",
+    "amount": "81.68",
+    "po_number": null,
+    "invoice_number": "12323459",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c088.jpg",
+    "vendor": "Burns, King and Serrano",
+    "amount": "549.98",
+    "po_number": null,
+    "invoice_number": "34967709",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c090.jpg",
+    "vendor": "Wilson-Todd",
+    "amount": "759.03",
+    "po_number": null,
+    "invoice_number": "76778037",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c092.jpg",
+    "vendor": "Davis, Evans and Cooper",
+    "amount": "4524.28",
+    "po_number": null,
+    "invoice_number": "24342647",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c094.jpg",
+    "vendor": "Frazier-Rose",
+    "amount": "529.78",
+    "po_number": null,
+    "invoice_number": "96947403",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c096.jpg",
+    "vendor": "Martinez PLC",
+    "amount": "342.87",
+    "po_number": null,
+    "invoice_number": "26700559",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c098.jpg",
+    "vendor": "Lee-Brown",
+    "amount": "25738.94",
+    "po_number": null,
+    "invoice_number": "53553822",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c100.jpg",
+    "vendor": "Phillips-Bailey",
+    "amount": "5439.26",
+    "po_number": null,
+    "invoice_number": "72761554",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c101.jpg",
+    "vendor": "Parker, Khan and Parker",
+    "amount": "321.95",
+    "po_number": null,
+    "invoice_number": "35312696",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c102.jpg",
+    "vendor": "Foster-Beard",
+    "amount": "6097.29",
+    "po_number": null,
+    "invoice_number": "60605668",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c103.jpg",
+    "vendor": "Baker-Smith",
+    "amount": "353.66",
+    "po_number": null,
+    "invoice_number": "90188228",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c104.jpg",
+    "vendor": "Adams PLC",
+    "amount": "70577.35",
+    "po_number": null,
+    "invoice_number": "57290992",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c105.jpg",
+    "vendor": "Salazar-Zavala",
+    "amount": "465.17",
+    "po_number": null,
+    "invoice_number": "98788913",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c106.jpg",
+    "vendor": "Maxwell Inc",
+    "amount": "514.02",
+    "po_number": null,
+    "invoice_number": "40700258",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c107.jpg",
+    "vendor": "Jackson Ltd",
+    "amount": "360.58",
+    "po_number": null,
+    "invoice_number": "20012449",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c108.jpg",
+    "vendor": "Campos-Hawkins",
+    "amount": "986.70",
+    "po_number": null,
+    "invoice_number": "26622011",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c109.jpg",
+    "vendor": "Wagner, Jensen and Key",
+    "amount": "1669.75",
+    "po_number": null,
+    "invoice_number": "91296589",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c110.jpg",
+    "vendor": "Cross, Pearson and Murillo",
+    "amount": "10.94",
+    "po_number": null,
+    "invoice_number": "33270121",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c111.jpg",
+    "vendor": "Spencer Group",
+    "amount": "178.83",
+    "po_number": null,
+    "invoice_number": "85238418",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c112.jpg",
+    "vendor": "Huff-Lowe",
+    "amount": "4416.24",
+    "po_number": null,
+    "invoice_number": "97022721",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c113.jpg",
+    "vendor": "Klein and Sons",
+    "amount": "3.29",
+    "po_number": null,
+    "invoice_number": "74184749",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c114.jpg",
+    "vendor": "Smith-Strickland",
+    "amount": "55.00",
+    "po_number": null,
+    "invoice_number": "94772624",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c115.jpg",
+    "vendor": "Patrick, Strong and Miller",
+    "amount": "1028.39",
+    "po_number": null,
+    "invoice_number": "84752922",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c116.jpg",
+    "vendor": "James LLC",
+    "amount": "375.04",
+    "po_number": null,
+    "invoice_number": "93053660",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c117.jpg",
+    "vendor": "Campbell LLC",
+    "amount": "3717.66",
+    "po_number": null,
+    "invoice_number": "68766191",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c118.jpg",
+    "vendor": "Pierce, Barber and Howard",
+    "amount": "701.72",
+    "po_number": null,
+    "invoice_number": "72869097",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c119.jpg",
+    "vendor": "Harris Group",
+    "amount": "9908.95",
+    "po_number": null,
+    "invoice_number": "33035917",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c120.jpg",
+    "vendor": "Sanchez, Richards and James",
+    "amount": "791.96",
+    "po_number": null,
+    "invoice_number": "83642064",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c121.jpg",
+    "vendor": "Welch PLC",
+    "amount": "2617.93",
+    "po_number": null,
+    "invoice_number": "22956460",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c122.jpg",
+    "vendor": "Fernandez-Evans",
+    "amount": "8621.78",
+    "po_number": null,
+    "invoice_number": "47037480",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c123.jpg",
+    "vendor": "Marshall-Mullins",
+    "amount": "7737.70",
+    "po_number": null,
+    "invoice_number": "13891625",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c124.jpg",
+    "vendor": "Lambert-Gomez",
+    "amount": "1084.56",
+    "po_number": null,
+    "invoice_number": "29800590",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c125.jpg",
+    "vendor": "Walker, Andrews and Leblanc",
+    "amount": "274.42",
+    "po_number": null,
+    "invoice_number": "96569585",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c126.jpg",
+    "vendor": "Burch PLC",
+    "amount": "19.77",
+    "po_number": null,
+    "invoice_number": "60022910",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c127.jpg",
+    "vendor": "Mcdowell, Odom and Crosby",
+    "amount": "63.32",
+    "po_number": null,
+    "invoice_number": "73144550",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c128.jpg",
+    "vendor": "Williams, Brown and Mcmillan",
+    "amount": "891.00",
+    "po_number": null,
+    "invoice_number": "41250328",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c129.jpg",
+    "vendor": "Thompson, Evans and Parker",
+    "amount": "66.99",
+    "po_number": null,
+    "invoice_number": "10737107",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c130.jpg",
+    "vendor": "Hicks-Miller",
+    "amount": "74294.55",
+    "po_number": null,
+    "invoice_number": "57416834",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c131.jpg",
+    "vendor": "Peterson, Hester and Mckee",
+    "amount": "714.95",
+    "po_number": null,
+    "invoice_number": "86164702",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c132.jpg",
+    "vendor": "Preston Inc",
+    "amount": "3454.44",
+    "po_number": null,
+    "invoice_number": "53221040",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c133.jpg",
+    "vendor": "Cervantes, Carpenter and Morse",
+    "amount": "10818.95",
+    "po_number": null,
+    "invoice_number": "36051373",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c134.jpg",
+    "vendor": "Brown and Sons",
+    "amount": "274.95",
+    "po_number": null,
+    "invoice_number": "87454899",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c135.jpg",
+    "vendor": "Faulkner Group",
+    "amount": "5605.15",
+    "po_number": null,
+    "invoice_number": "36475327",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c136.jpg",
+    "vendor": "Flores, David and Fleming",
+    "amount": "44.00",
+    "po_number": null,
+    "invoice_number": "77169807",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c137.jpg",
+    "vendor": "Anderson, Brown and Thompson",
+    "amount": "73824.49",
+    "po_number": null,
+    "invoice_number": "61782695",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c138.jpg",
+    "vendor": "Solomon-Murray",
+    "amount": "743.58",
+    "po_number": null,
+    "invoice_number": "38510682",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c139.jpg",
+    "vendor": "Mckay Inc",
+    "amount": "10319.10",
+    "po_number": null,
+    "invoice_number": "61527431",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c140.jpg",
+    "vendor": "Wood, Nichols and Perry",
+    "amount": "43.95",
+    "po_number": null,
+    "invoice_number": "73783721",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c141.jpg",
+    "vendor": "Daniel Group",
+    "amount": "104.97",
+    "po_number": null,
+    "invoice_number": "52701374",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c142.jpg",
+    "vendor": "Ellis-Thomas",
+    "amount": "17740.25",
+    "po_number": null,
+    "invoice_number": "61809225",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c143.jpg",
+    "vendor": "Stephens, Lopez and Ramirez",
+    "amount": "415.73",
+    "po_number": null,
+    "invoice_number": "79990560",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c144.jpg",
+    "vendor": "Barry-Roberts",
+    "amount": "6198.39",
+    "po_number": null,
+    "invoice_number": "91781923",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c145.jpg",
+    "vendor": "Fleming and Sons",
+    "amount": "205.21",
+    "po_number": null,
+    "invoice_number": "49900465",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c146.jpg",
+    "vendor": "Patton-Barrett",
+    "amount": "3620.84",
+    "po_number": null,
+    "invoice_number": "48440593",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c147.jpg",
+    "vendor": "Garcia, Avery and Hernandez",
+    "amount": "1721.01",
+    "po_number": null,
+    "invoice_number": "33299774",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c148.jpg",
+    "vendor": "Mendez, Gibson and Shaffer",
+    "amount": "10865.23",
+    "po_number": null,
+    "invoice_number": "50027163",
+    "confidence": "LOW"
+  },
+  {
+    "file": "inv-c149.jpg",
+    "vendor": "Herrera PLC",
+    "amount": "16.45",
+    "po_number": null,
+    "invoice_number": "24826419",
+    "confidence": "LOW"
+  }
+]
