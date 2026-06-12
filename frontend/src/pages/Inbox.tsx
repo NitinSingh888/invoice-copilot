@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react'
-import { Send, Sparkles } from 'lucide-react'
+import { Map, Send, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -34,6 +34,10 @@ interface InboxProps {
   onInvoiceClick: (id: string) => void
   onNavigateRules: () => void
   onRefresh: () => void
+  /** Called when IntroModal is dismissed — used to trigger the tour auto-launch */
+  onIntroModalDismiss?: () => void
+  /** Called when user wants to start / replay the tour */
+  onTakeTour?: () => void
 }
 
 export function Inbox({
@@ -55,6 +59,8 @@ export function Inbox({
   onInvoiceClick,
   onNavigateRules,
   onRefresh,
+  onIntroModalDismiss,
+  onTakeTour,
 }: InboxProps) {
   const threadEndRef = useRef<HTMLDivElement>(null)
   const intro = thread.length === 0
@@ -79,7 +85,12 @@ export function Inbox({
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <IntroModal open={helpOpen} onOpenChange={setHelpOpen} />
+      <IntroModal
+        open={helpOpen}
+        onOpenChange={setHelpOpen}
+        onDismiss={onIntroModalDismiss}
+        onTakeTour={onTakeTour}
+      />
       <PageHeader
         title="Inbox"
         subtitle="Your invoice queue — Copilot clears the safe ones and asks you about the rest"
@@ -88,7 +99,22 @@ export function Inbox({
         showSearch
         searchQuery={searchQuery}
         onSearchChange={onSearchChange}
-        actions={<HelpButton onClick={() => setHelpOpen(true)} />}
+        actions={
+          <div className="flex items-center gap-1">
+            <HelpButton onClick={() => setHelpOpen(true)} />
+            {onTakeTour && (
+              <button
+                type="button"
+                onClick={onTakeTour}
+                className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                title="Take the product tour"
+              >
+                <Map className="h-3.5 w-3.5" />
+                Tour
+              </button>
+            )}
+          </div>
+        }
       />
 
       <div className="flex min-h-0 flex-1">
@@ -144,6 +170,7 @@ export function Inbox({
                   </p>
                   <div className="mt-5 flex items-center gap-3 flex-wrap justify-center">
                     <Button
+                      data-tour="process-btn"
                       className="gap-2"
                       onClick={() => onSend("Process today's invoices")}
                     >

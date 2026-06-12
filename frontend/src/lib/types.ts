@@ -194,6 +194,14 @@ export interface DemoResetResponse {
   received: number
 }
 
+export interface CreateRuleBody {
+  vendor: string
+  finding_code?: string
+  max_over_pct?: number | null
+  min_amount?: number | null
+  route: string
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // UI-level types
 // ────────────────────────────────────────────────────────────────────────────

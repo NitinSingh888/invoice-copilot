@@ -1,9 +1,9 @@
-import { LayoutDashboard, Inbox, BookOpen, ScrollText, Sun, Moon, RotateCcw } from 'lucide-react'
+import { LayoutDashboard, Inbox, BookOpen, ScrollText, Sun, Moon, RotateCcw, GraduationCap } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import type { Role } from '@/lib/types'
 
-export type View = 'dashboard' | 'inbox' | 'rules' | 'audit'
+export type View = 'dashboard' | 'inbox' | 'rules' | 'audit' | 'guide'
 
 interface SidebarProps {
   view: View
@@ -40,7 +40,10 @@ export function Sidebar({
 }: SidebarProps) {
   return (
     <TooltipProvider>
-      <aside className="w-[220px] shrink-0 flex flex-col h-full bg-card border-r border-border select-none">
+      <aside
+        className="w-[220px] shrink-0 flex flex-col h-full bg-card border-r border-border select-none"
+        data-tour="sidebar"
+      >
         {/* Brand */}
         <div className="flex items-center gap-2.5 px-4 py-4 border-b border-border">
           {/* SVG Logo mark */}
@@ -125,6 +128,25 @@ export function Sidebar({
             )}
             <ScrollText className={cn('h-4 w-4 shrink-0', view === 'audit' ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground')} />
             <span>Audit Log</span>
+          </button>
+
+          {/* Guide nav item */}
+          <button
+            data-tour="guide-nav"
+            onClick={() => onViewChange('guide')}
+            className={cn(
+              'relative w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-all duration-150',
+              'group',
+              view === 'guide'
+                ? 'bg-accent text-accent-foreground'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/60',
+            )}
+          >
+            {view === 'guide' && (
+              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full bg-primary" />
+            )}
+            <GraduationCap className={cn('h-4 w-4 shrink-0', view === 'guide' ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground')} />
+            <span>Guide</span>
           </button>
         </nav>
 
