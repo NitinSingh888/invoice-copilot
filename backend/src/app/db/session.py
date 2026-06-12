@@ -52,11 +52,14 @@ def run_migrations() -> None:
     import alembic.config
     import alembic.command
 
-    # Locate the alembic.ini next to this package (backend root).
-    # Works whether running from source or installed.
-    ini_path = Path(__file__).parents[4] / "alembic.ini"
+    # Locate the alembic.ini at the backend root (/app in the container,
+    # backend/ from source). __file__ = <root>/src/app/db/session.py → parents[3].
+    ini_path = Path(__file__).parents[3] / "alembic.ini"
 
     cfg = alembic.config.Config(str(ini_path))
+    # Belt-and-suspenders: the ini's %(here)s should resolve script_location,
+    # but set it explicitly so a misread interpolation can't break boot.
+    cfg.set_main_option("script_location", str(ini_path.parent / "migrations"))
     # Override URL so we always use the app settings, not the ini file value.
     cfg.set_main_option("sqlalchemy.url", _settings.database_url)
     alembic.command.upgrade(cfg, "head")

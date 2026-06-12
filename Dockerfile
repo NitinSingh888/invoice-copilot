@@ -24,6 +24,8 @@ WORKDIR /app
 COPY backend/pyproject.toml ./
 COPY backend/src ./src
 COPY backend/scripts ./scripts
+COPY backend/alembic.ini ./
+COPY backend/migrations ./migrations
 RUN pip install .
 COPY --from=frontend /fe/dist /app/static
 # Ship the sample invoice PDFs inside the image so the /file preview route
