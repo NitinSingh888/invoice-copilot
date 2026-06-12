@@ -102,12 +102,22 @@ class AnthropicClient:
         try:
             client = self._get_client()
             if image_b64:
+                # Detect media type from the base64 magic prefix — Anthropic rejects
+                # a mismatch (e.g. JPEG bytes declared as image/png).
+                if image_b64.startswith("/9j/"):
+                    media_type = "image/jpeg"
+                elif image_b64.startswith("R0lGOD"):
+                    media_type = "image/gif"
+                elif image_b64.startswith("UklGR"):
+                    media_type = "image/webp"
+                else:
+                    media_type = "image/png"
                 content: list[dict[str, Any]] = [
                     {
                         "type": "image",
                         "source": {
                             "type": "base64",
-                            "media_type": "image/png",
+                            "media_type": media_type,
                             "data": image_b64,
                         },
                     },
