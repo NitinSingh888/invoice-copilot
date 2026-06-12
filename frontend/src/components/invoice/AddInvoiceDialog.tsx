@@ -154,7 +154,7 @@ function UploadTab({ onSuccess }: { onSuccess: () => void }) {
         onChange={onInputChange}
       />
       <p className="text-[11px] text-muted-foreground text-center">
-        Sample PDFs are in the repo's <code className="font-mono">samples/</code> folder.
+        No invoice handy? Try the <strong>Samples</strong> tab, or drop any PDF — Copilot extracts it.
       </p>
     </div>
   )
