@@ -1,7 +1,9 @@
-import { LayoutDashboard, Inbox, BookOpen, ScrollText, Sun, Moon, RotateCcw, GraduationCap, History, LogOut } from 'lucide-react'
+import { useState } from 'react'
+import { LayoutDashboard, Inbox, BookOpen, ScrollText, Sun, Moon, RotateCcw, GraduationCap, History, LogOut, Users } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
-import type { Role } from '@/lib/types'
+import { TeamDialog } from './TeamDialog'
+import type { Role, OrgRole } from '@/lib/types'
 
 export type View = 'dashboard' | 'inbox' | 'history' | 'rules' | 'audit' | 'guide'
 
@@ -18,6 +20,8 @@ interface SidebarProps {
   providerLabel: string
   providerLive: boolean
   userEmail?: string
+  orgName?: string | null
+  orgRole?: OrgRole | null
   onLogout?: () => void
 }
 
@@ -41,8 +45,13 @@ export function Sidebar({
   providerLabel,
   providerLive,
   userEmail,
+  orgName,
+  orgRole,
   onLogout,
 }: SidebarProps) {
+  const [teamOpen, setTeamOpen] = useState(false)
+  const isAdmin = orgRole === 'admin'
+
   return (
     <TooltipProvider>
       <aside
@@ -153,6 +162,20 @@ export function Sidebar({
             <GraduationCap className={cn('h-4 w-4 shrink-0', view === 'guide' ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground')} />
             <span>Guide</span>
           </button>
+
+          {/* Admin-only: Team */}
+          {isAdmin && (
+            <button
+              onClick={() => setTeamOpen(true)}
+              className={cn(
+                'relative w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-all duration-150',
+                'group text-muted-foreground hover:text-foreground hover:bg-muted/60',
+              )}
+            >
+              <Users className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-foreground" />
+              <span>Team</span>
+            </button>
+          )}
         </nav>
 
         {/* Bottom: role switcher + theme + reset */}
@@ -204,21 +227,28 @@ export function Sidebar({
             </Tooltip>
           </div>
 
-          {/* Logged-in user + logout */}
+          {/* Logged-in user + org + role + logout */}
           {userEmail && (
-            <div className="flex items-center gap-1.5 px-1">
-              <span
-                className="flex-1 truncate text-[10px] text-muted-foreground font-mono"
-                title={userEmail}
-              >
-                {userEmail}
-              </span>
+            <div className="flex items-start gap-1.5 px-1">
+              <div className="flex-1 min-w-0">
+                <span
+                  className="block truncate text-[10px] text-muted-foreground font-mono leading-tight"
+                  title={userEmail}
+                >
+                  {userEmail}
+                </span>
+                {(orgName || orgRole) && (
+                  <span className="block truncate text-[10px] text-muted-foreground leading-tight mt-0.5">
+                    {[orgName, orgRole].filter(Boolean).join(' · ')}
+                  </span>
+                )}
+              </div>
               {onLogout && (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
                       onClick={onLogout}
-                      className="flex items-center justify-center p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-150"
+                      className="flex items-center justify-center p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-150 shrink-0 mt-0.5"
                       aria-label="Log out"
                     >
                       <LogOut className="h-3.5 w-3.5" />
@@ -242,6 +272,8 @@ export function Sidebar({
           </div>
         </div>
       </aside>
+
+      <TeamDialog open={teamOpen} onOpenChange={setTeamOpen} />
     </TooltipProvider>
   )
 }

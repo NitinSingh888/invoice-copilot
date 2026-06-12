@@ -16,7 +16,8 @@ export function statusVariant(status: InvoiceStatus): StatusVariant {
   switch (status) {
     case 'queued': return 'success'
     case 'needs': return 'warning'
-    case 'blocked': return 'destructive'
+    case 'blocked':
+    case 'rejected': return 'destructive'
     case 'routed':
     case 'held': return 'muted'
     default: return 'default'
@@ -32,6 +33,7 @@ export function statusLabel(status: InvoiceStatus): string {
     case 'routed': return 'Routed'
     case 'held': return 'On hold'
     case 'cleared': return 'Cleared'
+    case 'rejected': return 'Rejected'
     default: return status
   }
 }

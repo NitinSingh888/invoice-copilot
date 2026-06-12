@@ -11,7 +11,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <TooltipProvider delayDuration={400}>
       <AuthGate>
-        {(email) => <App userEmail={email} />}
+        {(user) => <App userEmail={user.email} orgName={user.orgName} orgRole={user.orgRole} />}
       </AuthGate>
     </TooltipProvider>
   </StrictMode>,
