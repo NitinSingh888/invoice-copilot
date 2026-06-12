@@ -4,7 +4,7 @@ from decimal import Decimal
 from typing import Any
 
 from .base import LLMClient
-from .types import AgentReply, ChatMessage, ExtractedInvoice
+from .types import AgentReply, ChatMessage, CommandSpec, ExtractedInvoice
 
 
 class FailoverClient:
@@ -86,6 +86,23 @@ class FailoverClient:
                 )
                 self.last_provider = client.name
                 return result
+            except Exception:
+                continue
+        raise RuntimeError("FailoverClient: no clients available")  # pragma: no cover
+
+    def parse_command(
+        self, *, message: str, history: list[ChatMessage]
+    ) -> CommandSpec:
+        for i, client in enumerate(self._clients):
+            is_last = i == len(self._clients) - 1
+            if is_last:
+                result_cmd = client.parse_command(message=message, history=history)
+                self.last_provider = client.name
+                return result_cmd
+            try:
+                result_cmd = client.parse_command(message=message, history=history)
+                self.last_provider = client.name
+                return result_cmd
             except Exception:
                 continue
         raise RuntimeError("FailoverClient: no clients available")  # pragma: no cover

@@ -3,7 +3,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Any, Protocol
 
-from .types import AgentReply, ChatMessage, ExtractedInvoice
+from .types import AgentReply, ChatMessage, CommandSpec, ExtractedInvoice
 
 
 class LLMClient(Protocol):
@@ -25,3 +25,7 @@ class LLMClient(Protocol):
         threshold_pct: Decimal,
         route: str,
     ) -> str: ...
+
+    def parse_command(
+        self, *, message: str, history: list[ChatMessage]
+    ) -> CommandSpec: ...
