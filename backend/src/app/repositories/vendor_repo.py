@@ -18,11 +18,16 @@ def add(s: Session, vendor: Vendor) -> Vendor:
     return vendor
 
 
-def get(s: Session, vendor_id: str) -> Vendor | None:
-    return s.get(Vendor, vendor_id)
+def get(s: Session, vendor_id: str, *, org_id: str | None = None) -> Vendor | None:
+    v = s.get(Vendor, vendor_id)
+    if v is None:
+        return None
+    if org_id is not None and v.org_id != org_id:
+        return None
+    return v
 
 
-def resolve(s: Session, name: str) -> Vendor | None:
+def resolve(s: Session, name: str, *, org_id: str | None = None) -> Vendor | None:
     """Alias-aware vendor lookup.
 
     Priority:
@@ -30,19 +35,23 @@ def resolve(s: Session, name: str) -> Vendor | None:
     2. Case/whitespace-normalised match on canonical_name.
     3. Raw ``name`` or its normalised form appears in a vendor's ``aliases``.
     """
+    q = s.query(Vendor)
+    if org_id is not None:
+        q = q.filter(Vendor.org_id == org_id)
+
     # 1. Exact canonical_name match
-    exact = s.query(Vendor).filter(Vendor.canonical_name == name).first()
+    exact = q.filter(Vendor.canonical_name == name).first()
     if exact is not None:
         return exact
 
     # 2. Normalised canonical_name match
     norm = _normalize(name)
-    for vendor in s.query(Vendor).all():
+    for vendor in q.all():
         if _normalize(vendor.canonical_name) == norm:
             return vendor
 
     # 3. aliases match (raw or normalised)
-    for vendor in s.query(Vendor).all():
+    for vendor in q.all():
         aliases: list[str] = vendor.aliases or []
         if name in aliases:
             return vendor
@@ -52,7 +61,7 @@ def resolve(s: Session, name: str) -> Vendor | None:
     return None
 
 
-def resolve_from_text(s: Session, text: str) -> Vendor | None:
+def resolve_from_text(s: Session, text: str, *, org_id: str | None = None) -> Vendor | None:
     """Find the vendor whose canonical_name (or alias) best matches *text*.
 
     Matching strategy (in priority order):
@@ -69,7 +78,11 @@ def resolve_from_text(s: Session, text: str) -> Vendor | None:
     best_len = 0
     best_priority = 999  # lower = better
 
-    for vendor in s.query(Vendor).all():
+    q = s.query(Vendor)
+    if org_id is not None:
+        q = q.filter(Vendor.org_id == org_id)
+
+    for vendor in q.all():
         cname_norm = _normalize(vendor.canonical_name)
         priority: int | None = None
         match_len = 0
@@ -111,8 +124,8 @@ def resolve_from_text(s: Session, text: str) -> Vendor | None:
     return best
 
 
-def status_of(s: Session, name: str) -> str:
-    vendor = resolve(s, name)
+def status_of(s: Session, name: str, *, org_id: str | None = None) -> str:
+    vendor = resolve(s, name, org_id=org_id)
     if vendor is None:
         return "new"
     return vendor.status

@@ -14,9 +14,11 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.db.models.invoice import Invoice
+from app.db.models.organization import Organization
 from app.db.models.purchase_order import PurchaseOrder
 from app.db.models.vendor import Vendor
 from app.repositories import invoice_repo
+from tests.conftest import TEST_ORG_ID, TEST_ORG_NAME
 
 
 # ---------------------------------------------------------------------------
@@ -52,45 +54,53 @@ def cmd_db(db: Session) -> Session:
 
     settings = get_settings()
 
+    # Ensure the test org row exists so FK constraints pass.
+    if db.get(Organization, TEST_ORG_ID) is None:
+        db.add(Organization(id=TEST_ORG_ID, name=TEST_ORG_NAME))
+        db.flush()
+
     # Vendors
     for v_id, name in [
         ("v-cb", "Coolblue B.V."),
         ("v-palmer", "Palmer LLC"),
         ("v-acme", "Acme Corp"),
     ]:
-        db.add(Vendor(id=v_id, canonical_name=name, status="approved"))
+        db.add(Vendor(id=v_id, canonical_name=name, status="approved", org_id=TEST_ORG_ID))
 
     # POs
-    db.add(PurchaseOrder(id="po-cb-1", po_number="PO-CB-1", vendor="Coolblue B.V.", amount=Decimal("700")))
-    db.add(PurchaseOrder(id="po-palmer-1", po_number="PO-PALMER-1", vendor="Palmer LLC", amount=Decimal("200")))
-    db.add(PurchaseOrder(id="po-acme-1", po_number="PO-1", vendor="Acme Corp", amount=Decimal("10000")))
+    db.add(PurchaseOrder(id="po-cb-1", po_number="PO-CB-1", vendor="Coolblue B.V.", amount=Decimal("700"), org_id=TEST_ORG_ID))
+    db.add(PurchaseOrder(id="po-palmer-1", po_number="PO-PALMER-1", vendor="Palmer LLC", amount=Decimal("200"), org_id=TEST_ORG_ID))
+    db.add(PurchaseOrder(id="po-acme-1", po_number="PO-1", vendor="Acme Corp", amount=Decimal("10000"), org_id=TEST_ORG_ID))
 
     # Cleared history for cold-start check
     for i in range(settings.cold_start_n):
         db.add(Invoice(
             id=f"hist-cb-{i}", status="cleared", vendor="Coolblue B.V.",
             amount=Decimal("700"), invoice_number=f"HIST-CB-{i}",
+            org_id=TEST_ORG_ID,
         ))
         db.add(Invoice(
             id=f"hist-pal-{i}", status="cleared", vendor="Palmer LLC",
             amount=Decimal("200"), invoice_number=f"HIST-PAL-{i}",
+            org_id=TEST_ORG_ID,
         ))
         db.add(Invoice(
             id=f"hist-acme-{i}", status="cleared", vendor="Acme Corp",
             amount=Decimal("1000"), invoice_number=f"HIST-ACME-{i}",
+            org_id=TEST_ORG_ID,
         ))
 
     # Received invoices
-    db.add(Invoice(id="inv-cb-1", status="received", vendor="Coolblue B.V.", amount=Decimal("80.00"), invoice_number="CB-001", po_number="PO-CB-1"))
-    db.add(Invoice(id="inv-cb-2", status="received", vendor="Coolblue B.V.", amount=Decimal("120.00"), invoice_number="CB-002", po_number="PO-CB-1"))
-    db.add(Invoice(id="inv-cb-3", status="received", vendor="Coolblue B.V.", amount=Decimal("45.00"), invoice_number="CB-003", po_number="PO-CB-1"))
-    db.add(Invoice(id="inv-pal-1", status="received", vendor="Palmer LLC", amount=Decimal("60.00"), invoice_number="PAL-001", po_number="PO-PALMER-1"))
-    db.add(Invoice(id="inv-pal-2", status="received", vendor="Palmer LLC", amount=Decimal("90.00"), invoice_number="PAL-002", po_number="PO-PALMER-1"))
-    db.add(Invoice(id="inv-other", status="received", vendor="Acme Corp", amount=Decimal("200.00"), invoice_number="ACME-001", po_number="PO-1"))
+    db.add(Invoice(id="inv-cb-1", status="received", vendor="Coolblue B.V.", amount=Decimal("80.00"), invoice_number="CB-001", po_number="PO-CB-1", org_id=TEST_ORG_ID))
+    db.add(Invoice(id="inv-cb-2", status="received", vendor="Coolblue B.V.", amount=Decimal("120.00"), invoice_number="CB-002", po_number="PO-CB-1", org_id=TEST_ORG_ID))
+    db.add(Invoice(id="inv-cb-3", status="received", vendor="Coolblue B.V.", amount=Decimal("45.00"), invoice_number="CB-003", po_number="PO-CB-1", org_id=TEST_ORG_ID))
+    db.add(Invoice(id="inv-pal-1", status="received", vendor="Palmer LLC", amount=Decimal("60.00"), invoice_number="PAL-001", po_number="PO-PALMER-1", org_id=TEST_ORG_ID))
+    db.add(Invoice(id="inv-pal-2", status="received", vendor="Palmer LLC", amount=Decimal("90.00"), invoice_number="PAL-002", po_number="PO-PALMER-1", org_id=TEST_ORG_ID))
+    db.add(Invoice(id="inv-other", status="received", vendor="Acme Corp", amount=Decimal("200.00"), invoice_number="ACME-001", po_number="PO-1", org_id=TEST_ORG_ID))
 
     # Escalated (needs) invoices
-    db.add(Invoice(id="inv-needs1", status="needs", vendor="Acme Corp", amount=Decimal("30.00"), invoice_number="NEEDS-001"))
-    db.add(Invoice(id="inv-needs2", status="needs", vendor="Palmer LLC", amount=Decimal("40.00"), invoice_number="NEEDS-002"))
+    db.add(Invoice(id="inv-needs1", status="needs", vendor="Acme Corp", amount=Decimal("30.00"), invoice_number="NEEDS-001", org_id=TEST_ORG_ID))
+    db.add(Invoice(id="inv-needs2", status="needs", vendor="Palmer LLC", amount=Decimal("40.00"), invoice_number="NEEDS-002", org_id=TEST_ORG_ID))
 
     db.commit()
     return db

@@ -7,6 +7,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.db.models.correction import Correction
+from app.db.models.organization import Organization
+from tests.conftest import TEST_ORG_ID, TEST_ORG_NAME
 
 
 # ---------------------------------------------------------------------------
@@ -19,9 +21,14 @@ def client_with_corrections(client: TestClient, db: Session) -> TestClient:
     """client with 3 Correction rows committed to the test DB."""
     from app.db.models.invoice import Invoice
 
+    # Ensure the test org row exists so FK constraints pass.
+    if db.get(Organization, TEST_ORG_ID) is None:
+        db.add(Organization(id=TEST_ORG_ID, name=TEST_ORG_NAME))
+        db.flush()
+
     # Parent invoices must exist before corrections due to FK constraint.
     for i in range(3):
-        db.add(Invoice(id=f"inv-seed-{i}", vendor="Acme Corp", amount=Decimal("100")))
+        db.add(Invoice(id=f"inv-seed-{i}", vendor="Acme Corp", amount=Decimal("100"), org_id=TEST_ORG_ID))
     db.flush()
     for i, over_pct in enumerate(["0.06", "0.04", "0.07"]):
         db.add(
@@ -32,6 +39,7 @@ def client_with_corrections(client: TestClient, db: Session) -> TestClient:
                 finding_code="OVER_TOLERANCE",
                 user_action="route",
                 over_pct=Decimal(over_pct),
+                org_id=TEST_ORG_ID,
             )
         )
     db.commit()

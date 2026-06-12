@@ -19,22 +19,29 @@ class Enrichment:
     recent_same_amount: list[InvoiceData]
 
 
-def enrich(s: Session, invoice_data: InvoiceData) -> Enrichment:
+def enrich(s: Session, invoice_data: InvoiceData, *, org_id: str | None = None) -> Enrichment:
     settings = get_settings()
 
-    vendor_status = vendor_repo.status_of(s, invoice_data.vendor)
+    vendor_status = vendor_repo.status_of(s, invoice_data.vendor, org_id=org_id)
 
     if invoice_data.po_number:
-        pos = [po_repo.to_domain(p) for p in po_repo.get_by_number(s, invoice_data.po_number)]
+        pos = [
+            po_repo.to_domain(p)
+            for p in po_repo.get_by_number(s, invoice_data.po_number, org_id=org_id)
+        ]
     else:
         pos = []
     po_match = match_po(invoice_data, pos)
 
-    cleared_exact_rows = invoice_repo.cleared_exact(s, invoice_data.vendor, invoice_data.invoice_number)
+    cleared_exact_rows = invoice_repo.cleared_exact(
+        s, invoice_data.vendor, invoice_data.invoice_number, org_id=org_id
+    )
     cleared_exact = [invoice_repo.to_domain(i) for i in cleared_exact_rows]
 
     since = datetime.now(timezone.utc) - timedelta(days=settings.duplicate_window_days)
-    recent_rows = invoice_repo.recent_same_amount(s, invoice_data.vendor, invoice_data.amount, since)
+    recent_rows = invoice_repo.recent_same_amount(
+        s, invoice_data.vendor, invoice_data.amount, since, org_id=org_id
+    )
     recent_same_amount = [invoice_repo.to_domain(i) for i in recent_rows]
 
     return Enrichment(

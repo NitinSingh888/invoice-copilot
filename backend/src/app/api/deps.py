@@ -64,8 +64,17 @@ def get_current_user(
         )
     if not user.is_verified:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Email not verified",
-            headers={"WWW-Authenticate": "Bearer"},
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your account is pending admin approval.",
         )
     return user
+
+
+def get_current_org(user: User = Depends(get_current_user)) -> str:
+    """Return the org_id of the authenticated user."""
+    if user.org_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User does not belong to an organization",
+        )
+    return user.org_id

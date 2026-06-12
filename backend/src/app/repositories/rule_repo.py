@@ -12,16 +12,27 @@ def add(s: Session, rule: Rule) -> Rule:
     return rule
 
 
-def get(s: Session, rule_id: str) -> Rule | None:
-    return s.get(Rule, rule_id)
+def get(s: Session, rule_id: str, *, org_id: str | None = None) -> Rule | None:
+    r = s.get(Rule, rule_id)
+    if r is None:
+        return None
+    if org_id is not None and r.org_id != org_id:
+        return None
+    return r
 
 
-def list_all(s: Session) -> list[Rule]:
-    return list(s.query(Rule).all())
+def list_all(s: Session, *, org_id: str | None = None) -> list[Rule]:
+    q = s.query(Rule)
+    if org_id is not None:
+        q = q.filter(Rule.org_id == org_id)
+    return list(q.all())
 
 
-def list_active(s: Session) -> list[Rule]:
-    return list(s.query(Rule).filter(Rule.status == "active").all())
+def list_active(s: Session, *, org_id: str | None = None) -> list[Rule]:
+    q = s.query(Rule).filter(Rule.status == "active")
+    if org_id is not None:
+        q = q.filter(Rule.org_id == org_id)
+    return list(q.all())
 
 
 def set_status(s: Session, rule_id: str, status: str) -> Rule:

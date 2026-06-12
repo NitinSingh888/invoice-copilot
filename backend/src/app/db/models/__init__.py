@@ -4,6 +4,7 @@ from app.db.models.audit_event import AuditEvent
 from app.db.models.comment import Comment
 from app.db.models.correction import Correction
 from app.db.models.invoice import Invoice
+from app.db.models.organization import Organization
 from app.db.models.purchase_order import PurchaseOrder
 from app.db.models.rule import Rule
 from app.db.models.user import User
@@ -14,6 +15,7 @@ __all__ = [
     "Comment",
     "Correction",
     "Invoice",
+    "Organization",
     "PurchaseOrder",
     "Rule",
     "User",

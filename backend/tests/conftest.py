@@ -23,6 +23,7 @@ import app.db.models  # noqa: F401 — populate Base.metadata
 from app.api.deps import get_current_user, get_db, get_llm
 from app.clients.llm.mock_client import MockClient
 from app.db.base import Base
+from app.db.models.organization import Organization
 from app.db.models.user import User
 from app.main import app
 
@@ -30,6 +31,12 @@ TEST_DATABASE_URL = os.environ.get(
     "IC_TEST_DATABASE_URL",
     "postgresql+psycopg://copilot:copilot@localhost:5432/copilot_test",
 )
+
+# The test org / user used by the client fixture
+TEST_ORG_ID = "org-test0001"
+TEST_ORG_NAME = "Test Org"
+TEST_USER_ID = "usr-test0001"
+TEST_USER_EMAIL = "test@example.com"
 
 
 def _ensure_test_database() -> None:
@@ -84,10 +91,10 @@ def client(_engine: Engine) -> Generator[TestClient, None, None]:
     exactly as in production. Created WITHOUT the lifespan context manager so the
     seed-on-boot hook does not run — tests seed explicitly.
 
-    get_current_user is overridden with a pre-verified test user so that all
-    existing tests continue to work without sending a Bearer token. Tests that
-    exercise the auth flow directly should NOT rely on this override (they use
-    the real dependency via a plain TestClient or override it themselves).
+    get_current_user is overridden with a pre-verified test user (with org_id)
+    so that all existing tests continue to work without sending a Bearer token.
+    Tests that exercise the auth flow directly should NOT rely on this override
+    (they use the real dependency via a plain TestClient or override it themselves).
     """
     TestingSession = sessionmaker(bind=_engine, expire_on_commit=False)
 
@@ -102,13 +109,15 @@ def client(_engine: Engine) -> Generator[TestClient, None, None]:
         finally:
             session.close()
 
-    # A synthetic verified user injected into every protected request.
+    # A synthetic verified user with org_id injected into every protected request.
     _test_user = User(
-        id="usr-test0001",
-        email="test@example.com",
+        id=TEST_USER_ID,
+        email=TEST_USER_EMAIL,
         password_hash="",
         is_verified=True,
         verification_token=None,
+        org_id=TEST_ORG_ID,
+        role="admin",
     )
 
     app.dependency_overrides[get_db] = override_get_db
@@ -116,6 +125,14 @@ def client(_engine: Engine) -> Generator[TestClient, None, None]:
     # regardless of any IC_LLM_PROVIDER / API keys in a developer's .env.
     app.dependency_overrides[get_llm] = lambda: MockClient()
     app.dependency_overrides[get_current_user] = lambda: _test_user
+
+    # Ensure the test Organization row exists so FK constraints on org_id pass
+    # for any test that inserts entities directly with org_id=TEST_ORG_ID.
+    with Session(_engine, expire_on_commit=False) as _setup_session:
+        if _setup_session.get(Organization, TEST_ORG_ID) is None:
+            _setup_session.add(Organization(id=TEST_ORG_ID, name=TEST_ORG_NAME))
+            _setup_session.commit()
+
     test_client = TestClient(app)
     try:
         yield test_client
@@ -130,6 +147,11 @@ def seeded_client(client: TestClient, db: Session) -> TestClient:
     """A TestClient with the standard 'clearable' fixtures seeded (approved
     vendor + PO + cold-start history) and committed."""
     from tests.integration.api._seed import seed_clearable
+
+    # Ensure the test org row exists so FK constraints pass
+    if db.get(Organization, TEST_ORG_ID) is None:
+        db.add(Organization(id=TEST_ORG_ID, name=TEST_ORG_NAME))
+        db.flush()
 
     seed_clearable(db)
     db.commit()

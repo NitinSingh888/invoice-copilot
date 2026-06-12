@@ -18,26 +18,37 @@ def add(s: Session, inv: Invoice) -> Invoice:
     return inv
 
 
-def get(s: Session, invoice_id: str) -> Invoice | None:
-    return s.get(Invoice, invoice_id)
+def get(s: Session, invoice_id: str, *, org_id: str | None = None) -> Invoice | None:
+    inv = s.get(Invoice, invoice_id)
+    if inv is None:
+        return None
+    if org_id is not None and inv.org_id != org_id:
+        return None
+    return inv
 
 
-def get_by_invoice_number(s: Session, invoice_number: str) -> Invoice | None:
+def get_by_invoice_number(
+    s: Session, invoice_number: str, *, org_id: str | None = None
+) -> Invoice | None:
     """Find an invoice by its (vendor-assigned) invoice_number — any format."""
-    return (
-        s.query(Invoice)
-        .filter(Invoice.invoice_number == invoice_number)
-        .order_by(Invoice.created_at.desc())
-        .first()
-    )
+    q = s.query(Invoice).filter(Invoice.invoice_number == invoice_number)
+    if org_id is not None:
+        q = q.filter(Invoice.org_id == org_id)
+    return q.order_by(Invoice.created_at.desc()).first()
 
 
-def list_all(s: Session) -> list[Invoice]:
-    return list(s.query(Invoice).filter(Invoice.is_deleted.is_(False)).all())
+def list_all(s: Session, *, org_id: str | None = None) -> list[Invoice]:
+    q = s.query(Invoice).filter(Invoice.is_deleted.is_(False))
+    if org_id is not None:
+        q = q.filter(Invoice.org_id == org_id)
+    return list(q.all())
 
 
-def list_by_status(s: Session, status: str) -> list[Invoice]:
-    return list(s.query(Invoice).filter(Invoice.status == status).all())
+def list_by_status(s: Session, status: str, *, org_id: str | None = None) -> list[Invoice]:
+    q = s.query(Invoice).filter(Invoice.status == status)
+    if org_id is not None:
+        q = q.filter(Invoice.org_id == org_id)
+    return list(q.all())
 
 
 def set_status(s: Session, invoice_id: str, status: str, **fields: Any) -> Invoice:
@@ -51,41 +62,45 @@ def set_status(s: Session, invoice_id: str, status: str, **fields: Any) -> Invoi
     return inv
 
 
-def cleared_exact(s: Session, vendor: str, invoice_number: str) -> list[Invoice]:
-    return list(
-        s.query(Invoice)
-        .filter(
-            Invoice.status.in_(_CLEARED_STATUSES),
-            Invoice.vendor == vendor,
-            Invoice.invoice_number == invoice_number,
-        )
-        .all()
+def cleared_exact(
+    s: Session, vendor: str, invoice_number: str, *, org_id: str | None = None
+) -> list[Invoice]:
+    q = s.query(Invoice).filter(
+        Invoice.status.in_(_CLEARED_STATUSES),
+        Invoice.vendor == vendor,
+        Invoice.invoice_number == invoice_number,
     )
+    if org_id is not None:
+        q = q.filter(Invoice.org_id == org_id)
+    return list(q.all())
 
 
 def recent_same_amount(
-    s: Session, vendor: str, amount: Decimal, since: datetime
+    s: Session,
+    vendor: str,
+    amount: Decimal,
+    since: datetime,
+    *,
+    org_id: str | None = None,
 ) -> list[Invoice]:
-    return list(
-        s.query(Invoice)
-        .filter(
-            Invoice.vendor == vendor,
-            Invoice.amount == amount,
-            Invoice.created_at >= since,
-        )
-        .all()
+    q = s.query(Invoice).filter(
+        Invoice.vendor == vendor,
+        Invoice.amount == amount,
+        Invoice.created_at >= since,
     )
+    if org_id is not None:
+        q = q.filter(Invoice.org_id == org_id)
+    return list(q.all())
 
 
-def count_cleared_for_vendor(s: Session, vendor: str) -> int:
-    return int(
-        s.query(Invoice)
-        .filter(
-            Invoice.status.in_(_CLEARED_STATUSES),
-            Invoice.vendor == vendor,
-        )
-        .count()
+def count_cleared_for_vendor(s: Session, vendor: str, *, org_id: str | None = None) -> int:
+    q = s.query(Invoice).filter(
+        Invoice.status.in_(_CLEARED_STATUSES),
+        Invoice.vendor == vendor,
     )
+    if org_id is not None:
+        q = q.filter(Invoice.org_id == org_id)
+    return int(q.count())
 
 
 def to_domain(inv: Invoice) -> matching_domain.InvoiceData:

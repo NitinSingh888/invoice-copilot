@@ -12,8 +12,13 @@ def add(s: Session, po: PurchaseOrder) -> PurchaseOrder:
     return po
 
 
-def get_by_number(s: Session, po_number: str) -> list[PurchaseOrder]:
-    return list(s.query(PurchaseOrder).filter(PurchaseOrder.po_number == po_number).all())
+def get_by_number(
+    s: Session, po_number: str, *, org_id: str | None = None
+) -> list[PurchaseOrder]:
+    q = s.query(PurchaseOrder).filter(PurchaseOrder.po_number == po_number)
+    if org_id is not None:
+        q = q.filter(PurchaseOrder.org_id == org_id)
+    return list(q.all())
 
 
 def to_domain(po: PurchaseOrder) -> matching_domain.PurchaseOrder:

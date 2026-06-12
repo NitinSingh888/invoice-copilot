@@ -30,6 +30,7 @@ class Invoice(Base):
         Index("ix_invoices_vendor", "vendor"),
         Index("ix_invoices_created_at", "created_at"),
         Index("ix_invoices_is_deleted", "is_deleted"),
+        Index("ix_invoices_org_id", "org_id"),
     )
 
     id: Mapped[str] = mapped_column(primary_key=True)
@@ -56,6 +57,12 @@ class Invoice(Base):
     # FK to vendors table (optional; vendor name string kept for denorm)
     vendor_id: Mapped[str | None] = mapped_column(
         ForeignKey("vendors.id", name="fk_invoices_vendor_id", ondelete="SET NULL"),
+        default=None,
+    )
+
+    # Organization FK
+    org_id: Mapped[str | None] = mapped_column(
+        ForeignKey("organizations.id", name="fk_invoices_org_id", ondelete="SET NULL"),
         default=None,
     )
 

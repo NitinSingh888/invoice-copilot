@@ -29,6 +29,7 @@ def handle(
     message: str,
     history: list[ChatMessageIn],
     role: str,
+    org_id: str | None = None,
 ) -> tuple[str, str, dict[str, Any] | None]:
     """Handle a user message via the conversation agent.
 
@@ -56,14 +57,14 @@ def handle(
     # Base = today's received invoices; filters narrow the set.           #
     # ------------------------------------------------------------------ #
     if cmd.action == "process":
-        base = invoice_repo.list_by_status(db, "received")
-        candidates = _filter_invoices(db, cmd, base=base)
+        base = invoice_repo.list_by_status(db, "received", org_id=org_id)
+        candidates = _filter_invoices(db, cmd, base=base, org_id=org_id)
         label = _filter_label(cmd) or "today"
         queued = needs = blocked = 0
         for inv in candidates:
             invoice_data = invoice_repo.to_domain(inv)
             confidence = inv.confidence or "HIGH"
-            proc = pipeline_service.process_invoice(db, invoice_data, confidence)
+            proc = pipeline_service.process_invoice(db, invoice_data, confidence, org_id=org_id)
             verdict = proc.decision.verdict.value
             if verdict == "AUTO_CLEAR":
                 queued += 1
@@ -95,11 +96,11 @@ def handle(
 
         # Explicit invoice_ref from parser
         if cmd.invoice_ref:
-            inv_ref: Invoice | None = _resolve_by_ref(db, cmd.invoice_ref)
+            inv_ref: Invoice | None = _resolve_by_ref(db, cmd.invoice_ref, org_id=org_id)
             if inv_ref is None:
-                inv_ref = _resolve_target(db, message)
+                inv_ref = _resolve_target(db, message, org_id=org_id)
             if inv_ref is not None:
-                review_result = _build_review_result(db, inv_ref)
+                review_result = _build_review_result(db, inv_ref, org_id=org_id)
                 label_text = inv_ref.invoice_number or inv_ref.id
                 text = f"Here's {label_text} from {inv_ref.vendor}:"
                 return (text, "review_invoice", review_result)
@@ -112,9 +113,9 @@ def handle(
 
         # No filters at all — check if the message names a specific entity
         if not _has_filters:
-            inv_ent: Invoice | None = _resolve_target(db, message)
+            inv_ent: Invoice | None = _resolve_target(db, message, org_id=org_id)
             if inv_ent is not None:
-                review_result = _build_review_result(db, inv_ent)
+                review_result = _build_review_result(db, inv_ent, org_id=org_id)
                 label_text = inv_ent.invoice_number or inv_ent.id
                 text = f"Here's {label_text} from {inv_ent.vendor}:"
                 return (text, "review_invoice", review_result)
@@ -127,8 +128,8 @@ def handle(
             )
 
         # Has filters → list mode
-        base_all = invoice_repo.list_all(db)
-        candidates = _filter_invoices(db, cmd, base=base_all)
+        base_all = invoice_repo.list_all(db, org_id=org_id)
+        candidates = _filter_invoices(db, cmd, base=base_all, org_id=org_id)
         # A single match — or an "explain/why" question — shows the full review
         # card, whose summary explains the reason (e.g. "explain why SAECO was
         # blocked"). For "why" with several matches, pick the one whose state the
@@ -142,7 +143,7 @@ def handle(
                     if match:
                         target = match[0]
                         break
-            review_result = _build_review_result(db, target)
+            review_result = _build_review_result(db, target, org_id=org_id)
             inv0 = review_result["invoice"]
             text = f"Here's {inv0.get('invoice_number') or inv0.get('id')} from {inv0.get('vendor')}:"
             return (text, "review_invoice", review_result)
@@ -170,8 +171,8 @@ def handle(
     # COUNT / SUM                                                          #
     # ------------------------------------------------------------------ #
     if cmd.action in ("count", "sum"):
-        base_all = invoice_repo.list_all(db)
-        candidates = _filter_invoices(db, cmd, base=base_all)
+        base_all = invoice_repo.list_all(db, org_id=org_id)
+        candidates = _filter_invoices(db, cmd, base=base_all, org_id=org_id)
         label = _filter_label(cmd) or "all"
         if cmd.action == "count":
             value_str = str(len(candidates))
@@ -192,12 +193,12 @@ def handle(
         # Bulk actions only target ACTIONABLE invoices (awaiting a decision) —
         # never re-touch already-cleared history — unless the user names a status.
         if cmd.status:
-            base = invoice_repo.list_by_status(db, cmd.status)
+            base = invoice_repo.list_by_status(db, cmd.status, org_id=org_id)
         else:
-            base = invoice_repo.list_by_status(db, "received") + invoice_repo.list_by_status(
-                db, "needs"
+            base = invoice_repo.list_by_status(db, "received", org_id=org_id) + invoice_repo.list_by_status(
+                db, "needs", org_id=org_id
             )
-        candidates = _filter_invoices(db, cmd, base=base)
+        candidates = _filter_invoices(db, cmd, base=base, org_id=org_id)
         label = _filter_label(cmd) or "matching"
         ids = [inv.id for inv in candidates]
         total_amount = sum(
@@ -238,6 +239,7 @@ def _filter_invoices(
     cmd: CommandSpec,
     *,
     base: list[Invoice],
+    org_id: str | None = None,
 ) -> list[Invoice]:
     """Return the subset of *base* that satisfies all filters in *cmd*."""
     result: list[Invoice] = list(base)
@@ -248,7 +250,7 @@ def _filter_invoices(
     # vendor filter — fuzzy via vendor_repo or case-insensitive substring
     if cmd.vendor:
         vendor_name: str | None = None
-        resolved = vendor_repo.resolve_from_text(db, cmd.vendor)
+        resolved = vendor_repo.resolve_from_text(db, cmd.vendor, org_id=org_id)
         if resolved is not None:
             vendor_name = resolved.canonical_name
         result = [
@@ -303,13 +305,13 @@ def _filter_label(cmd: CommandSpec) -> str:
     return ", ".join(parts)
 
 
-def _resolve_by_ref(db: Session, ref: str) -> Invoice | None:
+def _resolve_by_ref(db: Session, ref: str, *, org_id: str | None = None) -> Invoice | None:
     """Resolve an invoice by id or invoice_number token."""
     for cand in (ref, ref.lower(), ref.upper()):
-        inv = invoice_repo.get(db, cand)
+        inv = invoice_repo.get(db, cand, org_id=org_id)
         if inv is not None:
             return inv
-    return invoice_repo.get_by_invoice_number(db, ref)
+    return invoice_repo.get_by_invoice_number(db, ref, org_id=org_id)
 
 
 # ---------------------------------------------------------------------------
@@ -317,40 +319,40 @@ def _resolve_by_ref(db: Session, ref: str) -> Invoice | None:
 # ---------------------------------------------------------------------------
 
 
-def _resolve_target(db: Session, message: str) -> Invoice | None:
+def _resolve_target(db: Session, message: str, *, org_id: str | None = None) -> Invoice | None:
     """Resolve the invoice a message refers to — by id, invoice_number, or vendor."""
     tokens = re.findall(r"[A-Za-z0-9][A-Za-z0-9/_.-]{3,}", message)
     for tok in tokens:
         for cand in (tok, tok.lower(), tok.upper()):
-            inv = invoice_repo.get(db, cand)
+            inv = invoice_repo.get(db, cand, org_id=org_id)
             if inv is not None:
                 return inv
-        inv = invoice_repo.get_by_invoice_number(db, tok)
+        inv = invoice_repo.get_by_invoice_number(db, tok, org_id=org_id)
         if inv is not None:
             return inv
-    vendor = vendor_repo.resolve_from_text(db, message)
+    vendor = vendor_repo.resolve_from_text(db, message, org_id=org_id)
     if vendor is not None:
-        candidates = (
-            db.query(Invoice)
-            .filter(Invoice.vendor == vendor.canonical_name)
-            .order_by(Invoice.created_at.desc())
-            .all()
-        )
+        q = db.query(Invoice).filter(Invoice.vendor == vendor.canonical_name)
+        if org_id is not None:
+            q = q.filter(Invoice.org_id == org_id)
+        candidates = q.order_by(Invoice.created_at.desc()).all()
         priority = [c for c in candidates if c.status in ("needs", "blocked")]
         return priority[0] if priority else (candidates[0] if candidates else None)
     return None
 
 
-def _has_review_entity(db: Session, message: str) -> bool:
+def _has_review_entity(db: Session, message: str, *, org_id: str | None = None) -> bool:
     """True if the message references a resolvable invoice."""
-    return _resolve_target(db, message) is not None
+    return _resolve_target(db, message, org_id=org_id) is not None
 
 
-def _build_review_result(db: Session, inv: Invoice) -> dict[str, Any]:
+def _build_review_result(
+    db: Session, inv: Invoice, *, org_id: str | None = None
+) -> dict[str, Any]:
     """Build the structured review result for a single invoice."""
     settings = get_settings()
     inv_data = invoice_repo.to_domain(inv)
-    enr = enrichment_service.enrich(db, inv_data)
+    enr = enrichment_service.enrich(db, inv_data, org_id=org_id)
     findings = policy_service.run(inv_data, enr, settings.tolerance_pct)
     salient = [f for f in findings if f.code != "PO_MATCH_OK"]
     return {

@@ -91,8 +91,8 @@ def test_upgrade_head_check_constraints(mig_engine) -> None:  # type: ignore[typ
     assert "ck_invoices_verdict" in constraints
 
 
-def test_downgrade_minus_one_removes_new_schema(mig_engine) -> None:  # type: ignore[type-arg]
-    """Downgrade -1 (0002→0001) removes comments table and new invoice columns."""
+def test_downgrade_minus_one_removes_multitenancy_schema(mig_engine) -> None:  # type: ignore[type-arg]
+    """Downgrade -1 (0003→0002) removes the organizations table and org_id columns."""
     import alembic.command
 
     alembic.command.upgrade(_alembic_cfg(), "head")
@@ -100,11 +100,15 @@ def test_downgrade_minus_one_removes_new_schema(mig_engine) -> None:  # type: ig
 
     insp = inspect(mig_engine)
     tables = set(insp.get_table_names())
-    assert "comments" not in tables, "comments table should be removed after downgrade"
+    # organizations table should be removed
+    assert "organizations" not in tables, "organizations table should be removed after downgrade"
 
-    cols = {c["name"] for c in insp.get_columns("invoices")}
-    assert "is_deleted" not in cols, "is_deleted should be removed after downgrade"
-    assert "updated_at" not in cols, "updated_at should be removed after downgrade"
+    # org_id should be removed from entity tables
+    invoice_cols = {c["name"] for c in insp.get_columns("invoices")}
+    assert "org_id" not in invoice_cols, "org_id should be removed from invoices after downgrade"
+
+    # comments table should STILL be present (it was added in 0002, not reverted by 0003 downgrade)
+    assert "comments" in tables, "comments table should remain after 0003 downgrade"
 
     # Restore to head so other tests (and the app) keep working.
     alembic.command.upgrade(_alembic_cfg(), "head")
@@ -120,7 +124,10 @@ def test_upgrade_head_after_downgrade_restores_schema(mig_engine) -> None:  # ty
 
     insp = inspect(mig_engine)
     tables = set(insp.get_table_names())
+    # All tables should be present after re-upgrade
     assert "comments" in tables
+    assert "organizations" in tables
     cols = {c["name"] for c in insp.get_columns("invoices")}
     assert "is_deleted" in cols
     assert "updated_at" in cols
+    assert "org_id" in cols

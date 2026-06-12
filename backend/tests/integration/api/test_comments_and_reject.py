@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.db.models.invoice import Invoice
+from tests.conftest import TEST_ORG_ID
 
 
 # ---------------------------------------------------------------------------
@@ -142,13 +143,11 @@ def test_route_sets_decided_fields(seeded_client: TestClient) -> None:
     resp = seeded_client.post(
         f"/api/v1/invoices/{inv_id}/action",
         json={"action": "route"},
-        # X-Role "priya" maps to "priya"; anything else maps to "maya" per security.py
         headers={"X-Role": "maya"},
     )
     assert resp.status_code == 200
     data = resp.json()
     assert data["status"] == "routed"
-    # "maya" is the default role for non-priya headers
     assert data["decided_by"] == "maya"
     assert data["decided_at"] is not None
 
@@ -158,7 +157,6 @@ def test_hold_sets_decided_fields(seeded_client: TestClient) -> None:
     resp = seeded_client.post(
         f"/api/v1/invoices/{inv_id}/action",
         json={"action": "hold"},
-        # "priya" is the only non-maya role recognized
         headers={"X-Role": "priya"},
     )
     assert resp.status_code == 200
@@ -183,6 +181,7 @@ def test_soft_deleted_invoice_excluded_from_list(
         invoice_number="DEL-001",
         status="received",
         is_deleted=True,
+        org_id=TEST_ORG_ID,
     )
     db.add(inv)
     db.commit()
@@ -202,6 +201,7 @@ def test_non_deleted_invoice_appears_in_list(client: TestClient, db: Session) ->
         invoice_number="ACT-001",
         status="received",
         is_deleted=False,
+        org_id=TEST_ORG_ID,
     )
     db.add(inv)
     db.commit()
@@ -225,6 +225,7 @@ def test_invoice_out_has_new_fields(client: TestClient, db: Session) -> None:
         amount=Decimal("300.00"),
         invoice_number="FLD-001",
         status="received",
+        org_id=TEST_ORG_ID,
     )
     db.add(inv)
     db.commit()

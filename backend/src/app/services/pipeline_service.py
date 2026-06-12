@@ -31,6 +31,8 @@ def process_invoice(
     s: Session,
     invoice_data: InvoiceData,
     confidence: str = "HIGH",
+    *,
+    org_id: str | None = None,
 ) -> ProcessResult:
     """Run the full invoice processing pipeline for a single invoice.
 
@@ -60,6 +62,7 @@ def process_invoice(
                 po_number=invoice_data.po_number,
                 invoice_number=invoice_data.invoice_number,
                 status="received",
+                org_id=org_id,
             ),
         )
 
@@ -80,12 +83,13 @@ def process_invoice(
             "amount": str(invoice_data.amount),
         },
         model_meta={"confidence": confidence},
+        org_id=org_id,
     )
 
     # ------------------------------------------------------------------ #
     # Stage 2 — Enrichment                                                #
     # ------------------------------------------------------------------ #
-    enr = enrichment_service.enrich(s, invoice_data)
+    enr = enrichment_service.enrich(s, invoice_data, org_id=org_id)
 
     audit_service.record(
         s,
@@ -97,6 +101,7 @@ def process_invoice(
             "vendor_status": enr.vendor_status,
             "po_matched": enr.po_match.po is not None,
         },
+        org_id=org_id,
     )
 
     # ------------------------------------------------------------------ #
@@ -111,6 +116,7 @@ def process_invoice(
         module="policy",
         action="findings_computed",
         outputs={"findings": [f.code for f in findings]},
+        org_id=org_id,
     )
 
     # ------------------------------------------------------------------ #
@@ -126,6 +132,7 @@ def process_invoice(
         action=f"verdict:{decision.verdict.value}",
         rationale=decision.reason,
         outputs={"verdict": decision.verdict.value, "route": decision.route},
+        org_id=org_id,
     )
 
     # ------------------------------------------------------------------ #
