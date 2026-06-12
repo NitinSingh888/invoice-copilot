@@ -19,7 +19,15 @@ from app.domain.policy.findings import Severity
 from app.domain.policy.matching import InvoiceData
 from app.repositories import invoice_repo
 from app.schemas.common import FindingOut
-from app.schemas.invoice import ActionIn, InvoiceIn, InvoiceOut, ProcessResultOut
+from app.schemas.invoice import (
+    ActionIn,
+    BulkActionIn,
+    BulkActionOut,
+    BulkActionResultItem,
+    InvoiceIn,
+    InvoiceOut,
+    ProcessResultOut,
+)
 from app.services import enrichment_service, execution_service, learning_service, pipeline_service, policy_service
 
 router = APIRouter()
@@ -177,6 +185,37 @@ def get_sample_invoices() -> list[dict[str, object]]:
 @router.get("", response_model=list[InvoiceOut])
 def list_invoices(db: Session = Depends(get_db)) -> list[InvoiceOut]:
     return [InvoiceOut.model_validate(i) for i in invoice_repo.list_all(db)]
+
+
+@router.post("/bulk-action", response_model=BulkActionOut)
+def bulk_action(
+    body: BulkActionIn,
+    db: Session = Depends(get_db),
+    role: str = Depends(get_role),
+) -> BulkActionOut:
+    """Apply approve / hold / route to a list of invoice ids.
+
+    This is the confirm step after the chat agent returns a ``bulk_confirm``
+    result.  Each invoice is run through ``execution_service.execute`` which
+    enforces the guard.  Returns the count applied and per-invoice statuses.
+    """
+    results: list[BulkActionResultItem] = []
+    fields: dict[str, object] = {}
+    if body.action == "route" and body.route:
+        fields["route"] = body.route
+
+    for inv_id in body.ids:
+        try:
+            inv = execution_service.execute(
+                db, inv_id, body.action, actor=role, **fields
+            )
+            results.append(BulkActionResultItem(id=inv_id, status=inv.status))
+        except (ValueError, KeyError):
+            # Invoice not found or invalid action — skip gracefully
+            results.append(BulkActionResultItem(id=inv_id, status="error"))
+
+    applied = sum(1 for r in results if r.status != "error")
+    return BulkActionOut(applied=applied, results=results)
 
 
 @router.get("/{invoice_id}/file")

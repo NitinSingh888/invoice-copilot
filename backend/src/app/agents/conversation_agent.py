@@ -1,25 +1,25 @@
 from __future__ import annotations
 
 import re
+from decimal import Decimal
 from typing import Any
 
 from sqlalchemy.orm import Session
 
 from app.clients.llm.base import LLMClient
-from app.clients.llm.types import AgentReply, ChatMessage
+from app.clients.llm.types import ChatMessage, CommandSpec
 from app.core.config import get_settings
 from app.db.models.invoice import Invoice
 from app.domain.policy.findings import Finding
 from app.repositories import invoice_repo, vendor_repo
 from app.schemas.chat import ChatMessageIn
 from app.services import (
-    audit_service,
     enrichment_service,
-    execution_service,
-    learning_service,
     pipeline_service,
     policy_service,
 )
+
+_LIST_CAP = 25  # max rows for a "review / list" result
 
 
 def handle(
@@ -32,9 +32,9 @@ def handle(
 ) -> tuple[str, str, dict[str, Any] | None]:
     """Handle a user message via the conversation agent.
 
-    The LLM proposes an intent; deterministic service calls execute it.
-    The LLM never directly authorises money — all execution goes through
-    existing services which enforce the guard.
+    The LLM proposes a structured command; deterministic service calls execute it.
+    The LLM never directly authorises money — all execution goes through existing
+    services which enforce the guard.
 
     Returns (reply_text, intent, result_dict_or_None).
     """
@@ -43,33 +43,24 @@ def handle(
     ]
     msgs.append(ChatMessage(role="user", content=message))
 
-    reply: AgentReply = client.converse(history=msgs, context={})
+    cmd: CommandSpec = client.parse_command(message=message, history=msgs[:-1])
 
-    result: dict[str, Any] | None = None
-    intent = reply.intent
+    # ------------------------------------------------------------------ #
+    # Smalltalk — nothing to execute                                       #
+    # ------------------------------------------------------------------ #
+    if cmd.action == "smalltalk":
+        return ("I'm your Invoice Copilot. How can I help?", "smalltalk", None)
 
-    # Deterministic override: a "review / show / look at / pull up / what about
-    # <entity>" message should resolve and return structured invoice data even if
-    # the LLM labelled it "explain" or "smalltalk" (the real model often maps
-    # "review" -> "explain"). Messages explicitly asking for the trail/audit/history
-    # keep their "explain" intent.
-    if intent in ("explain", "show_trail", "smalltalk", "review_invoice"):
-        wants_trail = bool(re.search(r"\b(trail|audit|history|log)\b", message, re.I))
-        wants_review = bool(
-            re.search(
-                r"\b(review|show|see|look|pull up|detail|about|check|info|status of)\b",
-                message,
-                re.I,
-            )
-        )
-        if not wants_trail and (wants_review or intent == "review_invoice"):
-            if _has_review_entity(db, message):
-                intent = "review_invoice"
-
-    if intent == "process_batch":
-        invoices = invoice_repo.list_by_status(db, "received")
+    # ------------------------------------------------------------------ #
+    # PROCESS                                                              #
+    # Base = today's received invoices; filters narrow the set.           #
+    # ------------------------------------------------------------------ #
+    if cmd.action == "process":
+        base = invoice_repo.list_by_status(db, "received")
+        candidates = _filter_invoices(db, cmd, base=base)
+        label = _filter_label(cmd) or "today"
         queued = needs = blocked = 0
-        for inv in invoices:
+        for inv in candidates:
             invoice_data = invoice_repo.to_domain(inv)
             confidence = inv.confidence or "HIGH"
             proc = pipeline_service.process_invoice(db, invoice_data, confidence)
@@ -80,76 +71,237 @@ def handle(
                 needs += 1
             else:  # BLOCK
                 blocked += 1
-        result = {"queued": queued, "needs": needs, "blocked": blocked}
+        result: dict[str, Any] = {
+            "queued": queued,
+            "needs": needs,
+            "blocked": blocked,
+            "label": label,
+        }
+        total = queued + needs + blocked
+        text = (
+            f"Processed {total} invoice(s) [{label}]: "
+            f"{queued} queued, {needs} need review, {blocked} blocked."
+        )
+        return (text, "process_batch", result)
 
-    elif intent in ("explain", "show_trail"):
-        inv_id = reply.args.get("invoice_id")
-        if inv_id:
-            events = audit_service.trail(db, str(inv_id))
-            trail_list = [
-                {
-                    "seq": e.seq,
-                    "module": e.module,
-                    "action": e.action,
-                    "actor": e.actor,
-                    "rationale": e.rationale,
-                }
-                for e in events
-            ]
-            result = {"invoice_id": inv_id, "trail": trail_list}
+    # ------------------------------------------------------------------ #
+    # REVIEW                                                               #
+    # If invoice_ref is set → single invoice review.                      #
+    # If no filters → try _resolve_target for a named entity.            #
+    # Otherwise → list matching invoices (capped at _LIST_CAP).           #
+    # ------------------------------------------------------------------ #
+    if cmd.action == "review":
+        _has_filters = bool(cmd.vendor or cmd.amount_op or cmd.status)
 
-    elif intent in ("approve", "route", "hold"):
-        inv_id = reply.args.get("invoice_id")
-        if inv_id:
-            execution_service.execute(db, str(inv_id), intent, actor=role)
-            result = {"invoice_id": inv_id, "action": intent}
-
-    elif intent == "propose_rule":
-        proposal = learning_service.propose_rule(db)
-        if proposal is not None:
-            result = {
-                "proposal": {
-                    "vendor": proposal.candidate.vendor,
-                    "threshold_pct": str(proposal.threshold_pct),
-                    "route": proposal.route,
-                }
-            }
-        else:
-            result = None
-
-    elif intent == "review_invoice":
-        result = _resolve_review_invoice(db, message)
-
-    elif intent == "smalltalk":
-        result = None
-
-    # For a resolved review, replace the LLM narration (which may ask for details
-    # the code already has) with a clean confirmation that matches the card shown.
-    if intent == "review_invoice" and result is not None:
-        if result.get("not_found"):
-            text = (
-                f"I couldn't find an invoice matching “{result.get('query')}”. "
-                "Try an invoice number like INV-4495 or a vendor name."
+        # Explicit invoice_ref from parser
+        if cmd.invoice_ref:
+            inv_ref: Invoice | None = _resolve_by_ref(db, cmd.invoice_ref)
+            if inv_ref is None:
+                inv_ref = _resolve_target(db, message)
+            if inv_ref is not None:
+                review_result = _build_review_result(db, inv_ref)
+                label_text = inv_ref.invoice_number or inv_ref.id
+                text = f"Here's {label_text} from {inv_ref.vendor}:"
+                return (text, "review_invoice", review_result)
+            return (
+                f"I couldn't find invoice \"{cmd.invoice_ref}\". "
+                "Try an invoice number like INV-4495 or a vendor name.",
+                "review_invoice",
+                {"not_found": True, "query": cmd.invoice_ref},
             )
-        else:
-            inv = result["invoice"]
-            label = inv.get("invoice_number") or inv.get("id")
-            text = f"Here's {label} from {inv.get('vendor')}:"
-        return (text, intent, result)
 
-    return (reply.text, intent, result)
+        # No filters at all — check if the message names a specific entity
+        if not _has_filters:
+            inv_ent: Invoice | None = _resolve_target(db, message)
+            if inv_ent is not None:
+                review_result = _build_review_result(db, inv_ent)
+                label_text = inv_ent.invoice_number or inv_ent.id
+                text = f"Here's {label_text} from {inv_ent.vendor}:"
+                return (text, "review_invoice", review_result)
+            # No entity found and no filters → return not_found
+            return (
+                "I couldn't find a specific invoice in that message. "
+                "Try 'review invoices from <vendor>' or 'review invoice <number>'.",
+                "review_invoice",
+                {"not_found": True, "query": message.strip()[:60]},
+            )
+
+        # Has filters → list mode
+        base_all = invoice_repo.list_all(db)
+        candidates = _filter_invoices(db, cmd, base=base_all)
+        label = _filter_label(cmd) or "all"
+        full_count = len(candidates)
+        page = candidates[:_LIST_CAP]
+        rows = [
+            {
+                "id": inv.id,
+                "vendor": inv.vendor,
+                "amount": str(inv.amount) if inv.amount is not None else None,
+                "invoice_number": inv.invoice_number,
+                "status": inv.status,
+                "po_number": inv.po_number,
+            }
+            for inv in page
+        ]
+        result = {"list": rows, "label": label, "count": full_count}
+        text = f"Found {full_count} invoice(s) [{label}]."
+        if full_count > _LIST_CAP:
+            text += f" Showing first {_LIST_CAP}."
+        return (text, "list", result)
+
+    # ------------------------------------------------------------------ #
+    # COUNT / SUM                                                          #
+    # ------------------------------------------------------------------ #
+    if cmd.action in ("count", "sum"):
+        base_all = invoice_repo.list_all(db)
+        candidates = _filter_invoices(db, cmd, base=base_all)
+        label = _filter_label(cmd) or "all"
+        if cmd.action == "count":
+            value_str = str(len(candidates))
+            text = f"There are {len(candidates)} invoice(s) matching [{label}]."
+        else:
+            total_amount = sum(
+                (inv.amount or Decimal("0")) for inv in candidates
+            )
+            value_str = f"${total_amount:,.2f}"
+            text = f"Total amount for [{label}]: {value_str}."
+        result = {"aggregate": {"label": label, "value": value_str}}
+        return (text, "aggregate", result)
+
+    # ------------------------------------------------------------------ #
+    # APPROVE / HOLD / ROUTE — bulk confirm (no execution)                #
+    # ------------------------------------------------------------------ #
+    if cmd.action in ("approve", "hold", "route"):
+        # Bulk actions only target ACTIONABLE invoices (awaiting a decision) —
+        # never re-touch already-cleared history — unless the user names a status.
+        if cmd.status:
+            base = invoice_repo.list_by_status(db, cmd.status)
+        else:
+            base = invoice_repo.list_by_status(db, "received") + invoice_repo.list_by_status(
+                db, "needs"
+            )
+        candidates = _filter_invoices(db, cmd, base=base)
+        label = _filter_label(cmd) or "matching"
+        ids = [inv.id for inv in candidates]
+        total_amount = sum(
+            (inv.amount or Decimal("0")) for inv in candidates
+        )
+        total_str = f"${total_amount:,.2f}"
+        bulk: dict[str, Any] = {
+            "action": cmd.action,
+            "ids": ids,
+            "count": len(ids),
+            "total": total_str,
+            "label": label,
+        }
+        if cmd.route_to:
+            bulk["route_to"] = cmd.route_to
+        result = {"bulk": bulk}
+        dest = f" to {cmd.route_to}" if cmd.route_to else ""
+        text = (
+            f"This will {cmd.action} {len(ids)} invoice(s){dest} totaling "
+            f"{total_str} [{label}]. Confirm?"
+        )
+        return (text, "bulk_confirm", result)
+
+    # ------------------------------------------------------------------ #
+    # Legacy single-invoice intents delegated from old converse flow      #
+    # (kept for backward-compat with tests that still use them)           #
+    # ------------------------------------------------------------------ #
+    return ("I'm your Invoice Copilot. How can I help?", "smalltalk", None)
 
 
 # ---------------------------------------------------------------------------
-# Internal helpers for review_invoice
+# Filter helpers
+# ---------------------------------------------------------------------------
+
+
+def _filter_invoices(
+    db: Session,
+    cmd: CommandSpec,
+    *,
+    base: list[Invoice],
+) -> list[Invoice]:
+    """Return the subset of *base* that satisfies all filters in *cmd*."""
+    result: list[Invoice] = list(base)
+
+    # invoice_ref → single match (handled by caller; skip list filter)
+    # We do NOT filter by invoice_ref here because review uses it separately.
+
+    # vendor filter — fuzzy via vendor_repo or case-insensitive substring
+    if cmd.vendor:
+        vendor_name: str | None = None
+        resolved = vendor_repo.resolve_from_text(db, cmd.vendor)
+        if resolved is not None:
+            vendor_name = resolved.canonical_name
+        result = [
+            inv
+            for inv in result
+            if (
+                (vendor_name is not None and inv.vendor == vendor_name)
+                or (
+                    inv.vendor is not None
+                    and cmd.vendor.lower() in inv.vendor.lower()
+                )
+            )
+        ]
+
+    # amount filter
+    if cmd.amount_op and cmd.amount_value is not None:
+        op = cmd.amount_op
+        val = cmd.amount_value
+        filtered: list[Invoice] = []
+        for inv in result:
+            amt = inv.amount
+            if amt is None:
+                continue
+            if op == "<" and amt < val:
+                filtered.append(inv)
+            elif op == "<=" and amt <= val:
+                filtered.append(inv)
+            elif op == ">" and amt > val:
+                filtered.append(inv)
+            elif op == ">=" and amt >= val:
+                filtered.append(inv)
+            elif op == "==" and amt == val:
+                filtered.append(inv)
+        result = filtered
+
+    # status filter
+    if cmd.status:
+        result = [inv for inv in result if inv.status == cmd.status]
+
+    return result
+
+
+def _filter_label(cmd: CommandSpec) -> str:
+    """Build a human-readable description of the active filters."""
+    parts: list[str] = []
+    if cmd.vendor:
+        parts.append(f"vendor={cmd.vendor}")
+    if cmd.amount_op and cmd.amount_value is not None:
+        parts.append(f"amount{cmd.amount_op}{cmd.amount_value}")
+    if cmd.status:
+        parts.append(f"status={cmd.status}")
+    return ", ".join(parts)
+
+
+def _resolve_by_ref(db: Session, ref: str) -> Invoice | None:
+    """Resolve an invoice by id or invoice_number token."""
+    for cand in (ref, ref.lower(), ref.upper()):
+        inv = invoice_repo.get(db, cand)
+        if inv is not None:
+            return inv
+    return invoice_repo.get_by_invoice_number(db, ref)
+
+
+# ---------------------------------------------------------------------------
+# Internal helpers for review_invoice (single)
 # ---------------------------------------------------------------------------
 
 
 def _resolve_target(db: Session, message: str) -> Invoice | None:
-    """Resolve the invoice a "review/show <X>" message refers to — by internal id,
-    by invoice_number in ANY format (e.g. '72128555', 'INV/2023/03/0008'), or by a
-    vendor name mentioned in the text."""
-    # id / number-like tokens: alphanumerics (with -, /, _, .) of length >= 4.
+    """Resolve the invoice a message refers to — by id, invoice_number, or vendor."""
     tokens = re.findall(r"[A-Za-z0-9][A-Za-z0-9/_.-]{3,}", message)
     for tok in tokens:
         for cand in (tok, tok.lower(), tok.upper()):
@@ -159,7 +311,6 @@ def _resolve_target(db: Session, message: str) -> Invoice | None:
         inv = invoice_repo.get_by_invoice_number(db, tok)
         if inv is not None:
             return inv
-    # Fall back to a vendor name in the message → that vendor's most relevant invoice.
     vendor = vendor_repo.resolve_from_text(db, message)
     if vendor is not None:
         candidates = (
@@ -174,25 +325,17 @@ def _resolve_target(db: Session, message: str) -> Invoice | None:
 
 
 def _has_review_entity(db: Session, message: str) -> bool:
-    """True if the message references a resolvable invoice (id / number / vendor)."""
+    """True if the message references a resolvable invoice."""
     return _resolve_target(db, message) is not None
 
 
-def _resolve_review_invoice(db: Session, message: str) -> dict[str, Any]:
-    """Deterministically resolve and return a structured invoice review."""
+def _build_review_result(db: Session, inv: Invoice) -> dict[str, Any]:
+    """Build the structured review result for a single invoice."""
     settings = get_settings()
-    inv = _resolve_target(db, message)
-    if inv is None:
-        return {"not_found": True, "query": message.strip()[:60]}
-
-    # 3. Recompute findings via policy service (uses enrichment).
     inv_data = invoice_repo.to_domain(inv)
     enr = enrichment_service.enrich(db, inv_data)
     findings = policy_service.run(inv_data, enr, settings.tolerance_pct)
-
-    # Salient findings: exclude trivial INFO PO_MATCH_OK
     salient = [f for f in findings if f.code != "PO_MATCH_OK"]
-
     return {
         "invoice": {
             "id": inv.id,

@@ -79,14 +79,14 @@ def test_process_batch_counts_are_ints(seeded_db: Session, client: MockClient) -
 
 
 # ---------------------------------------------------------------------------
-# explain intent
+# review_invoice intent — single invoice via entity reference
 # ---------------------------------------------------------------------------
 
 
-def test_explain_returns_trail_for_known_invoice(
+def test_review_invoice_by_id(
     seeded_db: Session, client: MockClient
 ) -> None:
-    # First process an invoice so there's an audit trail
+    # Process an invoice so it exists with a verdict
     from app.domain.policy.matching import InvoiceData
     from app.services import pipeline_service
 
@@ -106,20 +106,18 @@ def test_explain_returns_trail_for_known_invoice(
     _, intent, result = conversation_agent.handle(
         client,
         seeded_db,
-        message="why did you escalate INV-4495?",
+        message="review invoice INV-4495",
         history=[],
         role="priya",
     )
-    assert intent == "explain"
+    assert intent == "review_invoice"
     assert result is not None
-    assert result["invoice_id"] == "INV-4495"
-    assert "trail" in result
+    assert result["invoice"]["id"] == "INV-4495"
 
 
-def test_explain_no_invoice_id_gives_none_result(
+def test_unknown_message_returns_smalltalk(
     seeded_db: Session, client: MockClient
 ) -> None:
-    # "why" intent but no INV-\d+ pattern in the message → args["invoice_id"] absent
     _, intent, result = conversation_agent.handle(
         client,
         seeded_db,
@@ -127,18 +125,17 @@ def test_explain_no_invoice_id_gives_none_result(
         history=[],
         role="priya",
     )
-    assert intent == "explain"
-    # No invoice_id in args → result stays None
+    assert intent == "smalltalk"
     assert result is None
 
 
 # ---------------------------------------------------------------------------
-# approve intent
+# approve intent → now returns bulk_confirm (no immediate execution)
 # ---------------------------------------------------------------------------
 
 
-def test_approve_transitions_invoice(seeded_db: Session, client: MockClient) -> None:
-    # Seed a "needs" (escalated) invoice — ID must match INV-\d+ for MockClient
+def test_approve_returns_bulk_confirm(seeded_db: Session, client: MockClient) -> None:
+    # Seed a "needs" (escalated) invoice
     seeded_db.add(
         Invoice(
             id="INV-9001",
@@ -157,17 +154,16 @@ def test_approve_transitions_invoice(seeded_db: Session, client: MockClient) -> 
         history=[],
         role="priya",
     )
-    assert intent == "approve"
+    assert intent == "bulk_confirm"
     assert result is not None
-    assert result["invoice_id"] == "INV-9001"
-    assert result["action"] == "approve"
+    assert result["bulk"]["action"] == "approve"
 
-    # Verify the invoice status was changed
+    # Invoice must NOT be executed yet — status remains "needs"
     from app.repositories import invoice_repo
 
     inv = invoice_repo.get(seeded_db, "INV-9001")
     assert inv is not None
-    assert inv.status == "queued"
+    assert inv.status == "needs"
 
 
 # ---------------------------------------------------------------------------

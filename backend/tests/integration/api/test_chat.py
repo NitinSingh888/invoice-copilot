@@ -70,28 +70,27 @@ def test_chat_process_batch_counts_are_numeric(chat_client: TestClient) -> None:
 
 
 # ---------------------------------------------------------------------------
-# explain intent
+# explain intent → "why" questions now map to smalltalk
 # ---------------------------------------------------------------------------
 
 
-def test_chat_explain_returns_trail(chat_client: TestClient) -> None:
+def test_chat_why_returns_smalltalk(chat_client: TestClient) -> None:
     resp = chat_client.post(
         "/api/v1/chat",
         json={"message": "why did you escalate INV-4495?"},
     )
     assert resp.status_code == 200
     data = resp.json()
-    assert data["intent"] == "explain"
-    assert data["result"] is not None
-    assert data["result"]["invoice_id"] == "INV-4495"
+    # "why" has no process/review/approve action keyword → smalltalk
+    assert data["intent"] == "smalltalk"
 
 
 # ---------------------------------------------------------------------------
-# approve intent
+# approve → now returns bulk_confirm (no immediate execution)
 # ---------------------------------------------------------------------------
 
 
-def test_chat_approve_transitions_invoice(chat_client: TestClient) -> None:
+def test_chat_approve_returns_bulk_confirm(chat_client: TestClient) -> None:
     resp = chat_client.post(
         "/api/v1/chat",
         json={"message": "approve INV-9002"},
@@ -99,10 +98,9 @@ def test_chat_approve_transitions_invoice(chat_client: TestClient) -> None:
     )
     assert resp.status_code == 200
     data = resp.json()
-    assert data["intent"] == "approve"
+    assert data["intent"] == "bulk_confirm"
     assert data["result"] is not None
-    assert data["result"]["invoice_id"] == "INV-9002"
-    assert data["result"]["action"] == "approve"
+    assert data["result"]["bulk"]["action"] == "approve"
 
 
 # ---------------------------------------------------------------------------

@@ -4,7 +4,7 @@ import re
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
-from .types import AgentReply, ChatMessage, Confidence, ExtractedField, ExtractedInvoice
+from .types import AgentReply, ChatMessage, CommandSpec, Confidence, ExtractedField, ExtractedInvoice
 
 # Confidence ordering for comparison
 _CONF_RANK: dict[str, int] = {"HIGH": 2, "MED": 1, "LOW": 0}
@@ -130,6 +130,117 @@ class MockClient:
             args = {}
 
         return AgentReply(text=text, intent=intent, args=args)
+
+    # ------------------------------------------------------------------
+    # parse_command — deterministic regex / keyword heuristics
+    # ------------------------------------------------------------------
+    def parse_command(
+        self, *, message: str, history: list[ChatMessage]
+    ) -> CommandSpec:
+        """Parse a natural-language message into a CommandSpec using regex heuristics."""
+        low = message.lower().strip()
+
+        # ---- action detection (order matters: more-specific first) ----
+        if re.search(r"\b(how many|count)\b", low):
+            action = "count"
+        elif re.search(r"\b(sum|total amount|total value)\b", low):
+            action = "sum"
+        elif re.search(r"\b(approve)\b", low):
+            action = "approve"
+        elif re.search(r"\b(hold)\b", low):
+            action = "hold"
+        elif re.search(r"\b(route)\b", low):
+            action = "route"
+        elif re.search(r"\b(process|run the batch|go ahead|run batch)\b", low):
+            action = "process"
+        elif re.search(r"\b(review|show|list|see|find|pull up|pull-up)\b", low):
+            action = "review"
+        else:
+            return CommandSpec(action="smalltalk")
+
+        # ---- amount filter ----
+        amount_op: str | None = None
+        amount_value: Decimal | None = None
+        amount_pat = re.search(
+            r"\b(under|below|less than|over|above|greater than|exactly|at least|at most|=|<=|>=|<|>)\s*\$?\s*([0-9][0-9,]*(?:\.[0-9]+)?)",
+            low,
+        )
+        if amount_pat:
+            word = amount_pat.group(1).strip()
+            raw_val = amount_pat.group(2).replace(",", "")
+            try:
+                amount_value = Decimal(raw_val)
+                if word in ("under", "below", "less than", "<"):
+                    amount_op = "<"
+                elif word in ("<=", "at most"):
+                    amount_op = "<="
+                elif word in ("over", "above", "greater than", ">"):
+                    amount_op = ">"
+                elif word in (">=", "at least"):
+                    amount_op = ">="
+                elif word in ("exactly", "="):
+                    amount_op = "=="
+            except InvalidOperation:
+                pass
+
+        # ---- status filter ----
+        status: str | None = None
+        if re.search(r"\b(need review|needs review|needs|escalated)\b", low):
+            status = "needs"
+        elif re.search(r"\bblocked\b", low):
+            status = "blocked"
+        elif re.search(r"\bqueued\b", low):
+            status = "queued"
+        elif re.search(r"\bheld\b", low):
+            status = "held"
+        elif re.search(r"\brouted\b", low):
+            status = "routed"
+        elif re.search(r"\breceived\b", low):
+            status = "received"
+
+        # ---- invoice_ref (specific invoice id / number) ----
+        invoice_ref: str | None = None
+        ref_match = re.search(
+            r"\b(INV[-/][A-Za-z0-9/_.-]+|[A-Za-z]{2,}[-/][0-9]+[A-Za-z0-9/_.-]*|[0-9]{5,})\b",
+            message,
+        )
+        if ref_match:
+            invoice_ref = ref_match.group(1)
+
+        # ---- vendor ----
+        vendor: str | None = None
+        vendor_match = re.search(
+            r"\b(?:from|of|vendor|for)\s+([A-Za-z][A-Za-z0-9 .&,'-]{2,30?)(?:\s+invoice|\s+invoices|$)",
+            message,
+            re.I,
+        )
+        if vendor_match:
+            vendor = vendor_match.group(1).strip()
+        else:
+            # Try "invoices from <Vendor>" pattern
+            vendor_match2 = re.search(
+                r"invoices?\s+from\s+([A-Za-z][A-Za-z0-9 .&,'-]{2,30})",
+                message,
+                re.I,
+            )
+            if vendor_match2:
+                vendor = vendor_match2.group(1).strip()
+
+        # ---- route_to ----
+        route_to: str | None = None
+        route_match = re.search(r"\bto\s+([A-Za-z][a-z]+)\b", message, re.I)
+        if action == "route" and route_match:
+            route_to = route_match.group(1)
+
+        return CommandSpec(
+            action=action,
+            vendor=vendor,
+            amount_op=amount_op,
+            amount_value=amount_value,
+            status=status,
+            invoice_ref=invoice_ref,
+            route_to=route_to,
+        )
 
     # ------------------------------------------------------------------
     # explain_rule

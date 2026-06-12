@@ -5,7 +5,7 @@ import re
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
-from .types import AgentReply, ChatMessage, Confidence, ExtractedField, ExtractedInvoice
+from .types import AgentReply, ChatMessage, CommandSpec, Confidence, ExtractedField, ExtractedInvoice
 
 _EXTRACT_SYSTEM = (
     "You are an invoice data extraction assistant. "
@@ -44,6 +44,43 @@ _FALLBACK_REPLY = AgentReply(
     intent="smalltalk",
     args={},
 )
+
+_FALLBACK_COMMAND = CommandSpec(action="smalltalk")
+
+_COMMAND_SYSTEM = """\
+You are an invoice command parser. Extract a structured command from the user's message.
+Return ONLY a JSON object with these exact keys (all optional except "action"):
+  action       – one of: process | review | approve | hold | route | count | sum | smalltalk
+  vendor       – vendor name if mentioned (string or null)
+  amount_op    – one of: "<", "<=", ">", ">=", "==" (if an amount comparison is present, else null)
+  amount_value – numeric string if comparison present (e.g. "100", "1000.50"), else null
+  status       – one of: received | needs | queued | blocked | routed | held (if mentioned, else null)
+  invoice_ref  – specific invoice number or id if ONE invoice is named (else null)
+  route_to     – person/team name if action=route (else null)
+
+Rules:
+- "process" = run the processing pipeline on matching invoices
+- "review" = show details / list matching invoices
+- "approve" = approve matching invoices (return bulk confirm — do NOT execute)
+- "hold" = place matching invoices on hold (return bulk confirm — do NOT execute)
+- "route" = route matching invoices (return bulk confirm — do NOT execute)
+- "count" = count matching invoices
+- "sum" = sum the amount of matching invoices
+- "smalltalk" = anything that doesn't map to invoice operations
+
+Examples:
+  "process all invoices from Reyes" → {"action":"process","vendor":"Reyes"}
+  "review invoices under $100" → {"action":"review","amount_op":"<","amount_value":"100"}
+  "approve all under $50" → {"action":"approve","amount_op":"<","amount_value":"50"}
+  "how many need review?" → {"action":"count","status":"needs"}
+  "process those over 1000" → {"action":"process","amount_op":">","amount_value":"1000"}
+  "review invoice 72128555" → {"action":"review","invoice_ref":"72128555"}
+  "process today's invoices" → {"action":"process"}
+  "show all invoices from Palmer" → {"action":"review","vendor":"Palmer"}
+  "hi" → {"action":"smalltalk"}
+
+No explanation, no markdown, only the raw JSON object.\
+"""
 
 
 def _parse_json_from_text(text: str) -> dict[str, Any]:
@@ -211,6 +248,82 @@ class OpenAIClient:
             return AgentReply(text=text_val, intent=intent_val, args=dict(args_val))
         except Exception:
             return _FALLBACK_REPLY
+
+    # ------------------------------------------------------------------
+    # parse_command
+    # ------------------------------------------------------------------
+    def parse_command(
+        self, *, message: str, history: list[ChatMessage]
+    ) -> CommandSpec:
+        try:
+            client = self._get_client()
+            messages: list[dict[str, Any]] = [
+                {"role": "system", "content": _COMMAND_SYSTEM}
+            ]
+            messages.extend({"role": m.role, "content": m.content} for m in history)
+            messages.append({"role": "user", "content": message})
+            response = client.chat.completions.create(
+                model=self._model,
+                response_format={"type": "json_object"},
+                messages=messages,
+                max_tokens=256,
+            )
+            raw_text: str = response.choices[0].message.content or ""
+            data = _parse_json_from_text(raw_text)
+        except Exception:
+            return _FALLBACK_COMMAND
+
+        try:
+            from decimal import Decimal as _D, InvalidOperation
+
+            action = str(data.get("action", "smalltalk"))
+            valid_actions = {
+                "process", "review", "approve", "hold", "route", "count", "sum", "smalltalk"
+            }
+            if action not in valid_actions:
+                action = "smalltalk"
+
+            vendor = data.get("vendor") or None
+            if vendor is not None:
+                vendor = str(vendor)
+
+            amount_op = data.get("amount_op") or None
+            valid_ops = {"<", "<=", ">", ">=", "=="}
+            if amount_op not in valid_ops:
+                amount_op = None
+
+            amount_value: Decimal | None = None
+            raw_av = data.get("amount_value")
+            if raw_av is not None:
+                try:
+                    amount_value = _D(str(raw_av).replace(",", "").replace("$", ""))
+                except InvalidOperation:
+                    amount_value = None
+
+            status = data.get("status") or None
+            valid_statuses = {"received", "needs", "queued", "blocked", "routed", "held"}
+            if status not in valid_statuses:
+                status = None
+
+            invoice_ref = data.get("invoice_ref") or None
+            if invoice_ref is not None:
+                invoice_ref = str(invoice_ref)
+
+            route_to = data.get("route_to") or None
+            if route_to is not None:
+                route_to = str(route_to)
+
+            return CommandSpec(
+                action=action,
+                vendor=vendor,
+                amount_op=amount_op,
+                amount_value=amount_value,
+                status=status,
+                invoice_ref=invoice_ref,
+                route_to=route_to,
+            )
+        except Exception:
+            return _FALLBACK_COMMAND
 
     # ------------------------------------------------------------------
     # explain_rule

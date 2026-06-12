@@ -56,3 +56,19 @@ class ActionIn(BaseModel):
     amount: Decimal | None = None
     route: str | None = None
     reason: str | None = None
+
+
+class BulkActionIn(BaseModel):
+    ids: list[str]
+    action: Literal["approve", "hold", "route"]
+    route: str | None = None
+
+
+class BulkActionResultItem(BaseModel):
+    id: str
+    status: str
+
+
+class BulkActionOut(BaseModel):
+    applied: int
+    results: list[BulkActionResultItem]
