@@ -5,7 +5,7 @@ from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.agents import induction_agent
-from app.api.deps import get_db, get_llm
+from app.api.deps import get_current_org, get_db, get_llm
 from app.clients.llm.base import LLMClient
 from app.core.exceptions import AppError, NotFoundError
 from app.repositories import rule_repo
@@ -16,8 +16,11 @@ router = APIRouter()
 
 
 @router.get("", response_model=list[RuleOut])
-def list_rules(db: Session = Depends(get_db)) -> list[RuleOut]:
-    return [RuleOut.model_validate(r) for r in rule_repo.list_all(db)]
+def list_rules(
+    db: Session = Depends(get_db),
+    org_id: str = Depends(get_current_org),
+) -> list[RuleOut]:
+    return [RuleOut.model_validate(r) for r in rule_repo.list_all(db, org_id=org_id)]
 
 
 @router.post("", status_code=201, response_model=RuleOut)
@@ -25,6 +28,7 @@ def create_rule(
     body: CreateRuleIn,
     db: Session = Depends(get_db),
     x_role: str = Header(default="user"),
+    org_id: str = Depends(get_current_org),
 ) -> RuleOut:
     rule = learning_service.create_rule(
         db,
@@ -34,13 +38,17 @@ def create_rule(
         min_amount=body.min_amount,
         route=body.route,
         created_by=x_role,
+        org_id=org_id,
     )
     return RuleOut.model_validate(rule)
 
 
 @router.post("/propose", response_model=None)
-def propose_rule(db: Session = Depends(get_db)) -> Response | RuleProposalOut:
-    p = learning_service.propose_rule(db)
+def propose_rule(
+    db: Session = Depends(get_db),
+    org_id: str = Depends(get_current_org),
+) -> Response | RuleProposalOut:
+    p = learning_service.propose_rule(db, org_id=org_id)
     if p is None:
         return Response(status_code=204)
     return RuleProposalOut(
@@ -61,8 +69,9 @@ def activate_rule(
     body: ActivateRuleIn,
     db: Session = Depends(get_db),
     llm: LLMClient = Depends(get_llm),
+    org_id: str = Depends(get_current_org),
 ) -> RuleOut:
-    p = learning_service.propose_rule(db)
+    p = learning_service.propose_rule(db, org_id=org_id)
     if p is None:
         raise AppError("no rule to activate")
     note = induction_agent.reasoning(
@@ -78,6 +87,7 @@ def activate_rule(
         threshold_pct=body.threshold_pct,
         route=body.route,
         reasoning=note,
+        org_id=org_id,
     )
     return RuleOut.model_validate(rule)
 
@@ -87,9 +97,10 @@ def set_rule_status(
     rule_id: str,
     body: RuleStatusIn,
     db: Session = Depends(get_db),
+    org_id: str = Depends(get_current_org),
 ) -> RuleOut:
     try:
-        rule = learning_service.set_rule_status(db, rule_id, body.status)
+        rule = learning_service.set_rule_status(db, rule_id, body.status, org_id=org_id)
     except ValueError as exc:
         raise NotFoundError(str(exc)) from exc
     return RuleOut.model_validate(rule)

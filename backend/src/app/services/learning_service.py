@@ -30,6 +30,7 @@ def record_correction(
     user_action: str,
     over_pct: Decimal,
     reason: str | None = None,
+    org_id: str | None = None,
 ) -> Correction:
     """Persist a user correction and return the new row."""
     corr = Correction(
@@ -40,18 +41,21 @@ def record_correction(
         user_action=user_action,
         over_pct=over_pct,
         reason=reason,
+        org_id=org_id,
     )
     return correction_repo.add(s, corr)
 
 
-def propose_rule(s: Session, vendor: str | None = None) -> RuleProposal | None:
+def propose_rule(
+    s: Session, vendor: str | None = None, *, org_id: str | None = None
+) -> RuleProposal | None:
     """Detect a repeating correction pattern and propose a generalised rule.
 
     Returns None when there are not enough corrections to form a pattern.
     """
     settings = get_settings()
 
-    raw = correction_repo.list_recent(s)
+    raw = correction_repo.list_recent(s, org_id=org_id)
     corrections = [correction_repo.to_domain(c) for c in raw]
 
     # Optionally filter to a specific vendor before pattern detection.
@@ -82,6 +86,7 @@ def activate_rule(
     route: str,
     created_by: str = "maya",
     reasoning: str | None = None,
+    org_id: str | None = None,
 ) -> Rule:
     """Persist the proposed rule as an active Rule row and emit an audit event.
 
@@ -110,11 +115,12 @@ def activate_rule(
         source_correction_ids=list(cand.example_ids),
         reasoning_note=reasoning_note,
         created_by=created_by,
+        org_id=org_id,
     )
     # Supersede prior active rules matching BOTH vendor AND finding_code
     # (so a vendor can have separate rules for OVER_TOLERANCE vs DUPLICATE_SUSPECT,
     # but re-approving the same (vendor, finding_code) pair disables the prior one).
-    for existing in rule_repo.list_all(s):
+    for existing in rule_repo.list_all(s, org_id=org_id):
         if (
             existing.status == "active"
             and existing.vendor == cand.vendor
@@ -134,6 +140,7 @@ def activate_rule(
             "vendor": cand.vendor,
             "route": route,
         },
+        org_id=org_id,
     )
 
     return rule
@@ -148,6 +155,7 @@ def create_rule(
     min_amount: Decimal | None = None,
     route: str,
     created_by: str = "user",
+    org_id: str | None = None,
 ) -> Rule:
     """Manually create an active Rule, superseding any prior active rule for the
     same (vendor, finding_code) pair, and emit a ``rule_created`` audit event."""
@@ -166,10 +174,11 @@ def create_rule(
         source_correction_ids=[],
         reasoning_note=reasoning_note,
         created_by=created_by,
+        org_id=org_id,
     )
 
     # Supersede prior active rules matching BOTH vendor AND finding_code
-    for existing in rule_repo.list_all(s):
+    for existing in rule_repo.list_all(s, org_id=org_id):
         if (
             existing.status == "active"
             and existing.vendor == vendor
@@ -190,6 +199,7 @@ def create_rule(
             "finding_code": finding_code,
             "route": route,
         },
+        org_id=org_id,
     )
 
     return rule
@@ -200,6 +210,8 @@ def set_rule_status(
     rule_id: str,
     status: str,
     actor: str = "maya",
+    *,
+    org_id: str | None = None,
 ) -> Rule:
     """Change a rule's status and record a matching audit event."""
     rule = rule_repo.set_status(s, rule_id, status)
@@ -211,6 +223,7 @@ def set_rule_status(
         module="learning",
         action=action,
         outputs={"rule_id": rule_id, "status": status},
+        org_id=org_id,
     )
 
     return rule

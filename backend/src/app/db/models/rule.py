@@ -3,7 +3,7 @@ from __future__ import annotations
 from decimal import Decimal
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, JSON, Numeric, func
+from sqlalchemy import DateTime, ForeignKey, Index, JSON, Numeric, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -11,6 +11,10 @@ from app.db.base import Base
 
 class Rule(Base):
     __tablename__ = "rules"
+
+    __table_args__ = (
+        Index("ix_rules_org_id", "org_id"),
+    )
 
     id: Mapped[str] = mapped_column(primary_key=True)
     vendor: Mapped[str | None] = mapped_column(default=None)
@@ -22,6 +26,10 @@ class Rule(Base):
     source_correction_ids: Mapped[list[str]] = mapped_column(JSON, default=list)
     reasoning_note: Mapped[str | None] = mapped_column(default=None)
     created_by: Mapped[str | None] = mapped_column(default=None)
+    org_id: Mapped[str | None] = mapped_column(
+        ForeignKey("organizations.id", name="fk_rules_org_id", ondelete="SET NULL"),
+        default=None,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), default=lambda: datetime.now(timezone.utc)
     )

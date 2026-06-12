@@ -14,13 +14,21 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from app.seed import seed
+from app.db.models.organization import Organization
+from app.seed import seed_org
+from tests.conftest import TEST_ORG_ID, TEST_ORG_NAME
 
 
 @pytest.fixture()
 def demo_processed_client(client: TestClient, db: Session) -> TestClient:
-    """Seed the full demo dataset and run the batch so invoices have verdicts."""
-    seed(db, force=True)
+    """Seed the full demo dataset (into TEST_ORG_ID) and run the batch so invoices
+    have verdicts."""
+    # Ensure the test org row exists
+    if db.get(Organization, TEST_ORG_ID) is None:
+        db.add(Organization(id=TEST_ORG_ID, name=TEST_ORG_NAME))
+        db.flush()
+
+    seed_org(db, TEST_ORG_ID)
     db.commit()
 
     # Run the batch via the chat endpoint to assign verdicts/statuses

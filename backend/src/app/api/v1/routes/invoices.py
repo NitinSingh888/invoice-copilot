@@ -11,7 +11,7 @@ from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.agents import extraction_agent
-from app.api.deps import get_db, get_llm, get_role
+from app.api.deps import get_current_org, get_db, get_llm, get_role
 from app.clients.llm.base import LLMClient
 from app.core.config import get_settings
 from app.core.exceptions import NotFoundError
@@ -47,6 +47,7 @@ _UPLOADS_DIR = Path(__file__).parents[5] / "data" / "uploads"
 def create_invoice(
     body: InvoiceIn,
     db: Session = Depends(get_db),
+    org_id: str = Depends(get_current_org),
 ) -> ProcessResultOut:
     invoice_id = body.id or f"inv-{uuid4().hex[:8]}"
     invoice_data = InvoiceData(
@@ -56,8 +57,8 @@ def create_invoice(
         po_number=body.po_number,
         invoice_number=body.invoice_number,
     )
-    result = pipeline_service.process_invoice(db, invoice_data, body.confidence)
-    inv = invoice_repo.get(db, result.invoice_id)
+    result = pipeline_service.process_invoice(db, invoice_data, body.confidence, org_id=org_id)
+    inv = invoice_repo.get(db, result.invoice_id, org_id=org_id)
     if inv is None:
         raise NotFoundError(f"invoice {result.invoice_id} not found after processing")
     # Persist the source_file so the /file route can serve it for preview
@@ -80,6 +81,7 @@ def upload_invoice(
     db: Session = Depends(get_db),
     role: str = Depends(get_role),
     llm: LLMClient = Depends(get_llm),
+    org_id: str = Depends(get_current_org),
 ) -> ProcessResultOut:
     file_bytes = file.file.read()
     filename = file.filename or ""
@@ -101,9 +103,9 @@ def upload_invoice(
         invoice_number=extracted.invoice_number or "",
     )
 
-    result = pipeline_service.process_invoice(db, invoice_data, extracted.overall_confidence)
+    result = pipeline_service.process_invoice(db, invoice_data, extracted.overall_confidence, org_id=org_id)
 
-    inv = invoice_repo.get(db, result.invoice_id)
+    inv = invoice_repo.get(db, result.invoice_id, org_id=org_id)
     if inv is None:
         raise NotFoundError(f"invoice {result.invoice_id} not found after processing")
 
@@ -184,8 +186,11 @@ def get_sample_invoices() -> list[dict[str, object]]:
 
 
 @router.get("", response_model=list[InvoiceOut])
-def list_invoices(db: Session = Depends(get_db)) -> list[InvoiceOut]:
-    return [InvoiceOut.model_validate(i) for i in invoice_repo.list_all(db)]
+def list_invoices(
+    db: Session = Depends(get_db),
+    org_id: str = Depends(get_current_org),
+) -> list[InvoiceOut]:
+    return [InvoiceOut.model_validate(i) for i in invoice_repo.list_all(db, org_id=org_id)]
 
 
 @router.post("/bulk-action", response_model=BulkActionOut)
@@ -193,12 +198,11 @@ def bulk_action(
     body: BulkActionIn,
     db: Session = Depends(get_db),
     role: str = Depends(get_role),
+    org_id: str = Depends(get_current_org),
 ) -> BulkActionOut:
     """Apply approve / hold / route to a list of invoice ids.
 
-    This is the confirm step after the chat agent returns a ``bulk_confirm``
-    result.  Each invoice is run through ``execution_service.execute`` which
-    enforces the guard.  Returns the count applied and per-invoice statuses.
+    Only invoices belonging to the current org are touched.
     """
     results: list[BulkActionResultItem] = []
     fields: dict[str, object] = {}
@@ -206,13 +210,17 @@ def bulk_action(
         fields["route"] = body.route
 
     for inv_id in body.ids:
+        # Verify the invoice belongs to this org before executing
+        inv_check = invoice_repo.get(db, inv_id, org_id=org_id)
+        if inv_check is None:
+            results.append(BulkActionResultItem(id=inv_id, status="error"))
+            continue
         try:
             inv = execution_service.execute(
                 db, inv_id, body.action, actor=role, **fields
             )
             results.append(BulkActionResultItem(id=inv_id, status=inv.status))
         except (ValueError, KeyError):
-            # Invoice not found or invalid action — skip gracefully
             results.append(BulkActionResultItem(id=inv_id, status="error"))
 
     applied = sum(1 for r in results if r.status != "error")
@@ -220,14 +228,13 @@ def bulk_action(
 
 
 @router.get("/{invoice_id}/file")
-def get_invoice_file(invoice_id: str, db: Session = Depends(get_db)) -> FileResponse:
-    """Return the source document for an invoice as a file download/preview.
-
-    For seed invoices the file is served from ``data/sample_invoices/<source_file>``.
-    For uploaded invoices the stored path is used directly (absolute path saved at
-    upload time).  Returns 404 if no file is associated with the invoice.
-    """
-    inv = invoice_repo.get(db, invoice_id)
+def get_invoice_file(
+    invoice_id: str,
+    db: Session = Depends(get_db),
+    org_id: str = Depends(get_current_org),
+) -> FileResponse:
+    """Return the source document for an invoice as a file download/preview."""
+    inv = invoice_repo.get(db, invoice_id, org_id=org_id)
     if inv is None:
         raise NotFoundError(f"invoice {invoice_id} not found")
 
@@ -259,8 +266,12 @@ def get_invoice_file(invoice_id: str, db: Session = Depends(get_db)) -> FileResp
 
 
 @router.get("/{invoice_id}", response_model=InvoiceOut)
-def get_invoice(invoice_id: str, db: Session = Depends(get_db)) -> InvoiceOut:
-    inv = invoice_repo.get(db, invoice_id)
+def get_invoice(
+    invoice_id: str,
+    db: Session = Depends(get_db),
+    org_id: str = Depends(get_current_org),
+) -> InvoiceOut:
+    inv = invoice_repo.get(db, invoice_id, org_id=org_id)
     if inv is None:
         raise NotFoundError(f"invoice {invoice_id} not found")
     return InvoiceOut.model_validate(inv)
@@ -272,14 +283,15 @@ def invoice_action(
     body: ActionIn,
     db: Session = Depends(get_db),
     role: str = Depends(get_role),
+    org_id: str = Depends(get_current_org),
 ) -> InvoiceOut:
-    inv = invoice_repo.get(db, invoice_id)
+    inv = invoice_repo.get(db, invoice_id, org_id=org_id)
     if inv is None:
         raise NotFoundError(f"invoice {invoice_id} not found")
 
     if body.action in ("route", "hold"):
         inv_domain = invoice_repo.to_domain(inv)
-        enr = enrichment_service.enrich(db, inv_domain)
+        enr = enrichment_service.enrich(db, inv_domain, org_id=org_id)
         settings = get_settings()
         findings = policy_service.run(inv_domain, enr, settings.tolerance_pct)
 
@@ -304,6 +316,7 @@ def invoice_action(
             user_action=body.action,
             over_pct=over_pct,
             reason=body.reason,
+            org_id=org_id,
         )
 
     fields: dict[str, object] = {}
@@ -332,12 +345,13 @@ def add_comment(
     body: CommentIn,
     db: Session = Depends(get_db),
     role: str = Depends(get_role),
+    org_id: str = Depends(get_current_org),
 ) -> CommentOut:
     """Add a comment to an invoice.  Returns 404 when the invoice does not exist."""
-    inv = invoice_repo.get(db, invoice_id)
+    inv = invoice_repo.get(db, invoice_id, org_id=org_id)
     if inv is None:
         raise NotFoundError(f"invoice {invoice_id} not found")
-    comment = comment_repo.add(db, invoice_id=invoice_id, author=role, body=body.body)
+    comment = comment_repo.add(db, invoice_id=invoice_id, author=role, body=body.body, org_id=org_id)
     return CommentOut.model_validate(comment)
 
 
@@ -345,9 +359,10 @@ def add_comment(
 def list_comments(
     invoice_id: str,
     db: Session = Depends(get_db),
+    org_id: str = Depends(get_current_org),
 ) -> list[CommentOut]:
     """List comments for an invoice (oldest first).  Returns 404 for unknown invoices."""
-    inv = invoice_repo.get(db, invoice_id)
+    inv = invoice_repo.get(db, invoice_id, org_id=org_id)
     if inv is None:
         raise NotFoundError(f"invoice {invoice_id} not found")
-    return [CommentOut.model_validate(c) for c in comment_repo.list_for_invoice(db, invoice_id)]
+    return [CommentOut.model_validate(c) for c in comment_repo.list_for_invoice(db, invoice_id, org_id=org_id)]

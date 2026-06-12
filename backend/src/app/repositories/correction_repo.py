@@ -12,17 +12,18 @@ def add(s: Session, correction: Correction) -> Correction:
     return correction
 
 
-def list_for_vendor(s: Session, vendor: str) -> list[Correction]:
-    return list(s.query(Correction).filter(Correction.vendor == vendor).all())
+def list_for_vendor(s: Session, vendor: str, *, org_id: str | None = None) -> list[Correction]:
+    q = s.query(Correction).filter(Correction.vendor == vendor)
+    if org_id is not None:
+        q = q.filter(Correction.org_id == org_id)
+    return list(q.all())
 
 
-def list_recent(s: Session, limit: int = 50) -> list[Correction]:
-    return list(
-        s.query(Correction)
-        .order_by(Correction.created_at.desc())
-        .limit(limit)
-        .all()
-    )
+def list_recent(s: Session, limit: int = 50, *, org_id: str | None = None) -> list[Correction]:
+    q = s.query(Correction)
+    if org_id is not None:
+        q = q.filter(Correction.org_id == org_id)
+    return list(q.order_by(Correction.created_at.desc()).limit(limit).all())
 
 
 def to_domain(c: Correction) -> DomainCorrection:

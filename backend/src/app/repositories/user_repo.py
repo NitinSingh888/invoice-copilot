@@ -21,3 +21,17 @@ def get_by_email(s: Session, email: str) -> User | None:
 
 def get_by_verification_token(s: Session, token: str) -> User | None:
     return s.query(User).filter(User.verification_token == token).first()
+
+
+def list_by_org(s: Session, org_id: str) -> list[User]:
+    """Return all users in an organization."""
+    return list(s.query(User).filter(User.org_id == org_id).all())
+
+
+def list_pending_by_org(s: Session, org_id: str) -> list[User]:
+    """Return unverified (pending) users in an organization."""
+    return list(
+        s.query(User)
+        .filter(User.org_id == org_id, User.is_verified.is_(False))
+        .all()
+    )

@@ -14,6 +14,7 @@ class Correction(Base):
 
     __table_args__ = (
         Index("ix_corrections_invoice_id", "invoice_id"),
+        Index("ix_corrections_org_id", "org_id"),
     )
 
     id: Mapped[str] = mapped_column(primary_key=True)
@@ -25,6 +26,10 @@ class Correction(Base):
     user_action: Mapped[str]
     over_pct: Mapped[Decimal] = mapped_column(Numeric(6, 4))
     reason: Mapped[str | None] = mapped_column(default=None)
+    org_id: Mapped[str | None] = mapped_column(
+        ForeignKey("organizations.id", name="fk_corrections_org_id", ondelete="SET NULL"),
+        default=None,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

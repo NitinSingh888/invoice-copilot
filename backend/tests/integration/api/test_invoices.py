@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from tests.conftest import TEST_ORG_ID
 
 # ---------------------------------------------------------------------------
 # Payloads
@@ -114,14 +115,16 @@ def test_invoice_action_route(seeded_client: TestClient) -> None:
 
 def test_get_invoice_file_returns_200_pdf(demo_seeded_client: TestClient) -> None:
     """A seed invoice with a real PDF → GET /file returns 200 + application/pdf."""
-    resp = demo_seeded_client.get("/api/v1/invoices/inv-azure/file")
+    inv_id = f"inv-azure-{TEST_ORG_ID}"
+    resp = demo_seeded_client.get(f"/api/v1/invoices/{inv_id}/file")
     assert resp.status_code == 200
     assert resp.headers["content-type"].startswith("application/pdf")
 
 
 def test_get_invoice_file_returns_pdf_bytes(demo_seeded_client: TestClient) -> None:
     """File response body starts with the PDF magic bytes (%PDF)."""
-    resp = demo_seeded_client.get("/api/v1/invoices/inv-azure/file")
+    inv_id = f"inv-azure-{TEST_ORG_ID}"
+    resp = demo_seeded_client.get(f"/api/v1/invoices/{inv_id}/file")
     assert resp.status_code == 200
     assert resp.content[:4] == b"%PDF"
 
@@ -134,8 +137,9 @@ def test_get_invoice_file_unknown_id_returns_404(demo_seeded_client: TestClient)
 
 
 def test_get_corpus_image_file_returns_200(demo_seeded_client: TestClient) -> None:
-    """Corpus image invoice (inv-c000.jpg) → GET /file returns 200."""
-    resp = demo_seeded_client.get("/api/v1/invoices/inv-c000/file")
+    """Corpus image invoice → GET /file returns 200."""
+    inv_id = f"inv-c000-{TEST_ORG_ID}"
+    resp = demo_seeded_client.get(f"/api/v1/invoices/{inv_id}/file")
     assert resp.status_code == 200
 
 
@@ -167,6 +171,7 @@ def test_get_invoice_file_no_file_returns_404(client: TestClient, db: Session) -
         amount=Decimal("100.00"),
         confidence="HIGH",
         source_file=None,
+        org_id=TEST_ORG_ID,
     )
     db.add(inv)
     db.commit()
@@ -177,7 +182,8 @@ def test_get_invoice_file_no_file_returns_404(client: TestClient, db: Session) -
 
 def test_invoice_out_exposes_source_file(demo_seeded_client: TestClient) -> None:
     """GET /invoices/{id} includes source_file field in InvoiceOut."""
-    resp = demo_seeded_client.get("/api/v1/invoices/inv-azure")
+    inv_id = f"inv-azure-{TEST_ORG_ID}"
+    resp = demo_seeded_client.get(f"/api/v1/invoices/{inv_id}")
     assert resp.status_code == 200
     data = resp.json()
     assert "source_file" in data
@@ -197,6 +203,7 @@ def test_invoice_out_source_file_none_for_no_file(client: TestClient, db: Sessio
         amount=Decimal("100.00"),
         confidence="HIGH",
         source_file=None,
+        org_id=TEST_ORG_ID,
     )
     db.add(inv)
     db.commit()
@@ -223,6 +230,7 @@ def test_invoice_out_exposes_created_at(client: TestClient, db: Session) -> None
         vendor="Timestamp Vendor",
         amount=Decimal("500.00"),
         confidence="HIGH",
+        org_id=TEST_ORG_ID,
     )
     db.add(inv)
     db.commit()

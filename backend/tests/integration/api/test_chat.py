@@ -8,12 +8,13 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.db.models.invoice import Invoice
+from tests.conftest import TEST_ORG_ID
 
 
 @pytest.fixture()
 def chat_client(seeded_client: TestClient, db: Session) -> TestClient:
     """seeded_client with extra invoices for chat tests."""
-    # Add a received invoice for process_batch tests
+    # Add a received invoice for process_batch tests (must belong to TEST_ORG_ID)
     db.add(
         Invoice(
             id="inv-recv-chat",
@@ -22,6 +23,7 @@ def chat_client(seeded_client: TestClient, db: Session) -> TestClient:
             amount=Decimal("9800"),
             invoice_number="RECV-CHAT-1",
             po_number="PO-1",
+            org_id=TEST_ORG_ID,
         )
     )
     # Add an escalated invoice for approve tests — ID must match INV-\d+ for MockClient
@@ -33,6 +35,7 @@ def chat_client(seeded_client: TestClient, db: Session) -> TestClient:
             vendor="Acme Corp",
             amount=Decimal("11300"),
             invoice_number="ESC-CHAT-1",
+            org_id=TEST_ORG_ID,
         )
     )
     db.commit()

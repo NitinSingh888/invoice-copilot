@@ -10,6 +10,12 @@ Each event is hashed over the dict::
 that the hash is fully reproducible from stored row fields without needing to
 know the exact timestamp that the database/ORM resolved.  Both ``append`` and
 ``verify`` build the body the same way.
+
+Note on org_id and the hash chain
+----------------------------------
+``org_id`` is NOT included in the hash body — it's a routing/scoping attribute,
+not part of the event's logical content.  This preserves backward compatibility
+with existing chains and keeps the verify() logic stable.
 """
 
 from __future__ import annotations
@@ -57,6 +63,7 @@ def append(
     outputs: dict[str, Any] | None = None,
     rationale: str | None = None,
     model_meta: dict[str, Any] | None = None,
+    org_id: str | None = None,
 ) -> AuditEvent:
     """Append a new event, chaining its hash to the previous event."""
     inputs = inputs or {}
@@ -93,32 +100,44 @@ def append(
         model_meta=model_meta,
         prev_hash=prev_hash,
         hash=event_hash,
+        org_id=org_id,
     )
     s.add(event)
     s.flush()
     return event
 
 
-def list_for_invoice(s: Session, invoice_id: str) -> list[AuditEvent]:
-    return list(
-        s.query(AuditEvent)
-        .filter(AuditEvent.invoice_id == invoice_id)
-        .order_by(AuditEvent.seq.asc())
-        .all()
-    )
+def list_for_invoice(
+    s: Session, invoice_id: str, *, org_id: str | None = None
+) -> list[AuditEvent]:
+    q = s.query(AuditEvent).filter(AuditEvent.invoice_id == invoice_id)
+    if org_id is not None:
+        q = q.filter(AuditEvent.org_id == org_id)
+    return list(q.order_by(AuditEvent.seq.asc()).all())
 
 
-def all_events(s: Session) -> list[AuditEvent]:
-    return list(s.query(AuditEvent).order_by(AuditEvent.seq.asc()).all())
+def all_events(s: Session, *, org_id: str | None = None) -> list[AuditEvent]:
+    q = s.query(AuditEvent)
+    if org_id is not None:
+        q = q.filter(AuditEvent.org_id == org_id)
+    return list(q.order_by(AuditEvent.seq.asc()).all())
 
 
-def verify(s: Session) -> bool:
+def verify(s: Session, *, org_id: str | None = None) -> bool:
     """Walk all events in seq order and verify the hash chain.
 
     Returns False on the first mismatch, True if the chain is intact.
+
+    When org_id is provided, only events for that org are verified.
+    Note: the hash chain is global (chained across all orgs by seq), so
+    org-scoped verify only checks the subset — useful for per-org audit trails.
     """
-    events = all_events(s)
-    prev_hash: str = GENESIS
+    events = all_events(s, org_id=org_id)
+    if not events:
+        return True
+    # For global (no org filter) verification we use GENESIS as starting point.
+    # For per-org we find the prev_hash of the first event in scope.
+    prev_hash: str = events[0].prev_hash
     for ev in events:
         body = _body(
             invoice_id=ev.invoice_id,

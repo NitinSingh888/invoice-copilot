@@ -27,11 +27,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         logger.exception("DB migration failed — continuing anyway (may be stale schema)")
 
     try:
-        from app.seed import seed, seed_demo_user
+        from app.seed import DEMO_ORG_ID, seed_demo_user, seed_org
 
         with SessionLocal() as s:
             seed_demo_user(s)
-            seed(s)
+            seed_org(s, DEMO_ORG_ID)
             s.commit()
     except Exception:
         logger.exception("Seed-on-boot failed — continuing without demo data")
