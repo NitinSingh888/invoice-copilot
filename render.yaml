@@ -35,5 +35,10 @@ services:
       - key: IC_ANTHROPIC_API_KEY
         sync: false
 
+      # Signs the auth tokens. Render generates a strong random value once and
+      # keeps it stable across deploys — never use the insecure dev default in prod.
+      - key: IC_JWT_SECRET
+        generateValue: true
+
       - key: PYTHONUNBUFFERED
         value: "1"

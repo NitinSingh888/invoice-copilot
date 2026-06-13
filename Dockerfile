@@ -28,8 +28,11 @@ COPY backend/alembic.ini ./
 COPY backend/migrations ./migrations
 RUN pip install .
 COPY --from=frontend /fe/dist /app/static
-# Ship the sample invoice PDFs inside the image so the /file preview route
+# Ship the sample invoice documents inside the image so the /file preview route
 # works without a bind-mount in production (S3 migration TBD).
 COPY backend/data/sample_invoices /app/data/sample_invoices
+# Ship the cached extraction corpus so the demo seeds at boot (no LLM call).
+# Without this the seeder finds no corpus and the app comes up with an empty demo.
+COPY backend/data/corpus_unique.json /app/data/corpus_unique.json
 EXPOSE 8000
 CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
