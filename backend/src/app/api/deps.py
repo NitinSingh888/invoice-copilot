@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.clients.llm.base import LLMClient
 from app.clients.llm.factory import build_llm_client
+from app.clients.llm.metered import MeteredLLMClient
 from app.core.config import get_settings
 from app.core.security import current_role
 from app.db.models.user import User
@@ -15,13 +16,13 @@ from app.db.session import SessionLocal
 from app.repositories import user_repo
 from app.services import auth_service
 
-# Module-level cache — one client per process lifetime.
+# Module-level cache — one real client per process lifetime.
 _llm_client: LLMClient | None = None
 
 _bearer = HTTPBearer(auto_error=False)
 
 
-def get_llm() -> LLMClient:
+def _real_llm() -> LLMClient:
     global _llm_client
     if _llm_client is None:
         _llm_client = build_llm_client(get_settings())
@@ -83,3 +84,10 @@ def get_current_org(user: User = Depends(get_current_user)) -> str:
             detail="User does not belong to an organization",
         )
     return user.org_id
+
+
+def get_llm(user: User = Depends(get_current_user)) -> LLMClient:
+    """A per-request LLM client that meters every call — recording its purpose,
+    the triggering user/team, token usage, actual cost, and latency to the
+    ``llm_calls`` table. Wraps the process-wide real client."""
+    return MeteredLLMClient(_real_llm(), org_id=user.org_id, user_id=user.id)

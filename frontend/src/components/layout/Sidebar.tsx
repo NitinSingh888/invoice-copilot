@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { LayoutDashboard, Inbox, BookOpen, ScrollText, Sun, Moon, RotateCcw, GraduationCap, History, LogOut, Users } from 'lucide-react'
+import { LayoutDashboard, Inbox, BookOpen, ScrollText, Sun, Moon, RotateCcw, GraduationCap, History, LogOut, Users, Coins } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { TeamDialog } from './TeamDialog'
 import type { Role, OrgRole } from '@/lib/types'
 
-export type View = 'dashboard' | 'inbox' | 'history' | 'rules' | 'audit' | 'guide'
+export type View = 'dashboard' | 'inbox' | 'history' | 'rules' | 'audit' | 'guide' | 'usage'
 
 interface SidebarProps {
   view: View
@@ -30,6 +30,7 @@ const NAV = [
   { id: 'inbox' as View, label: 'Inbox', Icon: Inbox },
   { id: 'history' as View, label: 'History', Icon: History },
   { id: 'rules' as View, label: 'Rules', Icon: BookOpen },
+  { id: 'usage' as View, label: 'AI Usage', Icon: Coins },
 ]
 
 export function Sidebar({

@@ -347,3 +347,40 @@ export async function verifyMember(userId: string): Promise<void> {
     body: JSON.stringify({ user_id: userId }),
   })
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// AI usage / cost
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface UsageCall {
+  id: string
+  purpose: string
+  reason: string
+  entity_type: string | null
+  entity_id: string | null
+  provider: string
+  model: string
+  input_tokens: number
+  output_tokens: number
+  cost_usd: string
+  latency_ms: number
+  status: string
+  user_id: string | null
+  created_at: string
+}
+
+export interface UsageSummary {
+  currency: string
+  total_calls: number
+  total_cost_usd: string
+  total_input_tokens: number
+  total_output_tokens: number
+  by_purpose: { purpose: string; calls: number; cost_usd: string; tokens: number }[]
+  by_model: { model: string; calls: number; cost_usd: string }[]
+  by_user: { user: string; calls: number; cost_usd: string }[]
+  recent: UsageCall[]
+}
+
+export async function getUsage(): Promise<UsageSummary> {
+  return request<UsageSummary>('/usage')
+}

@@ -5,6 +5,7 @@ from decimal import Decimal, InvalidOperation
 from typing import Any
 
 from .types import AgentReply, ChatMessage, CommandSpec, Confidence, ExtractedField, ExtractedInvoice
+from .usage import record_usage
 
 # Confidence ordering for comparison
 _CONF_RANK: dict[str, int] = {"HIGH": 2, "MED": 1, "LOW": 0}
@@ -25,6 +26,7 @@ class MockClient:
         self, *, text: str, image_b64: str | None = None
     ) -> ExtractedInvoice:
         """Parse key: value lines from text.  Fully deterministic."""
+        record_usage("mock", "mock", 0, 0)
         raw: dict[str, str] = {}
         for line in text.splitlines():
             if ":" in line:
@@ -89,6 +91,7 @@ class MockClient:
     def converse(
         self, *, history: list[ChatMessage], context: dict[str, Any]
     ) -> AgentReply:
+        record_usage("mock", "mock", 0, 0)
         last = history[-1].content.lower() if history else ""
 
         # Extract optional invoice id from message
@@ -138,6 +141,7 @@ class MockClient:
         self, *, message: str, history: list[ChatMessage]
     ) -> CommandSpec:
         """Parse a natural-language message into a CommandSpec using regex heuristics."""
+        record_usage("mock", "mock", 0, 0)
         low = message.lower().strip()
 
         # ---- action detection (order matters: more-specific first) ----
@@ -253,6 +257,7 @@ class MockClient:
         threshold_pct: Decimal,
         route: str,
     ) -> str:
+        record_usage("mock", "mock", 0, 0)
         pcts_str = ", ".join(f"{p:.0%}" for p in over_pcts)
         return (
             f"Inferred from corrections at {pcts_str} over PO → "

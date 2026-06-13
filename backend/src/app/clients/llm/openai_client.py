@@ -6,6 +6,7 @@ from decimal import Decimal, InvalidOperation
 from typing import Any
 
 from .types import AgentReply, ChatMessage, CommandSpec, Confidence, ExtractedField, ExtractedInvoice
+from .usage import record_usage
 
 _EXTRACT_SYSTEM = (
     "You are an invoice data extraction assistant. "
@@ -125,6 +126,20 @@ class OpenAIClient:
             self._client = openai.OpenAI(api_key=self._api_key)
         return self._client
 
+    def _record(self, response: Any) -> None:
+        """Report this response's actual token usage to the metering sink."""
+        try:
+            usage = getattr(response, "usage", None)
+            if usage is not None:
+                record_usage(
+                    self.name,
+                    self._model,
+                    int(getattr(usage, "prompt_tokens", 0) or 0),
+                    int(getattr(usage, "completion_tokens", 0) or 0),
+                )
+        except Exception:
+            pass
+
     # ------------------------------------------------------------------
     # extract_invoice
     # ------------------------------------------------------------------
@@ -154,6 +169,7 @@ class OpenAIClient:
                 ],
                 max_tokens=512,
             )
+            self._record(response)
             raw_text: str = response.choices[0].message.content or ""
             data = _parse_json_from_text(raw_text)
         except Exception:
@@ -234,6 +250,7 @@ class OpenAIClient:
                 messages=messages,
                 max_tokens=512,
             )
+            self._record(response)
             raw_text = response.choices[0].message.content or ""
             data = _parse_json_from_text(raw_text)
         except Exception:
@@ -268,6 +285,7 @@ class OpenAIClient:
                 messages=messages,
                 max_tokens=256,
             )
+            self._record(response)
             raw_text: str = response.choices[0].message.content or ""
             data = _parse_json_from_text(raw_text)
         except Exception:
@@ -349,6 +367,7 @@ class OpenAIClient:
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=200,
             )
+            self._record(response)
             return str(response.choices[0].message.content or "").strip()
         except Exception:
             pcts_str2 = ", ".join(f"{p:.0%}" for p in over_pcts)

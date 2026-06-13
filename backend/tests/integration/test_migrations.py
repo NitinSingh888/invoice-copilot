@@ -62,7 +62,7 @@ def test_upgrade_head_creates_all_tables(mig_engine) -> None:  # type: ignore[ty
     tables = set(insp.get_table_names())
     expected = {
         "invoices", "purchase_orders", "vendors", "corrections",
-        "rules", "audit_events", "users", "comments",
+        "rules", "audit_events", "users", "comments", "organizations", "llm_calls",
     }
     assert expected.issubset(tables), f"Missing tables: {expected - tables}"
 
@@ -92,16 +92,19 @@ def test_upgrade_head_check_constraints(mig_engine) -> None:  # type: ignore[typ
 
 
 def test_downgrade_minus_one_removes_multitenancy_schema(mig_engine) -> None:  # type: ignore[type-arg]
-    """Downgrade -1 (0003→0002) removes the organizations table and org_id columns."""
+    """Downgrading to 0002 removes the multitenancy (0003) + llm_calls (0004) schema."""
     import alembic.command
 
     alembic.command.upgrade(_alembic_cfg(), "head")
-    alembic.command.downgrade(_alembic_cfg(), "-1")
+    # Downgrade to the pre-multitenancy revision explicitly (head has since moved
+    # past 0003, so a relative "-1" would no longer land on it).
+    alembic.command.downgrade(_alembic_cfg(), "0002")
 
     insp = inspect(mig_engine)
     tables = set(insp.get_table_names())
-    # organizations table should be removed
+    # organizations + llm_calls tables should be removed
     assert "organizations" not in tables, "organizations table should be removed after downgrade"
+    assert "llm_calls" not in tables, "llm_calls table should be removed after downgrade"
 
     # org_id should be removed from entity tables
     invoice_cols = {c["name"] for c in insp.get_columns("invoices")}

@@ -7,6 +7,7 @@ import { Inbox } from '@/pages/Inbox'
 import { History } from '@/pages/History'
 import { Rules } from '@/pages/Rules'
 import { Guide } from '@/pages/Guide'
+import { Usage } from '@/pages/Usage'
 import { AuditLog } from '@/pages/AuditLog'
 import { AuditSheet } from '@/components/invoice/AuditSheet'
 import { InvoiceDetailSheet } from '@/components/invoice/InvoiceDetailSheet'
@@ -376,6 +377,7 @@ export default function App({ userEmail, orgName, orgRole }: AppProps) {
         {view === 'rules' && <Rules />}
         {view === 'audit' && <AuditLog live={healthLive} />}
         {view === 'guide' && <Guide onStartTour={startTour} />}
+        {view === 'usage' && <Usage />}
       </div>
 
       <AuditSheet invoiceId={auditId} open={auditOpen} onOpenChange={setAuditOpen} />

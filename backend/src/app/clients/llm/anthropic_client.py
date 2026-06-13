@@ -6,6 +6,7 @@ from decimal import Decimal, InvalidOperation
 from typing import Any
 
 from .types import AgentReply, ChatMessage, CommandSpec, Confidence, ExtractedField, ExtractedInvoice
+from .usage import record_usage
 
 # System prompts
 _EXTRACT_SYSTEM = (
@@ -134,6 +135,20 @@ class AnthropicClient:
             self._client = anthropic.Anthropic(api_key=self._api_key)
         return self._client
 
+    def _record(self, response: Any) -> None:
+        """Report this response's actual token usage to the metering sink."""
+        try:
+            usage = getattr(response, "usage", None)
+            if usage is not None:
+                record_usage(
+                    self.name,
+                    self._model,
+                    int(getattr(usage, "input_tokens", 0) or 0),
+                    int(getattr(usage, "output_tokens", 0) or 0),
+                )
+        except Exception:
+            pass
+
     # ------------------------------------------------------------------
     # extract_invoice
     # ------------------------------------------------------------------
@@ -173,6 +188,7 @@ class AnthropicClient:
                 system=_EXTRACT_SYSTEM,
                 messages=[{"role": "user", "content": content}],
             )
+            self._record(response)
             raw_text: str = response.content[0].text
             data = _parse_json_from_text(raw_text)
         except Exception:
@@ -253,6 +269,7 @@ class AnthropicClient:
                 system=_CONVERSE_SYSTEM,
                 messages=messages,
             )
+            self._record(response)
             raw_text = response.content[0].text
             data = _parse_json_from_text(raw_text)
         except Exception:
@@ -284,6 +301,7 @@ class AnthropicClient:
                 system=_COMMAND_SYSTEM,
                 messages=messages,
             )
+            self._record(response)
             raw_text: str = response.content[0].text
             data = _parse_json_from_text(raw_text)
         except Exception:
@@ -365,6 +383,7 @@ class AnthropicClient:
                 max_tokens=200,
                 messages=[{"role": "user", "content": prompt}],
             )
+            self._record(response)
             return str(response.content[0].text).strip()
         except Exception:
             pcts_str2 = ", ".join(f"{p:.0%}" for p in over_pcts)

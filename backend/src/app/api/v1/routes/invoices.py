@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from app.agents import extraction_agent
 from app.api.deps import get_current_org, get_db, get_llm, get_role
 from app.clients.llm.base import LLMClient
+from app.clients.llm.usage import entity_context
 from app.core.config import get_settings
 from app.core.exceptions import NotFoundError
 from app.core.paths import project_data_dir
@@ -88,14 +89,16 @@ def upload_invoice(
     filename = file.filename or ""
     content_type = file.content_type or "application/octet-stream"
 
-    extracted = extraction_agent.extract(
-        llm,
-        file_bytes=file_bytes,
-        filename=filename,
-        content_type=content_type,
-    )
-
     invoice_id = f"inv-{uuid4().hex[:8]}"
+    # Tag the extraction LLM call with the invoice it's for (cost accounting).
+    with entity_context("invoice", invoice_id):
+        extracted = extraction_agent.extract(
+            llm,
+            file_bytes=file_bytes,
+            filename=filename,
+            content_type=content_type,
+        )
+
     invoice_data = InvoiceData(
         invoice_id=invoice_id,
         vendor=extracted.vendor or "",
