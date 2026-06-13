@@ -368,13 +368,13 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps) {
             <button
               type="button"
               onClick={() => {
-                setEmail('demo@zamp.ai')
+                setEmail('demo@example.com')
                 setPassword('demo1234')
                 switchMode('login')
               }}
               className="font-mono text-[11px] text-primary hover:underline"
             >
-              demo@zamp.ai / demo1234
+              demo@example.com / demo1234
             </button>
           </p>
         </div>

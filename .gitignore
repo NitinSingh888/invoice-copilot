@@ -28,3 +28,24 @@ build/
 # Local data / uploads
 data/uploads/
 storage/
+
+# Claude Code / AI agents
+.claude/
+CLAUDE.local.md
+.cursor/
+.aider*
+
+# Playwright / chrome-devtools / e2e artifacts
+playwright-report/
+test-results/
+.playwright/
+
+# Env variants (the committed .env.example is kept)
+.env.local
+.env.*.local
+
+# Build / tooling artifacts
+*.tsbuildinfo
+*.local
+*.tmp
+*.bak

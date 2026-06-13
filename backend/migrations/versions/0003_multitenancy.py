@@ -7,7 +7,7 @@ Create Date: 2026-06-12 00:02:00.000000
 Strategy for existing data
 --------------------------
 1. Create the ``organizations`` table.
-2. Insert the demo org row (id = 'org-demo', name = 'Zamp Demo').
+2. Insert the demo org row (id = 'org-demo', name = 'Demo Co').
 3. Add ``org_id`` as nullable to users, vendors, purchase_orders, invoices,
    corrections, rules, audit_events, comments.
 4. Backfill every existing row with 'org-demo'.
@@ -29,7 +29,7 @@ branch_labels: str | None = None
 depends_on: str | None = None
 
 _DEMO_ORG_ID = "org-demo"
-_DEMO_ORG_NAME = "Zamp Demo"
+_DEMO_ORG_NAME = "Demo Co"
 
 # Tables that get an org_id column (ordered so FKs can be added after backfill)
 _ORG_TABLES = [

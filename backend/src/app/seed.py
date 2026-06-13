@@ -65,9 +65,9 @@ _CORPUS_JSON = _DATA_DIR / "corpus_unique.json"  # deduped: one entry per invoic
 # ---------------------------------------------------------------------------
 
 DEMO_ORG_ID = "org-demo"
-DEMO_ORG_NAME = "Zamp Demo"
+DEMO_ORG_NAME = "Demo Co"
 DEMO_USER_ID = "usr-demo0001"
-DEMO_USER_EMAIL = "demo@zamp.ai"
+DEMO_USER_EMAIL = "demo@example.com"
 
 # ---------------------------------------------------------------------------
 # SEED_VENDORS  (10 PDF curated batch — unchanged)

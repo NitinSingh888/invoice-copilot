@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.11+, `pytest`, `Decimal`, `dataclasses`, `enum`; tooling `ruff` + `mypy`. Package layout `src/app/...` with `pyproject.toml` (setuptools, src layout).
 
-**Spec reference:** `docs/specs/2026-06-09-zamp-ap-agent-design.md` — §5 (domain model), §6 (guard), §7 (audit chain), §8 (learning), §14 (tests).
+**Spec reference:** `docs/specs/2026-06-09-ap-agent-design.md` — §5 (domain model), §6 (guard), §7 (audit chain), §8 (learning), §14 (tests).
 
 ---
 

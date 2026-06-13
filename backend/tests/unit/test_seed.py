@@ -35,7 +35,7 @@ def _inv_id(suffix: str, org_id: str = DEMO_ORG_ID) -> str:
 
 def _ensure_demo_org(s: Session) -> None:
     if s.get(Organization, DEMO_ORG_ID) is None:
-        s.add(Organization(id=DEMO_ORG_ID, name="Zamp Demo"))
+        s.add(Organization(id=DEMO_ORG_ID, name="Demo Co"))
         s.flush()
 
 

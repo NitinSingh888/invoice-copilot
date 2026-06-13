@@ -8,7 +8,7 @@
 
 **Tech Stack:** SQLAlchemy 2.0 (typed `Mapped`/`mapped_column`), Alembic, pydantic-settings, pytest. Python 3.14 venv at `.venv`.
 
-**Spec:** `docs/specs/2026-06-09-zamp-ap-agent-design.md` §5 (entities), §6 (decision orchestration), §7 (audit), §8 (learning). **Reuse, do not re-implement, M1 domain** (`app.domain.policy/decision/learning/audit`).
+**Spec:** `docs/specs/2026-06-09-ap-agent-design.md` §5 (entities), §6 (decision orchestration), §7 (audit), §8 (learning). **Reuse, do not re-implement, M1 domain** (`app.domain.policy/decision/learning/audit`).
 
 ---
 

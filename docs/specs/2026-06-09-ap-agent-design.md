@@ -1,15 +1,15 @@
 # Invoice Copilot — A Conversational AI Accounts-Payable Agent
 
 > **Design specification** · 2026-06-09 · **v1.1** (revised after senior-engineer + PM review)
-> Take-home: *"Build a conversational agent that can help a user accomplish a real task."*
-> Framing: built as a Zamp AI engineer would build it — a vertical, action-taking finance agent.
+> Brief: *"Build a conversational agent that can help a user accomplish a real task."*
+> Framing: built as a production finance-automation engineer would build it — a vertical, action-taking finance agent.
 > **Tagline:** *Invoice Copilot — a conversational agent that reads your invoices, clears the safe ones, asks you about the rest, and learns how you decide. Every action is logged for audit.*
 
 ---
 
 ## 0. How to read this document
 
-This spec is the single source of truth for the build. Sections 1–3 are *why/what*; 4–9 are *how it behaves*; 10–12 are *how it's built and tested*; 13 is the *UX/screen* detail for design hand-off; 14 maps to the grading rubric. **§18 is the v1.1 changelog** listing what changed after review and why.
+This spec is the single source of truth for the build. Sections 1–3 are *why/what*; 4–9 are *how it behaves*; 10–12 are *how it's built and tested*; 13 is the *UX/screen* detail for design hand-off; 14 maps the design to its success criteria. **§18 is the v1.1 changelog** listing what changed after review and why.
 
 ---
 
@@ -21,20 +21,20 @@ A finance **Accounts-Payable (AP) clerk** — persona **"Maya"** — clears a da
 **The pain, quantified (the business case):** a mid-market AP clerk processes ~40–60 invoices/day at ~3–5 min each → **~3+ hours/day of rote work**. Duplicate and over-billing errors are among the costliest AP leaks. Invoice Copilot's promise: clear the routine majority automatically, surface only what needs judgment, and **give Maya back ~2 hours/day** — while making *every* decision auditable.
 
 ### 1.2 Why a *conversational agent* (not a chatbot, not RPA)
-Anthropic and OpenAI draw the same line: **a system that only answers questions is not an agent.** It becomes one when *connected to real systems and taking action on the user's behalf* via tool calls, holding state, producing side effects. Zamp draws the same line:
-- **vs. a chatbot** — *"A chatbot waits for you to ask it something. Zamp doesn't wait — it monitors, acts, and escalates on its own."*
-- **vs. RPA** — brittle record-and-replay breaks on any layout change; Zamp instead *"understands intent, adapts to change, and keeps humans fully in the loop."*
+Anthropic and OpenAI draw the same line: **a system that only answers questions is not an agent.** It becomes one when *connected to real systems and taking action on the user's behalf* via tool calls, holding state, producing side effects. Production finance-automation platforms draw the same line:
+- **vs. a chatbot** — a chatbot waits to be asked; an agent doesn't wait — it monitors, acts, and escalates on its own.
+- **vs. RPA** — brittle record-and-replay breaks on any layout change; an agent instead understands intent, adapts to change, and keeps humans fully in the loop.
 
 Invoice Copilot sits in that gap: it **does the work**, **confirms before anything irreversible**, **escalates what it's unsure about**, **logs everything**, and **learns the user's judgment over time**.
 
 ### 1.3 Why this scopes the way it does
 The decision-relevant research finding: end-to-end financial-workflow *reliability* — not reasoning — is where agents fail (a 12-task wealth-management benchmark: GPT-4o resolved only 2–4/12; τ-bench: SOTA <50%, pass^8 <25%). The implication is a design principle: **the LLM proposes; deterministic code decides and guards.** We go *deep* on one workflow done *reliably and safely*, not wide across many done shakily.
 
-### 1.4 Zamp's product loop, mirrored
-Zamp's product is a loop — **Observe → Learn → Execute (with human-in-the-loop) → Audit.** Invoice Copilot implements the full loop on one workflow:
+### 1.4 The agentic product loop
+A finance-automation agent is a loop — **Observe → Learn → Execute (with human-in-the-loop) → Audit.** Invoice Copilot implements the full loop on one workflow:
 - **Execute + HITL** — the action-taking conversational agent (the spine).
 - **Observe → Learn** — learning the user's rules by watching their corrections (headline "above and beyond").
-- **Audit** — append-only, replayable, tamper-evident trail (Zamp's SOX/compliance wedge).
+- **Audit** — append-only, replayable, tamper-evident trail (the SOX/compliance wedge).
 
 ---
 
@@ -186,7 +186,7 @@ Prompt injection is unsolved industry-wide; LLM-based defenses are bypassed >90%
 ## 7. Audit & replay (compliance angle)
 
 ### 7.1 What is logged
-Every module appends an immutable `AuditEvent` — mirroring Zamp's *"every action, from reading a PDF to submitting a dispute, logged with timestamp, user context, and a rationale."*
+Every module appends an immutable `AuditEvent` — the compliance principle being that *every action, from reading a PDF to submitting a dispute, is logged with a timestamp, user context, and a rationale.*
 ```jsonc
 {
   "id": "...", "prev_hash": "...", "hash": "...",   // tamper-evident chain (7.2)
@@ -255,7 +255,7 @@ The agent **proposes** consequential calls; the gate authorizes them. Tool args 
 - A provider-agnostic `LLMClient` protocol: `complete()`, `extract_vision()`, `call_tools()`.
 - Implementations: **`MockClient`** (deterministic, scripted — powers tests + zero-key runs), **`AnthropicClient`** (built fully — primary, given the audience), **`OpenAIClient`** (a clean secondary adapter; finished if time allows). Provider-specific vision/tool-schema differences are absorbed *inside* each adapter so the protocol stays clean.
 - A `FailoverClient` wraps an ordered list (primary → secondary → mock). Selected via config (`LLM_PROVIDER=anthropic|openai|auto|mock`). Provider+model recorded in `model_meta`.
-- **Scoping note:** the take-home ships with Mock + Anthropic solid; OpenAI is a marked secondary. Better one solid adapter than two half-working ones behind a failover.
+- **Scoping note:** this build ships with Mock + Anthropic solid; OpenAI is a marked secondary. Better one solid adapter than two half-working ones behind a failover.
 
 ---
 
@@ -284,7 +284,7 @@ user-process-automation/
 ├── docker-compose.yml              # app + (optional) postgres
 ├── alembic.ini
 ├── docs/
-│   ├── specs/2026-06-09-zamp-ap-agent-design.md   # this document
+│   ├── specs/2026-06-09-ap-agent-design.md   # this document
 │   └── decisions/                  # ADRs
 ├── migrations/                     # Alembic
 │   ├── env.py
@@ -451,8 +451,8 @@ Explicit non-tests: no exact tool-sequence matching; no LLM-judge as a pass/fail
 
 ---
 
-## 16. Mapping to the grading rubric
-| Criterion | How this scores top marks |
+## 16. Design goals & how they're met
+| Goal | How the design meets it |
 |---|---|
 | **Problem framing** | §1 — reliable cross-tool execution + learn-once-run-autonomously; chatbot/RPA contrast; quantified pain; cites the reliability gap. |
 | **Product thinking** | §2–3, §6.4, §11 — concrete user, concrete pain + ROI, act-vs-escalate boundary, real-world-readiness, trust framing, second actor. |
@@ -460,11 +460,11 @@ Explicit non-tests: no exact tool-sequence matching; no LLM-judge as a pass/fail
 | **Code quality** | §12 — layered production FastAPI; pure-domain core; one idempotent place for side effects; clean boundaries. |
 | **Tests** | §14 — eight layers targeting real failures incl. guard precedence, injection, dup, idempotency, chain integrity. |
 | **Documentation** | This spec + README leading with framing, architecture, scoping cuts, real-world readiness, build tiers. |
-| **Setup experience** | §10, §12 — one command; zero-key mock mode; SQLite default; `make demo`. |
+| **Setup experience** | §10, §12 — one command; zero-key mock mode; Postgres via Docker; seeded demo. |
 | **Above & beyond** | §7 tamper-evident audit/replay + §8 generalizing learn-from-corrections + §6 injection-proof deterministic gate. |
 
-### 16.1 README build tiers (protect against spec-over-promising)
-State explicitly: **Must (core loop)** — extract→enrich→policy→gate→execute→audit + conversation. **Headline** — generalizing learning + audit replay + injection demo. **Nice-to-have (may be partial)** — OpenAI adapter, Docker/Postgres, public-dataset eval breadth. Reviewers forgive scoped cuts, not silent gaps.
+### 16.1 Scope tiers (stated honestly in the README)
+State explicitly: **Must (core loop)** — extract→enrich→policy→gate→execute→audit + conversation. **Headline** — generalizing learning + audit replay + injection demo. **Nice-to-have (may be partial)** — OpenAI adapter, Docker/Postgres, public-dataset eval breadth. Honest scope beats silent gaps.
 
 ---
 
