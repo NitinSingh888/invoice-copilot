@@ -342,6 +342,16 @@ def _filter_invoices(
     return result
 
 
+_STATUS_LABELS = {
+    "received": "waiting to be processed",
+    "needs": "need review",
+    "queued": "queued for payment",
+    "blocked": "blocked",
+    "held": "on hold",
+    "routed": "routed",
+}
+
+
 def _filter_label(cmd: CommandSpec) -> str:
     """Build a human-readable description of the active filters."""
     parts: list[str] = []
@@ -350,7 +360,7 @@ def _filter_label(cmd: CommandSpec) -> str:
     if cmd.amount_op and cmd.amount_value is not None:
         parts.append(f"amount{cmd.amount_op}{cmd.amount_value}")
     if cmd.status:
-        parts.append(f"status={cmd.status}")
+        parts.append(_STATUS_LABELS.get(cmd.status, f"status={cmd.status}"))
     return ", ".join(parts)
 
 

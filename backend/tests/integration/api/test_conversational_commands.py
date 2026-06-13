@@ -317,3 +317,26 @@ def test_smalltalk_still_works(cmd_client: TestClient) -> None:
     data = resp.json()
     assert data["intent"] == "smalltalk"
     assert data["result"] is None
+
+
+# ---------------------------------------------------------------------------
+# "to be processed" must count RECEIVED (pending), not queued
+# ---------------------------------------------------------------------------
+
+
+def test_count_to_be_processed_counts_received(cmd_client: TestClient) -> None:
+    resp = cmd_client.post(
+        "/api/v1/chat", json={"message": "how many need to be processed?"}
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["intent"] == "aggregate"
+    assert data["result"]["aggregate"]["value"] == "6"  # 6 received in the fixture
+    assert "waiting to be processed" in data["reply"]
+
+
+def test_count_need_review_counts_needs(cmd_client: TestClient) -> None:
+    resp = cmd_client.post("/api/v1/chat", json={"message": "how many need review?"})
+    data = resp.json()
+    assert data["result"]["aggregate"]["value"] == "2"  # 2 needs in the fixture
+    assert "need review" in data["reply"]

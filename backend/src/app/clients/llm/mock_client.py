@@ -199,7 +199,12 @@ class MockClient:
             status = "held"
         elif re.search(r"\brouted\b", low):
             status = "routed"
-        elif re.search(r"\breceived\b", low):
+        elif (
+            re.search(r"\b(received|pending|unprocessed)\b", low)
+            or "to be processed" in low
+            or "to process" in low
+            or "waiting to" in low
+        ):
             status = "received"
 
         # ---- invoice_ref (specific invoice id / number) ----
