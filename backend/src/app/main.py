@@ -12,9 +12,14 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api.v1.router import api_router
+from app.core.config import get_settings
 from app.core.exceptions import AppError, NotFoundError
 from app.db.session import SessionLocal, run_migrations
 
+logging.basicConfig(
+    level=get_settings().log_level.upper(),
+    format="%(asctime)s %(levelname)-8s %(name)s: %(message)s",
+)
 logger = logging.getLogger(__name__)
 
 
@@ -41,9 +46,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 def create_app() -> FastAPI:
     application = FastAPI(lifespan=lifespan)
 
+    origins = [o.strip() for o in get_settings().cors_origins.split(",") if o.strip()]
     application.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

@@ -26,6 +26,16 @@ class Settings(BaseSettings):
     jwt_expire_minutes: int = 1440
     jwt_algorithm: str = "HS256"
 
+    # CORS — comma-separated allowed origins. In production the SPA is served
+    # same-origin by this service, so CORS is effectively unused; these defaults
+    # cover the local Vite dev server. Override with IC_CORS_ORIGINS if the
+    # frontend is ever hosted on a separate domain.
+    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+
+    # Root log level (DEBUG/INFO/WARNING/ERROR). INFO surfaces boot, migration,
+    # and seed progress in the platform logs.
+    log_level: str = "INFO"
+
     # Path to the directory containing sample invoice PDFs.
     # Set IC_SAMPLE_INVOICES_DIR to override (e.g. a Docker volume mount path).
     sample_invoices_dir: str = ""
