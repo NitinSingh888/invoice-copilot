@@ -25,11 +25,10 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    # Run Alembic migrations to head before serving any requests.
-    try:
-        run_migrations()
-    except Exception:
-        logger.exception("DB migration failed — continuing anyway (may be stale schema)")
+    # Run Alembic migrations to head before serving any requests. A failure here
+    # means the schema is missing/broken, so the app cannot function — fail loudly
+    # (crash boot, fail the deploy) rather than serve 500s against an empty DB.
+    run_migrations()
 
     try:
         from app.seed import DEMO_ORG_ID, seed_demo_user, seed_org

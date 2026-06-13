@@ -42,24 +42,43 @@ def init_db(bind: object) -> None:
 def run_migrations() -> None:
     """Run Alembic migrations to head programmatically.
 
-    Called once at app boot (lifespan).  Uses a NullPool connection so the
-    migration engine does not interfere with the application pool.  Safe to
-    call on an already-up-to-date DB (no-op) or against a legacy DB that has
-    no alembic_version row yet (auto-stamps).
+    Called once at app boot (lifespan). Safe to call on an already-up-to-date
+    DB (no-op) or a fresh DB (creates all tables).
+
+    The ``migrations/`` directory and ``alembic.ini`` live next to the project
+    root, but the *code* may run either from a source checkout (dev /
+    docker-compose, where ``__file__`` is ``<root>/src/app/db/session.py``) or
+    from an installed package (production image, where ``pip install .`` puts
+    the code under ``site-packages`` while the Dockerfile copies ``migrations/``
+    + ``alembic.ini`` to the WORKDIR). So we resolve the root by checking the
+    candidate locations and using the first one that actually contains
+    ``migrations/`` — never a fixed ``parents[N]`` guess.
     """
+    import os
     from pathlib import Path
 
-    import alembic.config
     import alembic.command
+    import alembic.config
 
-    # Locate the alembic.ini at the backend root (/app in the container,
-    # backend/ from source). __file__ = <root>/src/app/db/session.py → parents[3].
-    ini_path = Path(__file__).parents[3] / "alembic.ini"
+    candidates = [
+        Path(__file__).resolve().parents[3],  # source layout: <root>
+        Path.cwd(),  # container WORKDIR (e.g. /app) where the Dockerfile copies them
+    ]
+    env_root = os.environ.get("IC_PROJECT_ROOT")
+    if env_root:
+        candidates.insert(0, Path(env_root))
 
-    cfg = alembic.config.Config(str(ini_path))
-    # Belt-and-suspenders: the ini's %(here)s should resolve script_location,
-    # but set it explicitly so a misread interpolation can't break boot.
-    cfg.set_main_option("script_location", str(ini_path.parent / "migrations"))
+    root = next((c for c in candidates if (c / "migrations").is_dir()), None)
+    if root is None:
+        raise RuntimeError(
+            "Alembic migrations directory not found in any of: "
+            + ", ".join(str(c) for c in candidates)
+        )
+
+    ini_path = root / "alembic.ini"
+    cfg = alembic.config.Config(str(ini_path) if ini_path.exists() else None)
+    # Set explicitly so neither a missing ini nor a misread %(here)s can break boot.
+    cfg.set_main_option("script_location", str(root / "migrations"))
     # Override URL so we always use the app settings, not the ini file value.
     cfg.set_main_option("sqlalchemy.url", _settings.database_url)
     alembic.command.upgrade(cfg, "head")
