@@ -96,16 +96,37 @@ export function useTour(introSeen: boolean) {
     d.drive()
   }, [prefersReducedMotion])
 
-  // Auto-run once when intro is dismissed (introSeen flips from false → true)
+  // Auto-run once, on the first visit, after the intro modal is dismissed.
+  // Instead of a fixed delay, poll for the page's tour anchors so the tour
+  // never starts before the Inbox has rendered them (which a fixed timeout can
+  // miss while data is still loading). Runs at most once per browser (TOUR_KEY).
   const autoRanRef = useRef(false)
   useEffect(() => {
     if (!introSeen) return
     if (autoRanRef.current) return
     if (localStorage.getItem(TOUR_KEY)) return
     autoRanRef.current = true
-    // Small delay so the modal finish animation completes
-    const id = setTimeout(startTour, 400)
-    return () => clearTimeout(id)
+
+    let cancelled = false
+    let tries = 0
+    const tick = () => {
+      if (cancelled) return
+      const sidebar = document.querySelector('[data-tour="sidebar"]')
+      const processBtn = document.querySelector('[data-tour="process-btn"]')
+      // Start once both primary anchors exist, or after ~5s with just the
+      // sidebar (the process button is absent once the queue is worked).
+      if ((sidebar && processBtn) || (sidebar && tries > 32)) {
+        startTour()
+        return
+      }
+      tries += 1
+      window.setTimeout(tick, 150)
+    }
+    const id = window.setTimeout(tick, 250)
+    return () => {
+      cancelled = true
+      window.clearTimeout(id)
+    }
   }, [introSeen, startTour])
 
   return { startTour }

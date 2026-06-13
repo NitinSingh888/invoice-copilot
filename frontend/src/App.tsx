@@ -380,7 +380,7 @@ export default function App({ userEmail, orgName, orgRole }: AppProps) {
         )}
         {view === 'rules' && <Rules />}
         {view === 'audit' && <AuditLog live={healthLive} />}
-        {view === 'guide' && <Guide />}
+        {view === 'guide' && <Guide onStartTour={startTour} />}
       </div>
 
       <AuditSheet invoiceId={auditId} open={auditOpen} onOpenChange={setAuditOpen} />

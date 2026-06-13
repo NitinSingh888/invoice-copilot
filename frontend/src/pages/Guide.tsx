@@ -4,11 +4,13 @@ import {
   FileSearch,
   GitBranch,
   Lock,
+  Map,
   ShieldCheck,
   Sparkles,
   Zap,
 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { Button } from '@/components/ui/button'
 
 // ─── Shared primitives ───────────────────────────────────────────────────────
 
@@ -353,12 +355,20 @@ function AuditTrail() {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export function Guide() {
+export function Guide({ onStartTour }: { onStartTour?: () => void }) {
   return (
     <div className="flex flex-col h-full overflow-y-auto scrollbar-thin" data-tour="guide-page">
       <PageHeader
         title="Guide"
         subtitle="How Invoice Copilot works — the full picture in five minutes"
+        actions={
+          onStartTour && (
+            <Button size="sm" variant="outline" className="gap-2" onClick={onStartTour}>
+              <Map className="h-4 w-4" />
+              Take the guided tour
+            </Button>
+          )
+        }
       />
       <div className="flex-1 p-6 space-y-5 max-w-4xl">
         <WhatItIs />
