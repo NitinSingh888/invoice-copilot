@@ -38,44 +38,44 @@ def demo_processed_client(client: TestClient, db: Session) -> TestClient:
 
 
 # ---------------------------------------------------------------------------
-# 1. review oyo → vendor lookup, UNKNOWN_VENDOR + MISSING_PO
+# 1. review an unknown-vendor invoice (Daniel Group) → UNKNOWN_VENDOR
+#    and an approved-but-no-PO invoice (Carter Inc) → MISSING_PO
 # ---------------------------------------------------------------------------
 
 
-def test_review_oyo_intent(demo_processed_client: TestClient) -> None:
+def test_review_unknown_vendor_intent(demo_processed_client: TestClient) -> None:
     resp = demo_processed_client.post(
         "/api/v1/chat",
-        json={"message": "review oyo invoice"},
+        json={"message": "review Daniel Group invoice"},
     )
     assert resp.status_code == 200
-    data = resp.json()
-    assert data["intent"] == "review_invoice"
+    assert resp.json()["intent"] == "review_invoice"
 
 
-def test_review_oyo_vendor(demo_processed_client: TestClient) -> None:
+def test_review_unknown_vendor_resolves(demo_processed_client: TestClient) -> None:
     resp = demo_processed_client.post(
         "/api/v1/chat",
-        json={"message": "review oyo invoice"},
+        json={"message": "review Daniel Group invoice"},
     )
     result = resp.json()["result"]
     assert result is not None
-    assert result["invoice"]["vendor"] == "OYO / Oravel Stays Private Limited"
+    assert result["invoice"]["vendor"] == "Daniel Group"
 
 
-def test_review_oyo_findings_unknown_vendor(demo_processed_client: TestClient) -> None:
+def test_review_unknown_vendor_findings(demo_processed_client: TestClient) -> None:
     resp = demo_processed_client.post(
         "/api/v1/chat",
-        json={"message": "review oyo invoice"},
+        json={"message": "review Daniel Group invoice"},
     )
     result = resp.json()["result"]
     codes = [f["code"] for f in result["findings"]]
     assert "UNKNOWN_VENDOR" in codes
 
 
-def test_review_oyo_findings_missing_po(demo_processed_client: TestClient) -> None:
+def test_review_missing_po_findings(demo_processed_client: TestClient) -> None:
     resp = demo_processed_client.post(
         "/api/v1/chat",
-        json={"message": "review oyo invoice"},
+        json={"message": "review Carter Inc invoice"},
     )
     result = resp.json()["result"]
     codes = [f["code"] for f in result["findings"]]

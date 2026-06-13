@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends
 
 from app.api.deps import get_current_user
-from app.api.v1.routes import audit, auth, chat, demo, health, invoices, rules, usage
+from app.api.v1.routes import audit, auth, chat, demo, health, invoices, policy, rules, usage
 
 api_router = APIRouter()
 
@@ -19,3 +19,4 @@ api_router.include_router(audit.router, prefix="/audit", tags=["audit"], depende
 api_router.include_router(chat.router, prefix="/chat", tags=["chat"], dependencies=_auth_dep)
 api_router.include_router(demo.router, prefix="/demo", tags=["demo"], dependencies=_auth_dep)
 api_router.include_router(usage.router, prefix="/usage", tags=["usage"], dependencies=_auth_dep)
+api_router.include_router(policy.router, prefix="/policy", tags=["policy"], dependencies=_auth_dep)

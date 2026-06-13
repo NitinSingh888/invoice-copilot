@@ -14,9 +14,108 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'
+import { ShieldCheck } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
-import { listRules, patchRule, createRule } from '@/lib/api'
-import type { RuleOut } from '@/lib/types'
+import { listRules, patchRule, createRule, getPolicy, updatePolicy, type Policy } from '@/lib/api'
+import type { RuleOut, OrgRole } from '@/lib/types'
+
+// ─── PolicyCard ─ the editable default auto-approve rule ─────────────────────
+
+function PolicyCard({ isAdmin }: { isAdmin: boolean }) {
+  const [policy, setPolicy] = useState<Policy | null>(null)
+  const [threshold, setThreshold] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    getPolicy()
+      .then((p) => {
+        setPolicy(p)
+        setThreshold(String(parseFloat(p.auto_approve_threshold)))
+      })
+      .catch(console.error)
+  }, [])
+
+  async function save(next: Partial<Policy>) {
+    setSaving(true)
+    try {
+      const updated = await updatePolicy(next)
+      setPolicy(updated)
+      setThreshold(String(parseFloat(updated.auto_approve_threshold)))
+      toast.success('Auto-approve policy updated')
+    } catch (err) {
+      toast.error(`Couldn't update policy: ${(err as Error).message}`)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (!policy) return null
+  const enabled = policy.auto_approve_enabled
+
+  return (
+    <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 mb-6">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="h-4 w-4 text-primary" />
+          <div>
+            <div className="text-sm font-semibold text-foreground">Default auto-approve policy</div>
+            <div className="text-xs text-muted-foreground">
+              Applied to every invoice before any learned rule.
+            </div>
+          </div>
+        </div>
+        <Switch
+          checked={enabled}
+          disabled={!isAdmin || saving}
+          onCheckedChange={(v) => save({ auto_approve_enabled: v })}
+        />
+      </div>
+
+      <p className="text-sm text-foreground mt-3">
+        {enabled ? (
+          <>
+            Auto-approve a clean invoice — approved vendor, matched PO, no flags, high confidence —
+            when it&apos;s under{' '}
+            <span className="font-semibold tabular-nums">${parseFloat(policy.auto_approve_threshold).toLocaleString()}</span>.
+            Anything above, or with any flag, goes to a person. Amount is never the only check.
+          </>
+        ) : (
+          <>Auto-approve is <span className="font-semibold">off</span> — every invoice is sent to a person.</>
+        )}
+      </p>
+
+      {isAdmin ? (
+        <div className="flex items-end gap-2 mt-3">
+          <div className="space-y-1">
+            <label className="text-[11px] font-medium text-muted-foreground" htmlFor="policy-threshold">
+              Auto-approve limit (USD)
+            </label>
+            <Input
+              id="policy-threshold"
+              type="number"
+              min="0"
+              step="1"
+              value={threshold}
+              onChange={(e) => setThreshold(e.target.value)}
+              className="h-8 w-32"
+              disabled={!enabled || saving}
+            />
+          </div>
+          <Button
+            size="sm"
+            className="h-8 text-xs"
+            disabled={!enabled || saving || threshold === ''}
+            onClick={() => save({ auto_approve_threshold: threshold })}
+          >
+            Save limit
+          </Button>
+        </div>
+      ) : (
+        <p className="text-[11px] text-muted-foreground mt-2">Only an admin can change this policy.</p>
+      )}
+    </div>
+  )
+}
 
 // ─── RuleCard ────────────────────────────────────────────────────────────────
 
@@ -291,10 +390,11 @@ function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {
 
 // ─── Rules page ──────────────────────────────────────────────────────────────
 
-export function Rules() {
+export function Rules({ orgRole }: { orgRole?: OrgRole | null }) {
   const [rules, setRules] = useState<RuleOut[]>([])
   const [loading, setLoading] = useState(true)
   const [createOpen, setCreateOpen] = useState(false)
+  const isAdmin = orgRole === 'admin'
 
   useEffect(() => {
     setLoading(true)
@@ -322,7 +422,7 @@ export function Rules() {
     <div className="flex flex-col h-full overflow-y-auto scrollbar-thin">
       <PageHeader
         title="Rules"
-        subtitle="Patterns Copilot learned from your decisions"
+        subtitle="Your auto-approve policy, plus patterns Copilot learned from your decisions"
         actions={
           <Button size="sm" className="gap-1.5 h-8 text-xs" onClick={() => setCreateOpen(true)}>
             <Plus className="h-3.5 w-3.5" />
@@ -332,6 +432,9 @@ export function Rules() {
       />
 
       <div className="flex-1 p-6">
+        {/* Default auto-approve policy — the editable rule */}
+        <PolicyCard isAdmin={isAdmin} />
+
         {/* Stats */}
         {!loading && rules.length > 0 && (
           <div className="flex items-center gap-2 mb-5 text-sm text-muted-foreground">

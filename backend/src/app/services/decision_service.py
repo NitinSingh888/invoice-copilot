@@ -20,8 +20,22 @@ def decide_invoice(
     enr: Enrichment,
     findings: list[Finding],
     confidence: str,
+    *,
+    org_id: str | None = None,
 ) -> Decision:
     settings = get_settings()
+
+    # Auto-approve policy is per-org and editable (threshold + on/off). Falls
+    # back to the global config default when the org row isn't available.
+    t_amount = settings.t_amount
+    auto_clear_enabled = True
+    if org_id is not None:
+        from app.repositories import org_repo
+
+        org = org_repo.get(s, org_id)
+        if org is not None:
+            t_amount = org.auto_approve_threshold
+            auto_clear_enabled = org.auto_approve_enabled
 
     if enr.po_match.po is not None and enr.po_match.po.amount != Decimal("0"):
         over_pct = (invoice_data.amount - enr.po_match.po.amount) / enr.po_match.po.amount
@@ -44,6 +58,6 @@ def decide_invoice(
         amount=invoice_data.amount,
         vendor_status=enr.vendor_status,
         rule_outcome=rule_outcome,
-        thresholds=Thresholds(t_amount=settings.t_amount),
+        thresholds=Thresholds(t_amount=t_amount, auto_clear_enabled=auto_clear_enabled),
         cold_start_ok=cold_start_ok,
     )

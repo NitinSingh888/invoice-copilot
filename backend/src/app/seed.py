@@ -147,6 +147,17 @@ _BASE_SEED_VENDORS = [
         "status": "approved",
         "default_approver": "Priya",
     },
+    # AUTO_CLEAR — small, approved vendors with a matched PO (the clean 'under $100' set)
+    {"id_suffix": "klein", "canonical_name": "Klein and Sons", "aliases": [], "status": "approved", "default_approver": "Priya"},
+    {"id_suffix": "herrera", "canonical_name": "Herrera PLC", "aliases": [], "status": "approved", "default_approver": "Priya"},
+    {"id_suffix": "tran", "canonical_name": "Tran, Hurst and Rodgers", "aliases": [], "status": "approved", "default_approver": "Priya"},
+    # ESCALATE missing-PO — approved vendor, but the invoice references no PO
+    {"id_suffix": "carter", "canonical_name": "Carter Inc", "aliases": [], "status": "approved", "default_approver": "Priya"},
+    # ESCALATE unknown vendor — status "new" = seen but NOT on the approved list,
+    # so these never auto-approve no matter how small the amount.
+    {"id_suffix": "daniel", "canonical_name": "Daniel Group", "aliases": [], "status": "new", "default_approver": "Priya"},
+    {"id_suffix": "spencer", "canonical_name": "Spencer Group", "aliases": [], "status": "new", "default_approver": "Priya"},
+    {"id_suffix": "west", "canonical_name": "West Group", "aliases": [], "status": "new", "default_approver": "Priya"},
 ]
 
 
@@ -191,6 +202,14 @@ _BASE_SEED_POS = [
     {"id_suffix": "coolblue-12508334", "po_number": "12508334", "vendor": "Coolblue B.V.", "amount": Decimal("4584.06")},
     # -- SAECO PO (blocked by duplicate before PO check matters) --
     {"id_suffix": "saeco-sconl", "po_number": "SCONL000000444", "vendor": "SAECO", "amount": Decimal("49.99")},
+    # -- AUTO_CLEAR POs for the small approved set (PO amount == invoice amount) --
+    {"id_suffix": "klein-po", "po_number": "PO-KLEIN-3290", "vendor": "Klein and Sons", "amount": Decimal("3.29")},
+    {"id_suffix": "herrera-po", "po_number": "PO-HERRERA-1645", "vendor": "Herrera PLC", "amount": Decimal("16.45")},
+    {"id_suffix": "tran-po", "po_number": "PO-TRAN-2495", "vendor": "Tran, Hurst and Rodgers", "amount": Decimal("24.95")},
+    # -- POs for the unknown-vendor invoices, so the ONLY flag is the unknown vendor --
+    {"id_suffix": "daniel-po", "po_number": "PO-DANIEL-10497", "vendor": "Daniel Group", "amount": Decimal("104.97")},
+    {"id_suffix": "spencer-po", "po_number": "PO-SPENCER-17883", "vendor": "Spencer Group", "amount": Decimal("178.83")},
+    {"id_suffix": "west-po", "po_number": "PO-WEST-19126", "vendor": "West Group", "amount": Decimal("191.26")},
 ]
 
 
@@ -221,20 +240,30 @@ SEED_POS: list[PurchaseOrder] = [
 # The received PDF batch of 10 real invoices (unchanged)
 # ---------------------------------------------------------------------------
 
+# The curated TODAY queue — a deliberately legible story. Processing it yields:
+#   5 auto-cleared (clean + approved vendor + matched PO + under the $100 limit),
+#   6 escalated (3 unknown vendor, 1 missing PO, 1 over-tolerance, 1 over the
+#   $100 limit but otherwise clean), and 1 blocked (exact duplicate).
+# Cost is never the only gate: the unknown-vendor invoices are cheap yet still
+# escalate. Every row maps to a real, viewable document.
 _BASE_SEED_INVOICES = [
-    # ---- AUTO_CLEAR (4) ----
-    {"id_suffix": "azure", "invoice_number": "INV/2023/03/0008", "vendor": "Azure Interior", "amount": Decimal("279.84"), "po_number": "CUSTREF123", "confidence": "HIGH", "source_file": "AzureInterior.pdf"},
-    {"id_suffix": "flipkart", "invoice_number": "BLR_WFLD20151000982590", "vendor": "WS Retail Services Pvt. Ltd", "amount": Decimal("319.00"), "po_number": "OD304175096047380001", "confidence": "HIGH", "source_file": "FlipkartInvoice.pdf"},
+    # ---- AUTO_CLEAR (5): approved vendor + matched PO + HIGH conf + under $100 ----
+    {"id_suffix": "klein", "invoice_number": "74184749", "vendor": "Klein and Sons", "amount": Decimal("3.29"), "po_number": "PO-KLEIN-3290", "confidence": "HIGH", "source_file": "inv-c113.jpg"},
+    {"id_suffix": "herrera", "invoice_number": "24826419", "vendor": "Herrera PLC", "amount": Decimal("16.45"), "po_number": "PO-HERRERA-1645", "confidence": "HIGH", "source_file": "inv-c149.jpg"},
+    {"id_suffix": "tran", "invoice_number": "77596491", "vendor": "Tran, Hurst and Rodgers", "amount": Decimal("24.95"), "po_number": "PO-TRAN-2495", "confidence": "HIGH", "source_file": "inv-c026.jpg"},
     {"id_suffix": "netpresse", "invoice_number": "2022089083", "vendor": "NETPRESSE", "amount": Decimal("56.02"), "po_number": "365146", "confidence": "HIGH", "source_file": "NetpresseInvoice.pdf"},
     {"id_suffix": "quality", "invoice_number": "47774", "vendor": "QualityHosting AG", "amount": Decimal("34.73"), "po_number": "CON02858", "confidence": "HIGH", "source_file": "QualityHosting.pdf"},
-    # ---- ESCALATE over-PO (2) ----
+    # ---- ESCALATE: unknown vendor (3) — cheap, PO matches, but vendor not approved ----
+    {"id_suffix": "daniel", "invoice_number": "52701374", "vendor": "Daniel Group", "amount": Decimal("104.97"), "po_number": "PO-DANIEL-10497", "confidence": "HIGH", "source_file": "inv-c141.jpg"},
+    {"id_suffix": "spencer", "invoice_number": "85238418", "vendor": "Spencer Group", "amount": Decimal("178.83"), "po_number": "PO-SPENCER-17883", "confidence": "HIGH", "source_file": "inv-c111.jpg"},
+    {"id_suffix": "west", "invoice_number": "74980573", "vendor": "West Group", "amount": Decimal("191.26"), "po_number": "PO-WEST-19126", "confidence": "HIGH", "source_file": "inv-c078.jpg"},
+    # ---- ESCALATE: approved vendor but missing PO (1) ----
+    {"id_suffix": "carter", "invoice_number": "61669642", "vendor": "Carter Inc", "amount": Decimal("151.38"), "po_number": None, "confidence": "HIGH", "source_file": "inv-c072.jpg"},
+    # ---- ESCALATE: over-tolerance vs PO (1) — PO is 670.99, invoice ~7% over ----
     {"id_suffix": "coolblue-1", "invoice_number": "993548900", "vendor": "Coolblue B.V.", "amount": Decimal("717.97"), "po_number": "12572103", "confidence": "HIGH", "source_file": "coolblue1.pdf"},
-    {"id_suffix": "coolblue-2", "invoice_number": "992288600", "vendor": "Coolblue B.V.", "amount": Decimal("4904.94"), "po_number": "12508334", "confidence": "MED", "source_file": "coolblue2.pdf"},
-    # ---- ESCALATE low-confidence / unknown vendor (3) ----
-    {"id_suffix": "aws", "invoice_number": "42183017", "vendor": "Amazon Web Services, Inc.", "amount": Decimal("4.11"), "po_number": None, "confidence": "LOW", "source_file": "AmazonWebServices.pdf"},
-    {"id_suffix": "free", "invoice_number": "562044387", "vendor": "Free SAS", "amount": Decimal("29.99"), "po_number": None, "confidence": "LOW", "source_file": "free_fiber.pdf"},
-    {"id_suffix": "oyo", "invoice_number": "IBZY2087", "vendor": "OYO / Oravel Stays Private Limited", "amount": Decimal("1939"), "po_number": None, "confidence": "LOW", "source_file": "oyo.pdf"},
-    # ---- BLOCK duplicate (1) ----
+    # ---- ESCALATE: clean but over the $100 auto-approve limit (1) ----
+    {"id_suffix": "azure", "invoice_number": "INV/2023/03/0008", "vendor": "Azure Interior", "amount": Decimal("279.84"), "po_number": "CUSTREF123", "confidence": "HIGH", "source_file": "AzureInterior.pdf"},
+    # ---- BLOCK: exact duplicate (1) ----
     {"id_suffix": "saeco", "invoice_number": "VF1005193039SCONL0303006280999", "vendor": "SAECO", "amount": Decimal("49.99"), "po_number": "SCONL000000444", "confidence": "MED", "source_file": "saeco.pdf"},
 ]
 
@@ -308,6 +337,9 @@ _AUTO_CLEAR_VENDORS = [
     "WS Retail Services Pvt. Ltd",
     "NETPRESSE",
     "QualityHosting AG",
+    "Klein and Sons",
+    "Herrera PLC",
+    "Tran, Hurst and Rodgers",
 ]
 
 # Coolblue needs cold-start too (it escalates for over-tolerance, not cold-start)
@@ -319,8 +351,24 @@ _ESCALATE_OVER_PO_VENDORS = [
 # Corpus constants
 # ---------------------------------------------------------------------------
 
-# First 12 corpus entries (indices 0-11) → TODAY batch (status=received)
-_CORPUS_TODAY_COUNT = 12
+# The curated _BASE_SEED_INVOICES IS the TODAY queue now, so the corpus is used
+# purely for HISTORY volume (no corpus invoices land in today).
+_CORPUS_TODAY_COUNT = 0
+
+# Corpus files promoted into the curated TODAY batch — excluded from the HISTORY
+# seed so the same invoice_number can't appear twice (which would make a clean
+# 'good' invoice look like a duplicate and block it).
+_DEMO_TODAY_FILES = frozenset(
+    {
+        "inv-c113.jpg",  # Klein and Sons
+        "inv-c149.jpg",  # Herrera PLC
+        "inv-c026.jpg",  # Tran, Hurst and Rodgers
+        "inv-c141.jpg",  # Daniel Group
+        "inv-c111.jpg",  # Spencer Group
+        "inv-c078.jpg",  # West Group
+        "inv-c072.jpg",  # Carter Inc
+    }
+)
 
 # History status bands — assigned deterministically by (index % _BAND_TOTAL)
 # 65% cleared, 12% queued, 8% blocked, 10% needs, 5% routed
@@ -387,6 +435,10 @@ def _make_corpus_invoices(
     """
     invoices: list[Invoice] = []
     seen_vendors: dict[str, Vendor] = {}
+
+    # Skip any corpus entries that the curated TODAY batch already uses, so the
+    # same invoice_number isn't seeded twice (which would trip duplicate checks).
+    corpus = [e for e in corpus if e.get("file") not in _DEMO_TODAY_FILES]
 
     for i, entry in enumerate(corpus):
         file_stem = Path(entry["file"]).stem  # e.g. "inv-c000"

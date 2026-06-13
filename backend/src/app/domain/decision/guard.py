@@ -40,13 +40,21 @@ def decide(
                         route=rule_outcome.route)
 
     # 3. Envelope — auto-clear only if every condition holds.
-    if (confidence is ConfidenceBand.HIGH
-            and amount <= thresholds.t_amount
-            and max_severity(findings) is Severity.INFO
-            and vendor_status == "approved"
-            and cold_start_ok):
+    clean = (
+        confidence is ConfidenceBand.HIGH
+        and max_severity(findings) is Severity.INFO
+        and vendor_status == "approved"
+        and cold_start_ok
+    )
+    if thresholds.auto_clear_enabled and clean and amount <= thresholds.t_amount:
         return Decision(Verdict.AUTO_CLEAR,
                         "HIGH confidence, within cap, all findings info, approved vendor → auto-clear.")
 
-    # 4. Otherwise — hand to a human.
+    # 4. Otherwise — hand to a human. Spell out the amount-only case so an
+    # otherwise-clean invoice over the limit gets a clear, honest reason.
+    if thresholds.auto_clear_enabled and clean and amount > thresholds.t_amount:
+        return Decision(
+            Verdict.ESCALATE,
+            f"Clean, but above the ${thresholds.t_amount:,.0f} auto-approve limit — needs sign-off.",
+        )
     return Decision(Verdict.ESCALATE, "Outside the auto-clear envelope → escalate to a human.")

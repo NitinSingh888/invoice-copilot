@@ -122,7 +122,9 @@ def process_invoice(
     # ------------------------------------------------------------------ #
     # Stage 4 — Decision                                                  #
     # ------------------------------------------------------------------ #
-    decision = decision_service.decide_invoice(s, invoice_data, enr, findings, confidence)
+    decision = decision_service.decide_invoice(
+        s, invoice_data, enr, findings, confidence, org_id=org_id
+    )
 
     audit_service.record(
         s,

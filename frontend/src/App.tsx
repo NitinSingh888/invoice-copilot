@@ -342,7 +342,7 @@ export default function App({ userEmail, orgName, orgRole }: AppProps) {
         {view === 'history' && (
           <History onInvoiceClick={openDetail} />
         )}
-        {view === 'rules' && <Rules />}
+        {view === 'rules' && <Rules orgRole={orgRole} />}
         {view === 'audit' && <AuditLog live={healthLive} />}
         {view === 'guide' && <Guide onStartTour={startTour} />}
         {view === 'usage' && <Usage />}

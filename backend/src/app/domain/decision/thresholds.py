@@ -16,3 +16,5 @@ class Verdict(str, Enum):
 @dataclass(frozen=True)
 class Thresholds:
     t_amount: Decimal = Decimal("10000")
+    # When False, the auto-approve policy is off — nothing auto-clears.
+    auto_clear_enabled: bool = True

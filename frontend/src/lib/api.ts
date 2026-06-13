@@ -365,3 +365,20 @@ export interface UsageSummary {
 export async function getUsage(): Promise<UsageSummary> {
   return request<UsageSummary>('/usage')
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// Auto-approve policy (the editable default rule)
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface Policy {
+  auto_approve_enabled: boolean
+  auto_approve_threshold: string
+}
+
+export async function getPolicy(): Promise<Policy> {
+  return request<Policy>('/policy')
+}
+
+export async function updatePolicy(body: Partial<Policy>): Promise<Policy> {
+  return request<Policy>('/policy', { method: 'PATCH', body: JSON.stringify(body) })
+}
