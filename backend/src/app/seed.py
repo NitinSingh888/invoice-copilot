@@ -42,6 +42,7 @@ from pathlib import Path
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
+from app.core.paths import project_data_dir
 from app.db.models.audit_event import AuditEvent
 from app.db.models.correction import Correction
 from app.db.models.invoice import Invoice
@@ -57,7 +58,7 @@ logger = logging.getLogger(__name__)
 # Data paths
 # ---------------------------------------------------------------------------
 
-_DATA_DIR = Path(__file__).parent.parent.parent / "data"
+_DATA_DIR = project_data_dir()
 _CORPUS_JSON = _DATA_DIR / "corpus_unique.json"  # deduped: one entry per invoice_number
 
 # ---------------------------------------------------------------------------

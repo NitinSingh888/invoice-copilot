@@ -15,6 +15,7 @@ from app.api.deps import get_current_org, get_db, get_llm, get_role
 from app.clients.llm.base import LLMClient
 from app.core.config import get_settings
 from app.core.exceptions import NotFoundError
+from app.core.paths import project_data_dir
 from app.domain.policy.findings import Severity
 from app.domain.policy.matching import InvoiceData
 from app.repositories import comment_repo, invoice_repo
@@ -33,14 +34,14 @@ from app.services import enrichment_service, execution_service, learning_service
 
 router = APIRouter()
 
-# Directory containing the seed PDFs.
-# Override with IC_SAMPLE_INVOICES_DIR for alternative mount paths.
-_DEFAULT_SAMPLE_INVOICES_DIR = Path(__file__).parents[5] / "data" / "sample_invoices"
+# Directory containing the seed invoice documents (resolved for source *and*
+# installed layouts). Override with IC_SAMPLE_INVOICES_DIR for alternative mounts.
+_DEFAULT_SAMPLE_INVOICES_DIR = project_data_dir() / "sample_invoices"
 _SAMPLE_INVOICES_DIR = Path(
     os.environ.get("IC_SAMPLE_INVOICES_DIR", str(_DEFAULT_SAMPLE_INVOICES_DIR))
 )
 # Directory for user-uploaded files
-_UPLOADS_DIR = Path(__file__).parents[5] / "data" / "uploads"
+_UPLOADS_DIR = project_data_dir() / "uploads"
 
 
 @router.post("", status_code=201, response_model=ProcessResultOut)
