@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.db.models.invoice import Invoice
-from tests.conftest import TEST_ORG_ID
+from tests.conftest import TEST_ORG_ID, TEST_USER_EMAIL
 
 
 # ---------------------------------------------------------------------------
@@ -45,7 +45,7 @@ def test_add_comment_returns_201(seeded_client: TestClient) -> None:
     data = resp.json()
     assert data["invoice_id"] == inv_id
     assert data["body"] == "This looks suspicious."
-    assert data["author"] == "priya"
+    assert data["author"] == TEST_USER_EMAIL
     assert "id" in data
     assert data["id"].startswith("cmt-")
     assert "created_at" in data
@@ -109,7 +109,7 @@ def test_reject_sets_status_and_decision_fields(seeded_client: TestClient) -> No
     assert resp.status_code == 200
     data = resp.json()
     assert data["status"] == "rejected"
-    assert data["decided_by"] == "priya"
+    assert data["decided_by"] == TEST_USER_EMAIL
     assert data["decided_at"] is not None
     assert data["decision_reason"] == "Duplicate invoice detected by reviewer"
 
@@ -133,7 +133,7 @@ def test_approve_sets_decided_by(seeded_client: TestClient) -> None:
     )
     assert resp.status_code == 200
     data = resp.json()
-    assert data["decided_by"] == "priya"
+    assert data["decided_by"] == TEST_USER_EMAIL
     assert data["decided_at"] is not None
     assert data["decision_reason"] is not None
 
@@ -148,7 +148,7 @@ def test_route_sets_decided_fields(seeded_client: TestClient) -> None:
     assert resp.status_code == 200
     data = resp.json()
     assert data["status"] == "routed"
-    assert data["decided_by"] == "maya"
+    assert data["decided_by"] == TEST_USER_EMAIL
     assert data["decided_at"] is not None
 
 
@@ -162,7 +162,7 @@ def test_hold_sets_decided_fields(seeded_client: TestClient) -> None:
     assert resp.status_code == 200
     data = resp.json()
     assert data["status"] == "held"
-    assert data["decided_by"] == "priya"
+    assert data["decided_by"] == TEST_USER_EMAIL
 
 
 # ---------------------------------------------------------------------------

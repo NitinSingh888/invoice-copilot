@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 
-from fastapi import Depends, Header, HTTPException, Query, status
+from fastapi import Depends, HTTPException, Query, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
@@ -10,7 +10,6 @@ from app.clients.llm.base import LLMClient
 from app.clients.llm.factory import build_llm_client
 from app.clients.llm.metered import MeteredLLMClient
 from app.core.config import get_settings
-from app.core.security import current_role
 from app.db.models.user import User
 from app.db.session import SessionLocal
 from app.repositories import user_repo
@@ -39,10 +38,6 @@ def get_db() -> Iterator[Session]:
         raise
     finally:
         s.close()
-
-
-def get_role(x_role: str | None = Header(default=None)) -> str:
-    return current_role(x_role)
 
 
 def get_current_user(

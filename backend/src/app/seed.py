@@ -69,6 +69,10 @@ DEMO_ORG_ID = "org-demo"
 DEMO_ORG_NAME = "Demo Co"
 DEMO_USER_ID = "usr-demo0001"
 DEMO_USER_EMAIL = "demo@example.com"
+# A second teammate in the same org — shows that a team is real, separate logins
+# (the AP clerk and the approver are distinct accounts, not a persona toggle).
+DEMO_APPROVER_ID = "usr-demo0002"
+DEMO_APPROVER_EMAIL = "priya@example.com"
 
 # ---------------------------------------------------------------------------
 # SEED_VENDORS  (10 PDF curated batch — unchanged)
@@ -554,7 +558,7 @@ def seed_demo_user(s: Session) -> None:
         s.add(org)
         s.flush()
 
-    # Ensure demo user exists
+    # Ensure demo user exists (the AP clerk — org founder/admin)
     if user_repo.get_by_email(s, DEMO_USER_EMAIL) is None:
         user = User(
             id=DEMO_USER_ID,
@@ -566,6 +570,21 @@ def seed_demo_user(s: Session) -> None:
             role="admin",
         )
         s.add(user)
+        s.flush()
+
+    # Ensure the second teammate exists (the approver — a separate, real login in
+    # the same org). Demonstrates the team model: distinct credentials, one org.
+    if user_repo.get_by_email(s, DEMO_APPROVER_EMAIL) is None:
+        approver = User(
+            id=DEMO_APPROVER_ID,
+            email=DEMO_APPROVER_EMAIL,
+            password_hash=hash_password("priya1234"),
+            is_verified=True,
+            verification_token=None,
+            org_id=DEMO_ORG_ID,
+            role="member",
+        )
+        s.add(approver)
         s.flush()
 
 

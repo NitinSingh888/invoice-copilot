@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { LayoutDashboard, Inbox, BookOpen, ScrollText, Sun, Moon, RotateCcw, GraduationCap, History, LogOut, Users, Coins } from 'lucide-react'
+import { LayoutDashboard, Inbox, BookOpen, ScrollText, Sun, Moon, GraduationCap, History, LogOut, Users, Coins } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { TeamDialog } from './TeamDialog'
-import type { Role, OrgRole } from '@/lib/types'
+import type { OrgRole } from '@/lib/types'
 
 export type View = 'dashboard' | 'inbox' | 'history' | 'rules' | 'audit' | 'guide' | 'usage'
 
@@ -13,10 +13,6 @@ interface SidebarProps {
   inboxCount: number
   theme: 'light' | 'dark'
   onThemeToggle: () => void
-  role: Role
-  onRoleToggle: () => void
-  onReset: () => void
-  resetting: boolean
   providerLabel: string
   providerLive: boolean
   userEmail?: string
@@ -39,10 +35,6 @@ export function Sidebar({
   inboxCount,
   theme,
   onThemeToggle,
-  role,
-  onRoleToggle,
-  onReset,
-  resetting,
   providerLabel,
   providerLive,
   userEmail,
@@ -179,56 +171,23 @@ export function Sidebar({
           )}
         </nav>
 
-        {/* Bottom: role switcher + theme + reset */}
+        {/* Bottom: theme toggle + signed-in user */}
         <div className="border-t border-border p-3 space-y-2">
-          {/* Role switcher */}
-          <div className="flex items-center gap-1 bg-muted rounded-md p-0.5">
-            {(['maya', 'priya'] as Role[]).map((r) => (
+          {/* Theme toggle */}
+          <Tooltip>
+            <TooltipTrigger asChild>
               <button
-                key={r}
-                onClick={() => r !== role && onRoleToggle()}
-                className={cn(
-                  'flex-1 py-1.5 rounded text-xs font-medium transition-all duration-150 capitalize',
-                  role === r
-                    ? 'bg-card text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground',
-                )}
+                onClick={onThemeToggle}
+                className="w-full flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all duration-150"
               >
-                {r}
+                {theme === 'dark' ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+                <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>
               </button>
-            ))}
-          </div>
+            </TooltipTrigger>
+            <TooltipContent side="top">Toggle theme</TooltipContent>
+          </Tooltip>
 
-          {/* Theme + Reset row */}
-          <div className="flex items-center gap-1">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={onThemeToggle}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all duration-150"
-                >
-                  {theme === 'dark' ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
-                  <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top">Toggle theme</TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={onReset}
-                  disabled={resetting}
-                  className="flex items-center justify-center p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all duration-150 disabled:opacity-50"
-                >
-                  <RotateCcw className={cn('h-3.5 w-3.5', resetting && 'animate-spin')} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top">Reset demo</TooltipContent>
-            </Tooltip>
-          </div>
-
-          {/* Logged-in user + org + role + logout */}
+          {/* Logged-in user + org + logout */}
           {userEmail && (
             <div className="flex items-start gap-1.5 px-1">
               <div className="flex-1 min-w-0">

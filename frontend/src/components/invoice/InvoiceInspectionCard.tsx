@@ -8,18 +8,16 @@ import { StatusBadge } from './StatusBadge'
 import { FindingChip } from './FindingChip'
 import { invoiceAction } from '@/lib/api'
 import { formatMoney, displayFinding } from '@/lib/utils'
-import type { ReviewInvoiceFound, InvoiceOut, Role } from '@/lib/types'
+import type { ReviewInvoiceFound, InvoiceOut } from '@/lib/types'
 
 interface InvoiceInspectionCardProps {
   data: ReviewInvoiceFound
-  role: Role
   onTrail: (id: string) => void
   onResolved: (inv: InvoiceOut, action: string) => void
 }
 
 export function InvoiceInspectionCard({
   data,
-  role,
   onTrail,
   onResolved,
 }: InvoiceInspectionCardProps) {
@@ -29,7 +27,7 @@ export function InvoiceInspectionCard({
   const isAcmeOverPO =
     invoice.vendor.toLowerCase().includes('acme') &&
     findings.some((f) => f.code === 'OVER_TOLERANCE')
-  const showRouteToPriya = isAcmeOverPO && role === 'maya'
+  const showRouteToPriya = isAcmeOverPO
   const canAct = invoice.status === 'needs'
 
   const displayFindings = findings

@@ -13,7 +13,7 @@ import { IntroModal, HelpButton } from '@/components/invoice/IntroModal'
 import { VendorAvatar } from '@/components/invoice/VendorAvatar'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { formatMoney } from '@/lib/utils'
-import type { InvoiceOut, ThreadMessage, Role, BulkConfirmState } from '@/lib/types'
+import type { InvoiceOut, ThreadMessage, BulkConfirmState } from '@/lib/types'
 
 const SUGGESTIONS = [
   "Process today's invoices",
@@ -28,7 +28,6 @@ interface InboxProps {
   thread: ThreadMessage[]
   input: string
   busy: boolean
-  role: Role
   live?: boolean | null
   searchQuery: string
   onSearchChange: (q: string) => void
@@ -55,7 +54,6 @@ export function Inbox({
   thread,
   input,
   busy,
-  role,
   live,
   searchQuery,
   onSearchChange,
@@ -149,7 +147,7 @@ export function Inbox({
             <div className="leading-tight">
               <div className="text-sm font-semibold">Copilot</div>
               <div className="text-xs text-muted-foreground">
-                AP agent · acting for {role === 'maya' ? 'Maya' : 'Priya'}
+                AP agent · acting on your behalf
               </div>
             </div>
             <div className="ml-auto flex items-center gap-1.5">
@@ -217,7 +215,6 @@ export function Inbox({
                       key={i}
                       idx={i}
                       m={m}
-                      role={role}
                       onResolved={onResolved}
                       onTrail={onTrail}
                       onRuleApproved={onRuleApproved}
@@ -285,7 +282,6 @@ export function Inbox({
 function ThreadItem({
   m,
   idx,
-  role,
   onResolved,
   onTrail,
   onRuleApproved,
@@ -296,7 +292,6 @@ function ThreadItem({
 }: {
   m: ThreadMessage
   idx: number
-  role: Role
   onResolved: (inv: InvoiceOut, action: string) => void
   onTrail: (id: string) => void
   onRuleApproved: () => void
@@ -348,7 +343,6 @@ function ThreadItem({
           invoice={m.invoice}
           findings={m.findings}
           rationale={m.rationale}
-          role={role}
           onResolved={onResolved}
           onTrailOpen={onTrail}
         />
@@ -399,7 +393,6 @@ function ThreadItem({
       <div className="ml-8">
         <InvoiceInspectionCard
           data={m.data}
-          role={role}
           onTrail={onTrail}
           onResolved={onResolved}
         />

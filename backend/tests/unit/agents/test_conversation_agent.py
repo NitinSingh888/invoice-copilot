@@ -55,7 +55,6 @@ def test_process_batch_returns_counts(seeded_db: Session, client: MockClient) ->
         seeded_db,
         message="process today's invoices",
         history=[],
-        role="maya",
     )
     assert intent == "process_batch"
     assert result is not None
@@ -70,7 +69,6 @@ def test_process_batch_counts_are_ints(seeded_db: Session, client: MockClient) -
         seeded_db,
         message="run the batch now",
         history=[],
-        role="maya",
     )
     assert result is not None
     assert isinstance(result["queued"], int)
@@ -108,7 +106,6 @@ def test_review_invoice_by_id(
         seeded_db,
         message="review invoice INV-4495",
         history=[],
-        role="priya",
     )
     assert intent == "review_invoice"
     assert result is not None
@@ -123,7 +120,6 @@ def test_unknown_message_returns_smalltalk(
         seeded_db,
         message="why was that escalated?",
         history=[],
-        role="priya",
     )
     assert intent == "smalltalk"
     assert result is None
@@ -152,7 +148,6 @@ def test_approve_returns_bulk_confirm(seeded_db: Session, client: MockClient) ->
         seeded_db,
         message="approve INV-9001",
         history=[],
-        role="priya",
     )
     assert intent == "bulk_confirm"
     assert result is not None
@@ -177,7 +172,6 @@ def test_smalltalk_returns_none_result(seeded_db: Session, client: MockClient) -
         seeded_db,
         message="hello there",
         history=[],
-        role="maya",
     )
     assert intent == "smalltalk"
     assert result is None
@@ -195,6 +189,5 @@ def test_history_is_passed_to_client(seeded_db: Session, client: MockClient) -> 
         seeded_db,
         message="process invoices",
         history=history,
-        role="maya",
     )
     assert intent == "process_batch"

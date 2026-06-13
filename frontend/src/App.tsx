@@ -14,13 +14,11 @@ import { InvoiceDetailSheet } from '@/components/invoice/InvoiceDetailSheet'
 import {
   chat,
   clearToken,
-  demoReset,
   getAudit,
   getHealth,
   getInvoice,
   listInvoices,
   proposeRule,
-  setRole as setApiRole,
 } from '@/lib/api'
 
 import { displayFinding, formatMoney, isToday } from '@/lib/utils'
@@ -28,7 +26,6 @@ import type {
   BatchResult,
   ChatMessage,
   InvoiceOut,
-  Role,
   OrgRole,
   ThreadMessage,
   ReviewInvoiceResult,
@@ -72,7 +69,6 @@ export default function App({ userEmail, orgName, orgRole }: AppProps) {
   const [theme, setTheme] = useState<'light' | 'dark'>(
     () => (localStorage.getItem('ic-theme') as 'light' | 'dark') || 'light',
   )
-  const [role, setRole] = useState<Role>('maya')
   const [view, setView] = useState<View>('inbox')
   const [invoices, setInvoices] = useState<InvoiceOut[]>([])
   const [thread, setThread] = useState<ThreadMessage[]>(() => {
@@ -85,7 +81,6 @@ export default function App({ userEmail, orgName, orgRole }: AppProps) {
   })
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(true)
-  const [resetting, setResetting] = useState(false)
   const [busy, setBusy] = useState(false)
   const [auditId, setAuditId] = useState<string | null>(null)
   const [auditOpen, setAuditOpen] = useState(false)
@@ -167,31 +162,9 @@ export default function App({ userEmail, orgName, orgRole }: AppProps) {
     setTheme((t) => (t === 'light' ? 'dark' : 'light'))
   }
 
-  function toggleRole() {
-    setRole((r) => {
-      const next: Role = r === 'maya' ? 'priya' : 'maya'
-      setApiRole(next)
-      return next
-    })
-  }
-
   function handleLogout() {
     clearToken()
     window.dispatchEvent(new Event('ic-unauthorized'))
-  }
-
-  async function handleReset() {
-    setResetting(true)
-    try {
-      await demoReset()
-      await refreshInvoices()
-      setThread([])
-      escalRef.current = []
-      ruleShownRef.current = false
-      toast.success('Demo reset — fresh batch loaded')
-    } finally {
-      setResetting(false)
-    }
   }
 
   async function presentNextEscalation() {
@@ -267,7 +240,7 @@ export default function App({ userEmail, orgName, orgRole }: AppProps) {
     setThread((t) =>
       t.map((m) =>
         m.type === 'approval' && m.invoice.id === updated.id
-          ? { type: 'resolved', invoice: updated, action, byRole: role }
+          ? { type: 'resolved', invoice: updated, action }
           : m,
       ),
     )
@@ -275,7 +248,7 @@ export default function App({ userEmail, orgName, orgRole }: AppProps) {
 
     // Toast for resolved action
     const verb =
-      action === 'route' ? 'Routed to Priya' : action === 'hold' ? 'Held' : 'Approved'
+      action === 'route' ? 'Routed' : action === 'hold' ? 'Held' : 'Approved'
     const amountLabel = formatMoney(updated.amount)
     if (action === 'approve') {
       toast.success(`${verb} · ${updated.vendor} · ${amountLabel}`)
@@ -319,10 +292,6 @@ export default function App({ userEmail, orgName, orgRole }: AppProps) {
         inboxCount={needsCount}
         theme={theme}
         onThemeToggle={toggleTheme}
-        role={role}
-        onRoleToggle={toggleRole}
-        onReset={handleReset}
-        resetting={resetting}
         providerLabel={providerLabel}
         providerLive={healthLive === true}
         userEmail={userEmail}
@@ -347,7 +316,6 @@ export default function App({ userEmail, orgName, orgRole }: AppProps) {
             thread={thread}
             input={input}
             busy={busy}
-            role={role}
             live={healthLive}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
@@ -384,7 +352,6 @@ export default function App({ userEmail, orgName, orgRole }: AppProps) {
       <InvoiceDetailSheet
         invoiceId={detailId}
         open={detailOpen}
-        role={role}
         onOpenChange={setDetailOpen}
         onTrail={(id) => {
           setDetailOpen(false)

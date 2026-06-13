@@ -77,7 +77,6 @@ export interface ActionRequest {
   reason?: string
 }
 
-export type Role = 'maya' | 'priya'
 
 export interface ChatMessage {
   role: 'user' | 'assistant'
@@ -278,7 +277,7 @@ export type ThreadMessage =
   | { type: 'agent'; content: string }
   | { type: 'narration'; queued: number; needs: number; blocked: number }
   | { type: 'approval'; invoice: InvoiceOut; findings: FindingDisplay[]; rationale: string }
-  | { type: 'resolved'; invoice: InvoiceOut; action: string; byRole: Role }
+  | { type: 'resolved'; invoice: InvoiceOut; action: string }
   | { type: 'rule_proposal'; proposal: RuleProposeResponse }
   | { type: 'inspection'; data: ReviewInvoiceFound }
   | { type: 'list'; data: ListResult }

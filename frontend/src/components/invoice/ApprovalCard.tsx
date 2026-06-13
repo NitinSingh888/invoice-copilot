@@ -9,13 +9,12 @@ import { VendorAvatar } from './VendorAvatar'
 import { FindingChip } from './FindingChip'
 import { invoiceAction } from '@/lib/api'
 import { formatMoney } from '@/lib/utils'
-import type { InvoiceOut, FindingDisplay, Role } from '@/lib/types'
+import type { InvoiceOut, FindingDisplay } from '@/lib/types'
 
 interface ApprovalCardProps {
   invoice: InvoiceOut
   findings: FindingDisplay[]
   rationale: string
-  role: Role
   onResolved: (invoice: InvoiceOut, action: string) => void
   onTrailOpen: (id: string) => void
 }
@@ -24,7 +23,6 @@ export function ApprovalCard({
   invoice,
   findings,
   rationale,
-  role,
   onResolved,
   onTrailOpen,
 }: ApprovalCardProps) {
@@ -37,7 +35,7 @@ export function ApprovalCard({
   const isAcmeOverPO =
     invoice.vendor.toLowerCase().includes('acme') &&
     findings.some((f) => f.code === 'OVER_TOLERANCE')
-  const showRouteToPriya = isAcmeOverPO && role === 'maya'
+  const showRouteToPriya = isAcmeOverPO
 
   async function doAction(action: 'approve' | 'hold' | 'edit' | 'route', extra?: Record<string, string>) {
     setLoading(action)

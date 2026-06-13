@@ -26,14 +26,13 @@ import {
   rejectInvoice,
 } from '@/lib/api'
 import { formatMoney, displayFinding } from '@/lib/utils'
-import type { InvoiceOut, FindingDisplay, Role, InvoiceComment } from '@/lib/types'
+import type { InvoiceOut, FindingDisplay, InvoiceComment } from '@/lib/types'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
 interface InvoiceDetailSheetProps {
   invoiceId: string | null
   open: boolean
-  role: Role
   onOpenChange: (v: boolean) => void
   onTrail: (id: string) => void
   onResolved: (inv: InvoiceOut, action: string) => void
@@ -56,7 +55,6 @@ function formatRelative(dateStr: string): string {
 export function InvoiceDetailSheet({
   invoiceId,
   open,
-  role,
   onOpenChange,
   onTrail,
   onResolved,
@@ -167,7 +165,7 @@ export function InvoiceDetailSheet({
   const isAcmeOverPO =
     invoice?.vendor.toLowerCase().includes('acme') &&
     findings.some((f) => f.code === 'OVER_TOLERANCE')
-  const showRouteToPriya = isAcmeOverPO && role === 'maya'
+  const showRouteToPriya = isAcmeOverPO
   const canAct = invoice?.status === 'needs' || invoice?.status === 'received'
 
   // Truncate long invoice/po numbers for display while preserving full value in title attr

@@ -114,11 +114,13 @@ PostgreSQL via SQLAlchemy 2.0 (typed `Mapped`) with **Alembic migrations**. Core
 docker compose up
 ```
 
-Then open **http://localhost:5173** and sign in with the seeded demo account:
+Then open **http://localhost:5173** and sign in with a seeded account. The demo
+team ships with two real, separate logins (one org, distinct credentials) — the
+AP clerk (admin) and an approver (member):
 
 ```
-email:    demo@example.com
-password: demo1234
+clerk     demo@example.com   / demo1234
+approver  priya@example.com  / priya1234
 ```
 
 No API keys are required — it runs on a deterministic mock LLM out of the box. To use a real model, create `backend/.env` (copy `backend/.env.example`) and set:
@@ -129,7 +131,7 @@ IC_ANTHROPIC_API_KEY=sk-ant-...
 # IC_ANTHROPIC_MODEL=claude-sonnet-4-6
 ```
 
-Source is bind-mounted, so backend/frontend edits hot-reload. Use the in-app **Reset** to reseed a fresh batch.
+Source is bind-mounted, so backend/frontend edits hot-reload.
 
 <details>
 <summary>Prefer running natively (without Docker for the app)?</summary>

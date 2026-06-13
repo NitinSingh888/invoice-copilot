@@ -5,7 +5,6 @@ import type {
   CreateInvoiceRequest,
   CreateInvoiceResponse,
   ActionRequest,
-  Role,
   ChatMessage,
   ChatResponse,
   AuditResponse,
@@ -20,16 +19,6 @@ import type {
 
 const BASE = '/api/v1'
 const TOKEN_KEY = 'ic_token'
-
-let currentRole: Role = 'maya'
-
-export function setRole(role: Role) {
-  currentRole = role
-}
-
-export function getRole(): Role {
-  return currentRole
-}
 
 // ────────────────────────────────────────────────────────────────────────────
 // Token helpers
@@ -50,15 +39,10 @@ export function getToken(): string | null {
 async function request<T>(
   path: string,
   options: RequestInit = {},
-  useRole = false,
 ): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
-  }
-
-  if (useRole) {
-    headers['X-Role'] = currentRole
   }
 
   const token = getToken()
@@ -194,7 +178,7 @@ export async function invoiceAction(
   id: string,
   body: ActionRequest,
 ): Promise<InvoiceOut> {
-  return request(`/invoices/${id}/action`, { method: 'POST', body: JSON.stringify(body) }, true)
+  return request(`/invoices/${id}/action`, { method: 'POST', body: JSON.stringify(body) })
 }
 
 export async function bulkAction(
@@ -205,7 +189,6 @@ export async function bulkAction(
   return request(
     '/invoices/bulk-action',
     { method: 'POST', body: JSON.stringify({ ids, action, route: route ?? null }) },
-    true,
   )
 }
 
@@ -235,7 +218,7 @@ export async function chat(
   message: string,
   history: ChatMessage[],
 ): Promise<ChatResponse> {
-  return request('/chat', { method: 'POST', body: JSON.stringify({ message, history }) }, true)
+  return request('/chat', { method: 'POST', body: JSON.stringify({ message, history }) })
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -313,7 +296,6 @@ export async function addComment(invoiceId: string, body: string): Promise<Invoi
   return request(
     `/invoices/${invoiceId}/comments`,
     { method: 'POST', body: JSON.stringify({ body }) },
-    true,
   )
 }
 
@@ -325,7 +307,6 @@ export async function rejectInvoice(invoiceId: string, reason: string): Promise<
   return request(
     `/invoices/${invoiceId}/action`,
     { method: 'POST', body: JSON.stringify({ action: 'reject', reason }) },
-    true,
   )
 }
 

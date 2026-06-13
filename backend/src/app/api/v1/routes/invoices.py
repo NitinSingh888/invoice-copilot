@@ -11,12 +11,13 @@ from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.agents import extraction_agent
-from app.api.deps import get_current_org, get_db, get_llm, get_role
+from app.api.deps import get_current_org, get_current_user, get_db, get_llm
 from app.clients.llm.base import LLMClient
 from app.clients.llm.usage import entity_context
 from app.core.config import get_settings
 from app.core.exceptions import NotFoundError
 from app.core.paths import project_data_dir
+from app.db.models.user import User
 from app.domain.policy.findings import Severity
 from app.domain.policy.matching import InvoiceData
 from app.repositories import comment_repo, invoice_repo
@@ -81,7 +82,6 @@ def create_invoice(
 def upload_invoice(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    role: str = Depends(get_role),
     llm: LLMClient = Depends(get_llm),
     org_id: str = Depends(get_current_org),
 ) -> ProcessResultOut:
@@ -201,7 +201,7 @@ def list_invoices(
 def bulk_action(
     body: BulkActionIn,
     db: Session = Depends(get_db),
-    role: str = Depends(get_role),
+    user: User = Depends(get_current_user),
     org_id: str = Depends(get_current_org),
 ) -> BulkActionOut:
     """Apply approve / hold / route to a list of invoice ids.
@@ -221,7 +221,7 @@ def bulk_action(
             continue
         try:
             inv = execution_service.execute(
-                db, inv_id, body.action, actor=role, **fields
+                db, inv_id, body.action, actor=user.email, **fields
             )
             results.append(BulkActionResultItem(id=inv_id, status=inv.status))
         except (ValueError, KeyError):
@@ -286,7 +286,7 @@ def invoice_action(
     invoice_id: str,
     body: ActionIn,
     db: Session = Depends(get_db),
-    role: str = Depends(get_role),
+    user: User = Depends(get_current_user),
     org_id: str = Depends(get_current_org),
 ) -> InvoiceOut:
     inv = invoice_repo.get(db, invoice_id, org_id=org_id)
@@ -334,7 +334,7 @@ def invoice_action(
     if body.action == "reject" and body.reason:
         fields["decision_reason"] = body.reason
 
-    inv2 = execution_service.execute(db, invoice_id, body.action, actor=role, **fields)
+    inv2 = execution_service.execute(db, invoice_id, body.action, actor=user.email, **fields)
     return InvoiceOut.model_validate(inv2)
 
 
@@ -348,14 +348,14 @@ def add_comment(
     invoice_id: str,
     body: CommentIn,
     db: Session = Depends(get_db),
-    role: str = Depends(get_role),
+    user: User = Depends(get_current_user),
     org_id: str = Depends(get_current_org),
 ) -> CommentOut:
     """Add a comment to an invoice.  Returns 404 when the invoice does not exist."""
     inv = invoice_repo.get(db, invoice_id, org_id=org_id)
     if inv is None:
         raise NotFoundError(f"invoice {invoice_id} not found")
-    comment = comment_repo.add(db, invoice_id=invoice_id, author=role, body=body.body, org_id=org_id)
+    comment = comment_repo.add(db, invoice_id=invoice_id, author=user.email, body=body.body, org_id=org_id)
     return CommentOut.model_validate(comment)
 
 

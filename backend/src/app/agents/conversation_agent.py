@@ -78,7 +78,6 @@ def handle(
     *,
     message: str,
     history: list[ChatMessageIn],
-    role: str,
     org_id: str | None = None,
 ) -> tuple[str, str, dict[str, Any] | None]:
     """Handle a user message via the conversation agent.
