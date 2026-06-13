@@ -60,7 +60,6 @@ function isBulkConfirmResult(r: unknown): r is BulkConfirmResult {
 }
 
 const HEALTH_POLL_MS = 20_000
-const INTRO_SEEN_KEY = 'ic_intro_seen'
 
 interface AppProps {
   userEmail: string
@@ -99,12 +98,9 @@ export default function App({ userEmail, orgName, orgRole }: AppProps) {
   // search query for Inbox
   const [searchQuery, setSearchQuery] = useState('')
 
-  // Track whether intro modal has been dismissed (for tour auto-launch)
-  const [introSeen, setIntroSeen] = useState(
-    () => !!localStorage.getItem(INTRO_SEEN_KEY),
-  )
-
-  const { startTour } = useTour(introSeen)
+  // The guided tour auto-runs on first visit and resumes on refresh entirely
+  // from its own localStorage state — no coupling to the intro modal.
+  const { startTour } = useTour()
 
   const escalRef = useRef<string[]>([])
   const ruleShownRef = useRef(false)
@@ -371,7 +367,6 @@ export default function App({ userEmail, orgName, orgRole }: AppProps) {
             onRefresh={() => void refreshInvoices()}
             onBulkConfirmed={() => void refreshInvoices()}
             onBulkStateChange={handleBulkStateChange}
-            onIntroModalDismiss={() => setIntroSeen(true)}
             onTakeTour={startTour}
           />
         )}
