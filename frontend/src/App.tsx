@@ -136,9 +136,10 @@ export default function App({ userEmail, orgName, orgRole }: AppProps) {
 
   const refreshInvoices = useCallback(async (): Promise<InvoiceOut[]> => {
     const rows = await listInvoices()
-    // Inbox shows only non-cleared invoices from today
+    // Inbox shows only actionable invoices from today — exclude terminal states
+    const terminal = new Set(['cleared', 'queued', 'rejected'])
     const live = rows.filter(
-      (i) => i.status !== 'cleared' && isToday(i.created_at),
+      (i) => !terminal.has(i.status) && isToday(i.created_at),
     )
     setInvoices(live)
     return live
