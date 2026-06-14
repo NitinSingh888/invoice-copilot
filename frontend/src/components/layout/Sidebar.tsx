@@ -104,10 +104,10 @@ export function Sidebar({
                 <span className="flex-1 text-left">{label}</span>
                 {id === 'inbox' && inboxCount > 0 && (
                   <span className={cn(
-                    'flex items-center justify-center h-4.5 min-w-[18px] px-1 rounded-full text-[10px] font-semibold leading-none',
+                    'flex items-center justify-center h-5 min-w-[22px] px-1.5 rounded-full text-[11px] font-semibold leading-none',
                     isActive
                       ? 'bg-primary text-primary-foreground'
-                      : 'bg-warning/20 text-[hsl(var(--warning))]'
+                      : 'bg-destructive/15 text-destructive'
                   )}>
                     {inboxCount}
                   </span>
