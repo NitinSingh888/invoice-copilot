@@ -50,7 +50,7 @@ export function BulkConfirmCard({
 
   if (state === 'done') {
     const verb =
-      action === 'approve' ? 'Approved' : action === 'hold' ? 'Held' : 'Routed'
+      action === 'approve' ? 'Approved' : action === 'hold' ? 'On Hold' : 'Routed'
     return (
       <div className={`flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3.5 py-2.5 text-sm font-medium ${ACTION_COLOR[action]}`}>
         <Check className="h-3.5 w-3.5 shrink-0" />

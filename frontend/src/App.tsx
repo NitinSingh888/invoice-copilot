@@ -271,7 +271,7 @@ export default function App({ userEmail, orgName, orgRole }: AppProps) {
 
     // Toast for resolved action
     const verb =
-      action === 'route' ? 'Routed' : action === 'hold' ? 'Held' : 'Approved'
+      action === 'route' ? 'Routed' : action === 'hold' ? 'On Hold' : 'Approved'
     const amountLabel = formatMoney(updated.amount)
     if (action === 'approve') {
       toast.success(`${verb} · ${updated.vendor} · ${amountLabel}`)

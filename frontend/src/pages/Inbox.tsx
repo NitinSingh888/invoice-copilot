@@ -381,7 +381,7 @@ function ThreadItem({
   }
   if (m.type === 'resolved') {
     const verb =
-      m.action === 'route' ? 'Routed to Priya' : m.action === 'hold' ? 'Held' : 'Approved'
+      m.action === 'route' ? 'Routed' : m.action === 'hold' ? 'On Hold' : 'Approved'
     const verbColor =
       m.action === 'approve'
         ? 'text-[hsl(var(--success))]'
