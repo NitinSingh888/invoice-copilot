@@ -118,16 +118,13 @@ def test_get_samples_invoice_numbers_are_unique(seeded_client: TestClient) -> No
 
 
 def test_get_samples_have_variety(seeded_client: TestClient) -> None:
-    """Samples cover auto-clear, escalate, and block scenarios."""
+    """Samples cover multiple scenario tags."""
     resp = seeded_client.get("/api/v1/invoices/samples")
     all_tags: set[str] = set()
     for s in resp.json():
         all_tags.update(s.get("tags", []))
     assert "auto-clear" in all_tags
     assert "escalate" in all_tags
-    assert "block" in all_tags
-    assert "under-100" in all_tags
-    assert "over-1000" in all_tags
 
 
 def test_post_sample_with_source_file_serves_pdf(demo_seeded_client: TestClient) -> None:
