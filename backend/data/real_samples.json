@@ -1,0 +1,1502 @@
+[
+  {
+    "label": "Clean \u00b7 Aaron Bergman",
+    "expected": "Routine invoice \u2014 matched PO, approved vendor",
+    "tags": [
+      "100-500",
+      "auto-clear"
+    ],
+    "vendor": "Aaron Bergman",
+    "amount": "331.18",
+    "invoice_number": "INV-36258",
+    "po_number": "PO-36258",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Aaron Bergman_36258.pdf"
+  },
+  {
+    "label": "Over PO \u00b7 Aaron Bergman",
+    "expected": "Amount exceeds purchase order tolerance",
+    "tags": [
+      "over-500",
+      "escalate",
+      "over-po"
+    ],
+    "vendor": "Aaron Bergman",
+    "amount": "971.42",
+    "invoice_number": "INV-36259",
+    "po_number": "PO-36259",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Aaron Bergman_36259.pdf"
+  },
+  {
+    "label": "No PO \u00b7 Aaron Bergman",
+    "expected": "No purchase order referenced",
+    "tags": [
+      "100-500",
+      "escalate",
+      "no-po",
+      "low-confidence"
+    ],
+    "vendor": "Aaron Bergman",
+    "amount": "108.83",
+    "invoice_number": "INV-36260",
+    "po_number": null,
+    "confidence": "LOW",
+    "source_file": "s3://samples/invoice_Aaron Bergman_36260.pdf"
+  },
+  {
+    "label": "Unknown vendor \u00b7 Aaron Bergman",
+    "expected": "Vendor not on approved list",
+    "tags": [
+      "over-500",
+      "escalate",
+      "unknown-vendor"
+    ],
+    "vendor": "Aaron Bergman",
+    "amount": "508.07",
+    "invoice_number": "INV-39519",
+    "po_number": "PO-39519",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Aaron Bergman_39519.pdf"
+  },
+  {
+    "label": "Review \u00b7 Aaron Hawkins",
+    "expected": "Medium confidence \u2014 needs human review",
+    "tags": [
+      "over-500",
+      "escalate",
+      "low-confidence"
+    ],
+    "vendor": "Aaron Hawkins",
+    "amount": "775.34",
+    "invoice_number": "INV-36651",
+    "po_number": "PO-36651",
+    "confidence": "MED",
+    "source_file": "s3://samples/invoice_Aaron Hawkins_36651.pdf"
+  },
+  {
+    "label": "Clean \u00b7 Aaron Hawkins",
+    "expected": "Routine invoice \u2014 matched PO, approved vendor",
+    "tags": [
+      "100-500",
+      "auto-clear"
+    ],
+    "vendor": "Aaron Hawkins",
+    "amount": "333.37",
+    "invoice_number": "INV-36652",
+    "po_number": "PO-36652",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Aaron Hawkins_36652.pdf"
+  },
+  {
+    "label": "Over PO \u00b7 Aaron Hawkins",
+    "expected": "Amount exceeds purchase order tolerance",
+    "tags": [
+      "under-100",
+      "escalate",
+      "over-po"
+    ],
+    "vendor": "Aaron Hawkins",
+    "amount": "51.19",
+    "invoice_number": "INV-37425",
+    "po_number": "PO-37425",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Aaron Hawkins_37425.pdf"
+  },
+  {
+    "label": "No PO \u00b7 Aaron Hawkins",
+    "expected": "No purchase order referenced",
+    "tags": [
+      "over-500",
+      "escalate",
+      "no-po",
+      "low-confidence"
+    ],
+    "vendor": "Aaron Hawkins",
+    "amount": "746.76",
+    "invoice_number": "INV-38460",
+    "po_number": null,
+    "confidence": "LOW",
+    "source_file": "s3://samples/invoice_Aaron Hawkins_38460.pdf"
+  },
+  {
+    "label": "Unknown vendor \u00b7 Aaron Hawkins",
+    "expected": "Vendor not on approved list",
+    "tags": [
+      "100-500",
+      "escalate",
+      "unknown-vendor"
+    ],
+    "vendor": "Aaron Hawkins",
+    "amount": "401.9",
+    "invoice_number": "INV-38461",
+    "po_number": "PO-38461",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Aaron Hawkins_38461.pdf"
+  },
+  {
+    "label": "Review \u00b7 Aaron Hawkins",
+    "expected": "Medium confidence \u2014 needs human review",
+    "tags": [
+      "100-500",
+      "escalate",
+      "low-confidence"
+    ],
+    "vendor": "Aaron Hawkins",
+    "amount": "131.84",
+    "invoice_number": "INV-40100",
+    "po_number": "PO-40100",
+    "confidence": "MED",
+    "source_file": "s3://samples/invoice_Aaron Hawkins_40100.pdf"
+  },
+  {
+    "label": "Clean \u00b7 Aaron Hawkins",
+    "expected": "Routine invoice \u2014 matched PO, approved vendor",
+    "tags": [
+      "100-500",
+      "auto-clear"
+    ],
+    "vendor": "Aaron Hawkins",
+    "amount": "417.93",
+    "invoice_number": "INV-40101",
+    "po_number": "PO-40101",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Aaron Hawkins_40101.pdf"
+  },
+  {
+    "label": "Over PO \u00b7 Aaron Hawkins",
+    "expected": "Amount exceeds purchase order tolerance",
+    "tags": [
+      "100-500",
+      "escalate",
+      "over-po"
+    ],
+    "vendor": "Aaron Hawkins",
+    "amount": "238.83",
+    "invoice_number": "INV-47905",
+    "po_number": "PO-47905",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Aaron Hawkins_47905.pdf"
+  },
+  {
+    "label": "No PO \u00b7 Aaron Hawkins",
+    "expected": "No purchase order referenced",
+    "tags": [
+      "over-500",
+      "escalate",
+      "no-po",
+      "low-confidence"
+    ],
+    "vendor": "Aaron Hawkins",
+    "amount": "856.84",
+    "invoice_number": "INV-4820",
+    "po_number": null,
+    "confidence": "LOW",
+    "source_file": "s3://samples/invoice_Aaron Hawkins_4820.pdf"
+  },
+  {
+    "label": "Unknown vendor \u00b7 Aaron Hawkins",
+    "expected": "Vendor not on approved list",
+    "tags": [
+      "over-500",
+      "escalate",
+      "unknown-vendor"
+    ],
+    "vendor": "Aaron Hawkins",
+    "amount": "627.46",
+    "invoice_number": "INV-49674",
+    "po_number": "PO-49674",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Aaron Hawkins_49674.pdf"
+  },
+  {
+    "label": "Review \u00b7 Aaron Hawkins",
+    "expected": "Medium confidence \u2014 needs human review",
+    "tags": [
+      "100-500",
+      "escalate",
+      "low-confidence"
+    ],
+    "vendor": "Aaron Hawkins",
+    "amount": "338.42",
+    "invoice_number": "INV-6817",
+    "po_number": "PO-6817",
+    "confidence": "MED",
+    "source_file": "s3://samples/invoice_Aaron Hawkins_6817.pdf"
+  },
+  {
+    "label": "Clean \u00b7 Aaron Smayling",
+    "expected": "Routine invoice \u2014 matched PO, approved vendor",
+    "tags": [
+      "over-500",
+      "auto-clear"
+    ],
+    "vendor": "Aaron Smayling",
+    "amount": "616.82",
+    "invoice_number": "INV-15978",
+    "po_number": "PO-15978",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Aaron Smayling_15978.pdf"
+  },
+  {
+    "label": "Over PO \u00b7 Aaron Smayling",
+    "expected": "Amount exceeds purchase order tolerance",
+    "tags": [
+      "100-500",
+      "escalate",
+      "over-po"
+    ],
+    "vendor": "Aaron Smayling",
+    "amount": "191.26",
+    "invoice_number": "INV-35876",
+    "po_number": "PO-35876",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Aaron Smayling_35876.pdf"
+  },
+  {
+    "label": "No PO \u00b7 Adam Bellavance",
+    "expected": "No purchase order referenced",
+    "tags": [
+      "100-500",
+      "escalate",
+      "no-po",
+      "low-confidence"
+    ],
+    "vendor": "Adam Bellavance",
+    "amount": "118.28",
+    "invoice_number": "INV-21617",
+    "po_number": null,
+    "confidence": "LOW",
+    "source_file": "s3://samples/invoice_Adam Bellavance_21617.pdf"
+  },
+  {
+    "label": "Unknown vendor \u00b7 Adam Hart",
+    "expected": "Vendor not on approved list",
+    "tags": [
+      "over-500",
+      "escalate",
+      "unknown-vendor"
+    ],
+    "vendor": "Adam Hart",
+    "amount": "629.87",
+    "invoice_number": "INV-16384",
+    "po_number": "PO-16384",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Adam Hart_16384.pdf"
+  },
+  {
+    "label": "Review \u00b7 Adam Hart",
+    "expected": "Medium confidence \u2014 needs human review",
+    "tags": [
+      "over-500",
+      "escalate",
+      "low-confidence"
+    ],
+    "vendor": "Adam Hart",
+    "amount": "759.27",
+    "invoice_number": "INV-30118",
+    "po_number": "PO-30118",
+    "confidence": "MED",
+    "source_file": "s3://samples/invoice_Adam Hart_30118.pdf"
+  },
+  {
+    "label": "Clean \u00b7 Adam Hart",
+    "expected": "Routine invoice \u2014 matched PO, approved vendor",
+    "tags": [
+      "100-500",
+      "auto-clear"
+    ],
+    "vendor": "Adam Hart",
+    "amount": "474.03",
+    "invoice_number": "INV-30845",
+    "po_number": "PO-30845",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Adam Hart_30845.pdf"
+  },
+  {
+    "label": "Over PO \u00b7 Adam Hart",
+    "expected": "Amount exceeds purchase order tolerance",
+    "tags": [
+      "over-500",
+      "escalate",
+      "over-po"
+    ],
+    "vendor": "Adam Hart",
+    "amount": "608.44",
+    "invoice_number": "INV-36279",
+    "po_number": "PO-36279",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Adam Hart_36279.pdf"
+  },
+  {
+    "label": "No PO \u00b7 Adam Shillingsburg",
+    "expected": "No purchase order referenced",
+    "tags": [
+      "under-100",
+      "escalate",
+      "no-po",
+      "low-confidence"
+    ],
+    "vendor": "Adam Shillingsburg",
+    "amount": "72.28",
+    "invoice_number": "INV-12471",
+    "po_number": null,
+    "confidence": "LOW",
+    "source_file": "s3://samples/invoice_Adam Shillingsburg_12471.pdf"
+  },
+  {
+    "label": "Unknown vendor \u00b7 Adam Shillingsburg",
+    "expected": "Vendor not on approved list",
+    "tags": [
+      "100-500",
+      "escalate",
+      "unknown-vendor"
+    ],
+    "vendor": "Adam Shillingsburg",
+    "amount": "278.29",
+    "invoice_number": "INV-40245",
+    "po_number": "PO-40245",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Adam Shillingsburg_40245.pdf"
+  },
+  {
+    "label": "Review \u00b7 Adam Shillingsburg",
+    "expected": "Medium confidence \u2014 needs human review",
+    "tags": [
+      "over-500",
+      "escalate",
+      "low-confidence"
+    ],
+    "vendor": "Adam Shillingsburg",
+    "amount": "973.44",
+    "invoice_number": "INV-40952",
+    "po_number": "PO-40952",
+    "confidence": "MED",
+    "source_file": "s3://samples/invoice_Adam Shillingsburg_40952.pdf"
+  },
+  {
+    "label": "Clean \u00b7 Adam Shillingsburg",
+    "expected": "Routine invoice \u2014 matched PO, approved vendor",
+    "tags": [
+      "over-500",
+      "auto-clear"
+    ],
+    "vendor": "Adam Shillingsburg",
+    "amount": "518.23",
+    "invoice_number": "INV-40953",
+    "po_number": "PO-40953",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Adam Shillingsburg_40953.pdf"
+  },
+  {
+    "label": "Over PO \u00b7 Adam Shillingsburg",
+    "expected": "Amount exceeds purchase order tolerance",
+    "tags": [
+      "100-500",
+      "escalate",
+      "over-po"
+    ],
+    "vendor": "Adam Shillingsburg",
+    "amount": "220.99",
+    "invoice_number": "INV-40954",
+    "po_number": "PO-40954",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Adam Shillingsburg_40954.pdf"
+  },
+  {
+    "label": "No PO \u00b7 Adam Shillingsburg",
+    "expected": "No purchase order referenced",
+    "tags": [
+      "100-500",
+      "escalate",
+      "no-po",
+      "low-confidence"
+    ],
+    "vendor": "Adam Shillingsburg",
+    "amount": "426.17",
+    "invoice_number": "INV-40955",
+    "po_number": null,
+    "confidence": "LOW",
+    "source_file": "s3://samples/invoice_Adam Shillingsburg_40955.pdf"
+  },
+  {
+    "label": "Unknown vendor \u00b7 Adrian Barton",
+    "expected": "Vendor not on approved list",
+    "tags": [
+      "100-500",
+      "escalate",
+      "unknown-vendor"
+    ],
+    "vendor": "Adrian Barton",
+    "amount": "352.71",
+    "invoice_number": "INV-25445",
+    "po_number": "PO-25445",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Adrian Barton_25445.pdf"
+  },
+  {
+    "label": "Review \u00b7 Adrian Barton",
+    "expected": "Medium confidence \u2014 needs human review",
+    "tags": [
+      "over-500",
+      "escalate",
+      "low-confidence"
+    ],
+    "vendor": "Adrian Barton",
+    "amount": "795.51",
+    "invoice_number": "INV-35579",
+    "po_number": "PO-35579",
+    "confidence": "MED",
+    "source_file": "s3://samples/invoice_Adrian Barton_35579.pdf"
+  },
+  {
+    "label": "Clean \u00b7 Adrian Barton",
+    "expected": "Routine invoice \u2014 matched PO, approved vendor",
+    "tags": [
+      "over-500",
+      "auto-clear"
+    ],
+    "vendor": "Adrian Barton",
+    "amount": "727.88",
+    "invoice_number": "INV-35580",
+    "po_number": "PO-35580",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Adrian Barton_35580.pdf"
+  },
+  {
+    "label": "Over PO \u00b7 Adrian Hane",
+    "expected": "Amount exceeds purchase order tolerance",
+    "tags": [
+      "under-100",
+      "escalate",
+      "over-po"
+    ],
+    "vendor": "Adrian Hane",
+    "amount": "95.28",
+    "invoice_number": "INV-33399",
+    "po_number": "PO-33399",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Adrian Hane_33399.pdf"
+  },
+  {
+    "label": "No PO \u00b7 Aimee Bixby",
+    "expected": "No purchase order referenced",
+    "tags": [
+      "100-500",
+      "escalate",
+      "no-po",
+      "low-confidence"
+    ],
+    "vendor": "Aimee Bixby",
+    "amount": "309.75",
+    "invoice_number": "INV-39793",
+    "po_number": null,
+    "confidence": "LOW",
+    "source_file": "s3://samples/invoice_Aimee Bixby_39793.pdf"
+  },
+  {
+    "label": "Unknown vendor \u00b7 Aimee Bixby",
+    "expected": "Vendor not on approved list",
+    "tags": [
+      "over-500",
+      "escalate",
+      "unknown-vendor"
+    ],
+    "vendor": "Aimee Bixby",
+    "amount": "944.02",
+    "invoice_number": "INV-39794",
+    "po_number": "PO-39794",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Aimee Bixby_39794.pdf"
+  },
+  {
+    "label": "Review \u00b7 Aimee Bixby",
+    "expected": "Medium confidence \u2014 needs human review",
+    "tags": [
+      "100-500",
+      "escalate",
+      "low-confidence"
+    ],
+    "vendor": "Aimee Bixby",
+    "amount": "413.27",
+    "invoice_number": "INV-39795",
+    "po_number": "PO-39795",
+    "confidence": "MED",
+    "source_file": "s3://samples/invoice_Aimee Bixby_39795.pdf"
+  },
+  {
+    "label": "Clean \u00b7 Aimee Bixby",
+    "expected": "Routine invoice \u2014 matched PO, approved vendor",
+    "tags": [
+      "100-500",
+      "auto-clear"
+    ],
+    "vendor": "Aimee Bixby",
+    "amount": "233.25",
+    "invoice_number": "INV-39796",
+    "po_number": "PO-39796",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Aimee Bixby_39796.pdf"
+  },
+  {
+    "label": "Over PO \u00b7 Aimee Bixby",
+    "expected": "Amount exceeds purchase order tolerance",
+    "tags": [
+      "over-500",
+      "escalate",
+      "over-po"
+    ],
+    "vendor": "Aimee Bixby",
+    "amount": "501.16",
+    "invoice_number": "INV-39797",
+    "po_number": "PO-39797",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Aimee Bixby_39797.pdf"
+  },
+  {
+    "label": "No PO \u00b7 Alan Barnes",
+    "expected": "No purchase order referenced",
+    "tags": [
+      "100-500",
+      "escalate",
+      "no-po",
+      "low-confidence"
+    ],
+    "vendor": "Alan Barnes",
+    "amount": "493.85",
+    "invoice_number": "INV-36600",
+    "po_number": null,
+    "confidence": "LOW",
+    "source_file": "s3://samples/invoice_Alan Barnes_36600.pdf"
+  },
+  {
+    "label": "Unknown vendor \u00b7 Alan Dominguez",
+    "expected": "Vendor not on approved list",
+    "tags": [
+      "over-500",
+      "escalate",
+      "unknown-vendor"
+    ],
+    "vendor": "Alan Dominguez",
+    "amount": "836.51",
+    "invoice_number": "INV-1626",
+    "po_number": "PO-1626",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Alan Dominguez_1626.pdf"
+  },
+  {
+    "label": "Review \u00b7 Alan Dominguez",
+    "expected": "Medium confidence \u2014 needs human review",
+    "tags": [
+      "over-500",
+      "escalate",
+      "low-confidence"
+    ],
+    "vendor": "Alan Dominguez",
+    "amount": "812.76",
+    "invoice_number": "INV-31421",
+    "po_number": "PO-31421",
+    "confidence": "MED",
+    "source_file": "s3://samples/invoice_Alan Dominguez_31421.pdf"
+  },
+  {
+    "label": "Clean \u00b7 Alan Dominguez",
+    "expected": "Routine invoice \u2014 matched PO, approved vendor",
+    "tags": [
+      "over-500",
+      "auto-clear"
+    ],
+    "vendor": "Alan Dominguez",
+    "amount": "766.28",
+    "invoice_number": "INV-41032",
+    "po_number": "PO-41032",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Alan Dominguez_41032.pdf"
+  },
+  {
+    "label": "Over PO \u00b7 Alan Haines",
+    "expected": "Amount exceeds purchase order tolerance",
+    "tags": [
+      "100-500",
+      "escalate",
+      "over-po"
+    ],
+    "vendor": "Alan Haines",
+    "amount": "490.69",
+    "invoice_number": "INV-22343",
+    "po_number": "PO-22343",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Alan Haines_22343.pdf"
+  },
+  {
+    "label": "No PO \u00b7 Alan Haines",
+    "expected": "No purchase order referenced",
+    "tags": [
+      "over-500",
+      "escalate",
+      "no-po",
+      "low-confidence"
+    ],
+    "vendor": "Alan Haines",
+    "amount": "679.34",
+    "invoice_number": "INV-29721",
+    "po_number": null,
+    "confidence": "LOW",
+    "source_file": "s3://samples/invoice_Alan Haines_29721.pdf"
+  },
+  {
+    "label": "Unknown vendor \u00b7 Alan Haines",
+    "expected": "Vendor not on approved list",
+    "tags": [
+      "under-100",
+      "escalate",
+      "unknown-vendor"
+    ],
+    "vendor": "Alan Haines",
+    "amount": "35.04",
+    "invoice_number": "INV-36551",
+    "po_number": "PO-36551",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Alan Haines_36551.pdf"
+  },
+  {
+    "label": "Review \u00b7 Alan Haines",
+    "expected": "Medium confidence \u2014 needs human review",
+    "tags": [
+      "100-500",
+      "escalate",
+      "low-confidence"
+    ],
+    "vendor": "Alan Haines",
+    "amount": "402.42",
+    "invoice_number": "INV-36552",
+    "po_number": "PO-36552",
+    "confidence": "MED",
+    "source_file": "s3://samples/invoice_Alan Haines_36552.pdf"
+  },
+  {
+    "label": "Clean \u00b7 Alan Haines",
+    "expected": "Routine invoice \u2014 matched PO, approved vendor",
+    "tags": [
+      "100-500",
+      "auto-clear"
+    ],
+    "vendor": "Alan Haines",
+    "amount": "233.23",
+    "invoice_number": "INV-42998",
+    "po_number": "PO-42998",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Alan Haines_42998.pdf"
+  },
+  {
+    "label": "Over PO \u00b7 Alan Haines",
+    "expected": "Amount exceeds purchase order tolerance",
+    "tags": [
+      "under-100",
+      "escalate",
+      "over-po"
+    ],
+    "vendor": "Alan Haines",
+    "amount": "30.32",
+    "invoice_number": "INV-5873",
+    "po_number": "PO-5873",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Alan Haines_5873.pdf"
+  },
+  {
+    "label": "No PO \u00b7 Alan Hwang",
+    "expected": "No purchase order referenced",
+    "tags": [
+      "100-500",
+      "escalate",
+      "no-po",
+      "low-confidence"
+    ],
+    "vendor": "Alan Hwang",
+    "amount": "201.77",
+    "invoice_number": "INV-14266",
+    "po_number": null,
+    "confidence": "LOW",
+    "source_file": "s3://samples/invoice_Alan Hwang_14266.pdf"
+  },
+  {
+    "label": "Unknown vendor \u00b7 Alan Hwang",
+    "expected": "Vendor not on approved list",
+    "tags": [
+      "over-500",
+      "escalate",
+      "unknown-vendor"
+    ],
+    "vendor": "Alan Hwang",
+    "amount": "911.86",
+    "invoice_number": "INV-14267",
+    "po_number": "PO-14267",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Alan Hwang_14267.pdf"
+  },
+  {
+    "label": "Review \u00b7 Alan Hwang",
+    "expected": "Medium confidence \u2014 needs human review",
+    "tags": [
+      "under-100",
+      "escalate",
+      "low-confidence"
+    ],
+    "vendor": "Alan Hwang",
+    "amount": "61.52",
+    "invoice_number": "INV-14269",
+    "po_number": "PO-14269",
+    "confidence": "MED",
+    "source_file": "s3://samples/invoice_Alan Hwang_14269.pdf"
+  },
+  {
+    "label": "Clean \u00b7 Alan Hwang",
+    "expected": "Routine invoice \u2014 matched PO, approved vendor",
+    "tags": [
+      "over-500",
+      "auto-clear"
+    ],
+    "vendor": "Alan Hwang",
+    "amount": "682.85",
+    "invoice_number": "INV-28262",
+    "po_number": "PO-28262",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Alan Hwang_28262.pdf"
+  },
+  {
+    "label": "Over PO \u00b7 Alan Hwang",
+    "expected": "Amount exceeds purchase order tolerance",
+    "tags": [
+      "under-100",
+      "escalate",
+      "over-po"
+    ],
+    "vendor": "Alan Hwang",
+    "amount": "47.48",
+    "invoice_number": "INV-35712",
+    "po_number": "PO-35712",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Alan Hwang_35712.pdf"
+  },
+  {
+    "label": "No PO \u00b7 Alan Hwang",
+    "expected": "No purchase order referenced",
+    "tags": [
+      "under-100",
+      "escalate",
+      "no-po",
+      "low-confidence"
+    ],
+    "vendor": "Alan Hwang",
+    "amount": "75.98",
+    "invoice_number": "INV-35713",
+    "po_number": null,
+    "confidence": "LOW",
+    "source_file": "s3://samples/invoice_Alan Hwang_35713.pdf"
+  },
+  {
+    "label": "Unknown vendor \u00b7 Alan Schoenberger",
+    "expected": "Vendor not on approved list",
+    "tags": [
+      "under-100",
+      "escalate",
+      "unknown-vendor"
+    ],
+    "vendor": "Alan Schoenberger",
+    "amount": "30.48",
+    "invoice_number": "INV-33272",
+    "po_number": "PO-33272",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Alan Schoenberger_33272.pdf"
+  },
+  {
+    "label": "Review \u00b7 Alan Schoenberger",
+    "expected": "Medium confidence \u2014 needs human review",
+    "tags": [
+      "100-500",
+      "escalate",
+      "low-confidence"
+    ],
+    "vendor": "Alan Schoenberger",
+    "amount": "374.19",
+    "invoice_number": "INV-33273",
+    "po_number": "PO-33273",
+    "confidence": "MED",
+    "source_file": "s3://samples/invoice_Alan Schoenberger_33273.pdf"
+  },
+  {
+    "label": "Clean \u00b7 Alan Schoenberger",
+    "expected": "Routine invoice \u2014 matched PO, approved vendor",
+    "tags": [
+      "over-500",
+      "auto-clear"
+    ],
+    "vendor": "Alan Schoenberger",
+    "amount": "562.23",
+    "invoice_number": "INV-33274",
+    "po_number": "PO-33274",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Alan Schoenberger_33274.pdf"
+  },
+  {
+    "label": "Over PO \u00b7 Alan Shonely",
+    "expected": "Amount exceeds purchase order tolerance",
+    "tags": [
+      "over-500",
+      "escalate",
+      "over-po"
+    ],
+    "vendor": "Alan Shonely",
+    "amount": "947.83",
+    "invoice_number": "INV-31899",
+    "po_number": "PO-31899",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Alan Shonely_31899.pdf"
+  },
+  {
+    "label": "No PO \u00b7 Alan Shonely",
+    "expected": "No purchase order referenced",
+    "tags": [
+      "100-500",
+      "escalate",
+      "no-po",
+      "low-confidence"
+    ],
+    "vendor": "Alan Shonely",
+    "amount": "460.78",
+    "invoice_number": "INV-31900",
+    "po_number": null,
+    "confidence": "LOW",
+    "source_file": "s3://samples/invoice_Alan Shonely_31900.pdf"
+  },
+  {
+    "label": "Unknown vendor \u00b7 Alan Shonely",
+    "expected": "Vendor not on approved list",
+    "tags": [
+      "under-100",
+      "escalate",
+      "unknown-vendor"
+    ],
+    "vendor": "Alan Shonely",
+    "amount": "14.62",
+    "invoice_number": "INV-31901",
+    "po_number": "PO-31901",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Alan Shonely_31901.pdf"
+  },
+  {
+    "label": "Review \u00b7 Alan Shonely",
+    "expected": "Medium confidence \u2014 needs human review",
+    "tags": [
+      "over-500",
+      "escalate",
+      "low-confidence"
+    ],
+    "vendor": "Alan Shonely",
+    "amount": "598.88",
+    "invoice_number": "INV-31902",
+    "po_number": "PO-31902",
+    "confidence": "MED",
+    "source_file": "s3://samples/invoice_Alan Shonely_31902.pdf"
+  },
+  {
+    "label": "Clean \u00b7 Alan Shonely",
+    "expected": "Routine invoice \u2014 matched PO, approved vendor",
+    "tags": [
+      "under-100",
+      "auto-clear"
+    ],
+    "vendor": "Alan Shonely",
+    "amount": "73.03",
+    "invoice_number": "INV-31903",
+    "po_number": "PO-31903",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Alan Shonely_31903.pdf"
+  },
+  {
+    "label": "Over PO \u00b7 Alan Shonely",
+    "expected": "Amount exceeds purchase order tolerance",
+    "tags": [
+      "over-500",
+      "escalate",
+      "over-po"
+    ],
+    "vendor": "Alan Shonely",
+    "amount": "709.35",
+    "invoice_number": "INV-37511",
+    "po_number": "PO-37511",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Alan Shonely_37511.pdf"
+  },
+  {
+    "label": "No PO \u00b7 Alan Shonely",
+    "expected": "No purchase order referenced",
+    "tags": [
+      "100-500",
+      "escalate",
+      "no-po",
+      "low-confidence"
+    ],
+    "vendor": "Alan Shonely",
+    "amount": "199.95",
+    "invoice_number": "INV-43048",
+    "po_number": null,
+    "confidence": "LOW",
+    "source_file": "s3://samples/invoice_Alan Shonely_43048.pdf"
+  },
+  {
+    "label": "Unknown vendor \u00b7 Alejandro Ballentine",
+    "expected": "Vendor not on approved list",
+    "tags": [
+      "100-500",
+      "escalate",
+      "unknown-vendor"
+    ],
+    "vendor": "Alejandro Ballentine",
+    "amount": "316.84",
+    "invoice_number": "INV-40780",
+    "po_number": "PO-40780",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Alejandro Ballentine_40780.pdf"
+  },
+  {
+    "label": "Review \u00b7 Alejandro Grove",
+    "expected": "Medium confidence \u2014 needs human review",
+    "tags": [
+      "100-500",
+      "escalate",
+      "low-confidence"
+    ],
+    "vendor": "Alejandro Grove",
+    "amount": "321.84",
+    "invoice_number": "INV-24518",
+    "po_number": "PO-24518",
+    "confidence": "MED",
+    "source_file": "s3://samples/invoice_Alejandro Grove_24518.pdf"
+  },
+  {
+    "label": "Clean \u00b7 Alejandro Grove",
+    "expected": "Routine invoice \u2014 matched PO, approved vendor",
+    "tags": [
+      "under-100",
+      "auto-clear"
+    ],
+    "vendor": "Alejandro Grove",
+    "amount": "31.0",
+    "invoice_number": "INV-31314",
+    "po_number": "PO-31314",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Alejandro Grove_31314.pdf"
+  },
+  {
+    "label": "Over PO \u00b7 Alejandro Grove",
+    "expected": "Amount exceeds purchase order tolerance",
+    "tags": [
+      "100-500",
+      "escalate",
+      "over-po"
+    ],
+    "vendor": "Alejandro Grove",
+    "amount": "309.16",
+    "invoice_number": "INV-38707",
+    "po_number": "PO-38707",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Alejandro Grove_38707.pdf"
+  },
+  {
+    "label": "No PO \u00b7 Alejandro Savely",
+    "expected": "No purchase order referenced",
+    "tags": [
+      "over-500",
+      "escalate",
+      "no-po",
+      "low-confidence"
+    ],
+    "vendor": "Alejandro Savely",
+    "amount": "520.74",
+    "invoice_number": "INV-20581",
+    "po_number": null,
+    "confidence": "LOW",
+    "source_file": "s3://samples/invoice_Alejandro Savely_20581.pdf"
+  },
+  {
+    "label": "Unknown vendor \u00b7 Alejandro Savely",
+    "expected": "Vendor not on approved list",
+    "tags": [
+      "100-500",
+      "escalate",
+      "unknown-vendor"
+    ],
+    "vendor": "Alejandro Savely",
+    "amount": "195.97",
+    "invoice_number": "INV-20583",
+    "po_number": "PO-20583",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Alejandro Savely_20583.pdf"
+  },
+  {
+    "label": "Review \u00b7 Alejandro Savely",
+    "expected": "Medium confidence \u2014 needs human review",
+    "tags": [
+      "over-500",
+      "escalate",
+      "low-confidence"
+    ],
+    "vendor": "Alejandro Savely",
+    "amount": "943.56",
+    "invoice_number": "INV-41450",
+    "po_number": "PO-41450",
+    "confidence": "MED",
+    "source_file": "s3://samples/invoice_Alejandro Savely_41450.pdf"
+  },
+  {
+    "label": "Clean \u00b7 Aleksandra Gannaway",
+    "expected": "Routine invoice \u2014 matched PO, approved vendor",
+    "tags": [
+      "100-500",
+      "auto-clear"
+    ],
+    "vendor": "Aleksandra Gannaway",
+    "amount": "202.35",
+    "invoice_number": "INV-33911",
+    "po_number": "PO-33911",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Aleksandra Gannaway_33911.pdf"
+  },
+  {
+    "label": "Over PO \u00b7 Aleksandra Gannaway",
+    "expected": "Amount exceeds purchase order tolerance",
+    "tags": [
+      "100-500",
+      "escalate",
+      "over-po"
+    ],
+    "vendor": "Aleksandra Gannaway",
+    "amount": "241.12",
+    "invoice_number": "INV-33912",
+    "po_number": "PO-33912",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Aleksandra Gannaway_33912.pdf"
+  },
+  {
+    "label": "No PO \u00b7 Alex Avila",
+    "expected": "No purchase order referenced",
+    "tags": [
+      "100-500",
+      "escalate",
+      "no-po",
+      "low-confidence"
+    ],
+    "vendor": "Alex Avila",
+    "amount": "150.7",
+    "invoice_number": "INV-33526",
+    "po_number": null,
+    "confidence": "LOW",
+    "source_file": "s3://samples/invoice_Alex Avila_33526.pdf"
+  },
+  {
+    "label": "Unknown vendor \u00b7 Alex Avila",
+    "expected": "Vendor not on approved list",
+    "tags": [
+      "over-500",
+      "escalate",
+      "unknown-vendor"
+    ],
+    "vendor": "Alex Avila",
+    "amount": "724.01",
+    "invoice_number": "INV-33527",
+    "po_number": "PO-33527",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Alex Avila_33527.pdf"
+  },
+  {
+    "label": "Review \u00b7 Alex Avila",
+    "expected": "Medium confidence \u2014 needs human review",
+    "tags": [
+      "over-500",
+      "escalate",
+      "low-confidence"
+    ],
+    "vendor": "Alex Avila",
+    "amount": "698.08",
+    "invoice_number": "INV-38765",
+    "po_number": "PO-38765",
+    "confidence": "MED",
+    "source_file": "s3://samples/invoice_Alex Avila_38765.pdf"
+  },
+  {
+    "label": "Clean \u00b7 Alex Avila",
+    "expected": "Routine invoice \u2014 matched PO, approved vendor",
+    "tags": [
+      "over-500",
+      "auto-clear"
+    ],
+    "vendor": "Alex Avila",
+    "amount": "521.23",
+    "invoice_number": "INV-38766",
+    "po_number": "PO-38766",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Alex Avila_38766.pdf"
+  },
+  {
+    "label": "Over PO \u00b7 Alex Grayson",
+    "expected": "Amount exceeds purchase order tolerance",
+    "tags": [
+      "100-500",
+      "escalate",
+      "over-po"
+    ],
+    "vendor": "Alex Grayson",
+    "amount": "342.54",
+    "invoice_number": "INV-18794",
+    "po_number": "PO-18794",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Alex Grayson_18794.pdf"
+  },
+  {
+    "label": "No PO \u00b7 Alex Russell",
+    "expected": "No purchase order referenced",
+    "tags": [
+      "100-500",
+      "escalate",
+      "no-po",
+      "low-confidence"
+    ],
+    "vendor": "Alex Russell",
+    "amount": "144.55",
+    "invoice_number": "INV-28157",
+    "po_number": null,
+    "confidence": "LOW",
+    "source_file": "s3://samples/invoice_Alex Russell_28157.pdf"
+  },
+  {
+    "label": "Unknown vendor \u00b7 Alex Russell",
+    "expected": "Vendor not on approved list",
+    "tags": [
+      "under-100",
+      "escalate",
+      "unknown-vendor"
+    ],
+    "vendor": "Alex Russell",
+    "amount": "36.75",
+    "invoice_number": "INV-38655",
+    "po_number": "PO-38655",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Alex Russell_38655.pdf"
+  },
+  {
+    "label": "Review \u00b7 Alex Russell",
+    "expected": "Medium confidence \u2014 needs human review",
+    "tags": [
+      "100-500",
+      "escalate",
+      "low-confidence"
+    ],
+    "vendor": "Alex Russell",
+    "amount": "368.03",
+    "invoice_number": "INV-38656",
+    "po_number": "PO-38656",
+    "confidence": "MED",
+    "source_file": "s3://samples/invoice_Alex Russell_38656.pdf"
+  },
+  {
+    "label": "Clean \u00b7 Alice McCarthy",
+    "expected": "Routine invoice \u2014 matched PO, approved vendor",
+    "tags": [
+      "over-500",
+      "auto-clear"
+    ],
+    "vendor": "Alice McCarthy",
+    "amount": "623.0",
+    "invoice_number": "INV-10670",
+    "po_number": "PO-10670",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Alice McCarthy_10670.pdf"
+  },
+  {
+    "label": "Over PO \u00b7 Alice McCarthy",
+    "expected": "Amount exceeds purchase order tolerance",
+    "tags": [
+      "100-500",
+      "escalate",
+      "over-po"
+    ],
+    "vendor": "Alice McCarthy",
+    "amount": "226.1",
+    "invoice_number": "INV-36714",
+    "po_number": "PO-36714",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Alice McCarthy_36714.pdf"
+  },
+  {
+    "label": "No PO \u00b7 Alice McCarthy",
+    "expected": "No purchase order referenced",
+    "tags": [
+      "100-500",
+      "escalate",
+      "no-po",
+      "low-confidence"
+    ],
+    "vendor": "Alice McCarthy",
+    "amount": "367.81",
+    "invoice_number": "INV-8673",
+    "po_number": null,
+    "confidence": "LOW",
+    "source_file": "s3://samples/invoice_Alice McCarthy_8673.pdf"
+  },
+  {
+    "label": "Unknown vendor \u00b7 Allen Armold",
+    "expected": "Vendor not on approved list",
+    "tags": [
+      "over-500",
+      "escalate",
+      "unknown-vendor"
+    ],
+    "vendor": "Allen Armold",
+    "amount": "945.74",
+    "invoice_number": "INV-32104",
+    "po_number": "PO-32104",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Allen Armold_32104.pdf"
+  },
+  {
+    "label": "Review \u00b7 Allen Armold",
+    "expected": "Medium confidence \u2014 needs human review",
+    "tags": [
+      "over-500",
+      "escalate",
+      "low-confidence"
+    ],
+    "vendor": "Allen Armold",
+    "amount": "814.31",
+    "invoice_number": "INV-32105",
+    "po_number": "PO-32105",
+    "confidence": "MED",
+    "source_file": "s3://samples/invoice_Allen Armold_32105.pdf"
+  },
+  {
+    "label": "Clean \u00b7 Allen Armold",
+    "expected": "Routine invoice \u2014 matched PO, approved vendor",
+    "tags": [
+      "100-500",
+      "auto-clear"
+    ],
+    "vendor": "Allen Armold",
+    "amount": "150.72",
+    "invoice_number": "INV-32469",
+    "po_number": "PO-32469",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Allen Armold_32469.pdf"
+  },
+  {
+    "label": "Over PO \u00b7 Allen Armold",
+    "expected": "Amount exceeds purchase order tolerance",
+    "tags": [
+      "100-500",
+      "escalate",
+      "over-po"
+    ],
+    "vendor": "Allen Armold",
+    "amount": "467.5",
+    "invoice_number": "INV-34304",
+    "po_number": "PO-34304",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Allen Armold_34304.pdf"
+  },
+  {
+    "label": "No PO \u00b7 Allen Goldenen",
+    "expected": "No purchase order referenced",
+    "tags": [
+      "100-500",
+      "escalate",
+      "no-po",
+      "low-confidence"
+    ],
+    "vendor": "Allen Goldenen",
+    "amount": "261.73",
+    "invoice_number": "INV-36282",
+    "po_number": null,
+    "confidence": "LOW",
+    "source_file": "s3://samples/invoice_Allen Goldenen_36282.pdf"
+  },
+  {
+    "label": "Unknown vendor \u00b7 Allen Goldenen",
+    "expected": "Vendor not on approved list",
+    "tags": [
+      "over-500",
+      "escalate",
+      "unknown-vendor"
+    ],
+    "vendor": "Allen Goldenen",
+    "amount": "618.38",
+    "invoice_number": "INV-39139",
+    "po_number": "PO-39139",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Allen Goldenen_39139.pdf"
+  },
+  {
+    "label": "Review \u00b7 Allen Goldenen",
+    "expected": "Medium confidence \u2014 needs human review",
+    "tags": [
+      "over-500",
+      "escalate",
+      "low-confidence"
+    ],
+    "vendor": "Allen Goldenen",
+    "amount": "666.55",
+    "invoice_number": "INV-39140",
+    "po_number": "PO-39140",
+    "confidence": "MED",
+    "source_file": "s3://samples/invoice_Allen Goldenen_39140.pdf"
+  },
+  {
+    "label": "Clean \u00b7 Allen Rosenblatt",
+    "expected": "Routine invoice \u2014 matched PO, approved vendor",
+    "tags": [
+      "over-500",
+      "auto-clear"
+    ],
+    "vendor": "Allen Rosenblatt",
+    "amount": "542.94",
+    "invoice_number": "INV-27259",
+    "po_number": "PO-27259",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Allen Rosenblatt_27259.pdf"
+  },
+  {
+    "label": "Over PO \u00b7 Allen Rosenblatt",
+    "expected": "Amount exceeds purchase order tolerance",
+    "tags": [
+      "over-500",
+      "escalate",
+      "over-po"
+    ],
+    "vendor": "Allen Rosenblatt",
+    "amount": "934.82",
+    "invoice_number": "INV-33571",
+    "po_number": "PO-33571",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Allen Rosenblatt_33571.pdf"
+  },
+  {
+    "label": "No PO \u00b7 Allen Rosenblatt",
+    "expected": "No purchase order referenced",
+    "tags": [
+      "100-500",
+      "escalate",
+      "no-po",
+      "low-confidence"
+    ],
+    "vendor": "Allen Rosenblatt",
+    "amount": "101.86",
+    "invoice_number": "INV-33572",
+    "po_number": null,
+    "confidence": "LOW",
+    "source_file": "s3://samples/invoice_Allen Rosenblatt_33572.pdf"
+  },
+  {
+    "label": "Unknown vendor \u00b7 Alyssa Crouse",
+    "expected": "Vendor not on approved list",
+    "tags": [
+      "100-500",
+      "escalate",
+      "unknown-vendor"
+    ],
+    "vendor": "Alyssa Crouse",
+    "amount": "252.13",
+    "invoice_number": "INV-31634",
+    "po_number": "PO-31634",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Alyssa Crouse_31634.pdf"
+  },
+  {
+    "label": "Review \u00b7 Alyssa Crouse",
+    "expected": "Medium confidence \u2014 needs human review",
+    "tags": [
+      "100-500",
+      "escalate",
+      "low-confidence"
+    ],
+    "vendor": "Alyssa Crouse",
+    "amount": "225.77",
+    "invoice_number": "INV-31635",
+    "po_number": "PO-31635",
+    "confidence": "MED",
+    "source_file": "s3://samples/invoice_Alyssa Crouse_31635.pdf"
+  },
+  {
+    "label": "Clean \u00b7 Alyssa Tate",
+    "expected": "Routine invoice \u2014 matched PO, approved vendor",
+    "tags": [
+      "100-500",
+      "auto-clear"
+    ],
+    "vendor": "Alyssa Tate",
+    "amount": "313.95",
+    "invoice_number": "INV-32473",
+    "po_number": "PO-32473",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Alyssa Tate_32473.pdf"
+  },
+  {
+    "label": "Over PO \u00b7 Alyssa Tate",
+    "expected": "Amount exceeds purchase order tolerance",
+    "tags": [
+      "over-500",
+      "escalate",
+      "over-po"
+    ],
+    "vendor": "Alyssa Tate",
+    "amount": "989.66",
+    "invoice_number": "INV-41218",
+    "po_number": "PO-41218",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Alyssa Tate_41218.pdf"
+  },
+  {
+    "label": "No PO \u00b7 Amy Cox",
+    "expected": "No purchase order referenced",
+    "tags": [
+      "over-500",
+      "escalate",
+      "no-po",
+      "low-confidence"
+    ],
+    "vendor": "Amy Cox",
+    "amount": "856.4",
+    "invoice_number": "INV-36068",
+    "po_number": null,
+    "confidence": "LOW",
+    "source_file": "s3://samples/invoice_Amy Cox_36068.pdf"
+  },
+  {
+    "label": "Unknown vendor \u00b7 Amy Hunt",
+    "expected": "Vendor not on approved list",
+    "tags": [
+      "100-500",
+      "escalate",
+      "unknown-vendor"
+    ],
+    "vendor": "Amy Hunt",
+    "amount": "338.65",
+    "invoice_number": "INV-36350",
+    "po_number": "PO-36350",
+    "confidence": "HIGH",
+    "source_file": "s3://samples/invoice_Amy Hunt_36350.pdf"
+  },
+  {
+    "label": "Review \u00b7 Amy Hunt",
+    "expected": "Medium confidence \u2014 needs human review",
+    "tags": [
+      "over-500",
+      "escalate",
+      "low-confidence"
+    ],
+    "vendor": "Amy Hunt",
+    "amount": "706.9",
+    "invoice_number": "INV-36351",
+    "po_number": "PO-36351",
+    "confidence": "MED",
+    "source_file": "s3://samples/invoice_Amy Hunt_36351.pdf"
+  }
+]

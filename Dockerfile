@@ -32,5 +32,7 @@ COPY backend/data/sample_invoices /app/data/sample_invoices
 # Ship the cached extraction corpus so the demo seeds at boot (no LLM call).
 # Without this the seeder finds no corpus and the app comes up with an empty demo.
 COPY backend/data/corpus_unique.json /app/data/corpus_unique.json
+# Real invoice samples (100 PDFs on S3, this is the metadata JSON)
+COPY backend/data/real_samples.json /app/data/real_samples.json
 EXPOSE 8000
 CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
