@@ -19,7 +19,7 @@ const SUGGESTIONS = [
   "Process today's invoices",
   'How many need review?',
   'Show me held invoices',
-  'What is the total amount pending?',
+  'What is the total amount needing review?',
 ]
 
 interface InboxProps {
