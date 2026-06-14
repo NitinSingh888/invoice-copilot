@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Shield, Zap, Brain, ScrollText, CheckCircle2, ArrowRight } from 'lucide-react'
+import { Shield, ArrowRight, Lock, FileCheck, TrendingUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -21,77 +21,91 @@ function getApiStatus(err: unknown): number {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Left panel — product story
+// Left panel — dark, premium product story
 // ────────────────────────────────────────────────────────────────────────────
 
 function ProductPanel() {
   return (
-    <div className="hidden lg:flex flex-col justify-between h-full bg-primary px-10 py-10 text-white relative overflow-hidden">
-      {/* Subtle grid background */}
-      <div className="absolute inset-0 opacity-[0.04]" style={{
-        backgroundImage: 'linear-gradient(rgba(255,255,255,.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.5) 1px, transparent 1px)',
-        backgroundSize: '40px 40px',
+    <div className="hidden lg:flex flex-col justify-between h-full px-12 py-10 text-white relative overflow-hidden"
+      style={{ background: 'linear-gradient(175deg, #0f1117 0%, #161922 50%, #111827 100%)' }}
+    >
+      {/* Subtle dot pattern for texture */}
+      <div className="absolute inset-0 opacity-[0.035]" style={{
+        backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px)',
+        backgroundSize: '24px 24px',
       }} />
 
-      <div className="relative z-10">
+      {/* Soft gradient glow — top-right corner */}
+      <div className="absolute -top-32 -right-32 w-[400px] h-[400px] rounded-full opacity-[0.06]"
+        style={{ background: 'radial-gradient(circle, #5b8def 0%, transparent 70%)' }} />
+
+      <div className="relative z-10 flex flex-col h-full">
         {/* Logo */}
-        <div className="flex items-center gap-3 mb-16">
-          <svg width="32" height="32" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="28" height="28" rx="7" fill="rgba(255,255,255,0.2)" />
-            <rect x="7" y="6" width="14" height="16" rx="2" fill="white" fillOpacity="0.15" />
-            <rect x="7" y="6" width="14" height="16" rx="2" stroke="white" strokeOpacity="0.6" strokeWidth="1.2" />
-            <line x1="10" y1="11" x2="18" y2="11" stroke="white" strokeOpacity="0.7" strokeWidth="1.2" strokeLinecap="round" />
-            <line x1="10" y1="14" x2="16" y2="14" stroke="white" strokeOpacity="0.5" strokeWidth="1.2" strokeLinecap="round" />
-            <line x1="10" y1="17" x2="14" y2="17" stroke="white" strokeOpacity="0.5" strokeWidth="1.2" strokeLinecap="round" />
-            <circle cx="20" cy="20" r="5" fill="rgba(255,255,255,0.2)" />
-            <circle cx="20" cy="20" r="5" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" />
-            <path d="M17.5 20L19.2 21.7L22.5 18.5" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          <span className="text-lg font-semibold tracking-tight">Invoice Copilot</span>
+        <div className="flex items-center gap-2.5 mb-auto">
+          <div className="h-8 w-8 rounded-lg flex items-center justify-center"
+            style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <rect x="2" y="1" width="10" height="13" rx="1.5" stroke="white" strokeOpacity="0.7" strokeWidth="1.2" />
+              <line x1="4.5" y1="5" x2="9.5" y2="5" stroke="white" strokeOpacity="0.5" strokeWidth="1" strokeLinecap="round" />
+              <line x1="4.5" y1="7.5" x2="8" y2="7.5" stroke="white" strokeOpacity="0.35" strokeWidth="1" strokeLinecap="round" />
+              <line x1="4.5" y1="10" x2="7" y2="10" stroke="white" strokeOpacity="0.35" strokeWidth="1" strokeLinecap="round" />
+              <circle cx="13" cy="13" r="4" stroke="white" strokeOpacity="0.5" strokeWidth="1.2" />
+              <path d="M11.2 13L12.4 14.2L14.8 11.8" stroke="white" strokeOpacity="0.8" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <span className="text-[15px] font-semibold tracking-tight text-white/90">Invoice Copilot</span>
         </div>
 
-        {/* Hero */}
-        <h2 className="text-3xl font-bold leading-tight tracking-tight mb-3">
-          Your AI accounts-payable
-          <br />clerk that never sleeps
-        </h2>
-        <p className="text-white/70 text-sm leading-relaxed max-w-[380px] mb-10">
-          Hand it the invoice batch. It reads each one, matches purchase orders,
-          auto-clears the safe ones, and asks you about the rest. Every action
-          is logged to a tamper-proof audit trail.
-        </p>
+        {/* Center content — hero + features */}
+        <div className="flex-1 flex flex-col justify-center -mt-8">
+          <h2 className="text-[28px] font-semibold leading-[1.2] tracking-tight mb-3 text-white/95">
+            Accounts payable
+            <br />on autopilot.
+          </h2>
+          <p className="text-[13px] text-white/45 leading-relaxed max-w-[340px] mb-10">
+            Invoice Copilot reads every invoice, matches POs, auto-clears safe
+            payments, and surfaces the rest for your review. Every action logged
+            to a tamper-proof audit trail.
+          </p>
 
-        {/* Feature cards */}
-        <div className="space-y-3">
-          <FeatureRow
-            icon={<Zap className="h-4 w-4" />}
-            title="Process in seconds"
-            desc="60 invoices become a handful of decisions. The safe ones clear themselves."
-          />
-          <FeatureRow
-            icon={<Shield className="h-4 w-4" />}
-            title="Deterministic safety"
-            desc="The AI reads — deterministic code decides. No LLM on the money path."
-          />
-          <FeatureRow
-            icon={<Brain className="h-4 w-4" />}
-            title="Learns from you"
-            desc="Correct it the same way 3 times and it proposes a rule you approve."
-          />
-          <FeatureRow
-            icon={<ScrollText className="h-4 w-4" />}
-            title="Audit-ready"
-            desc="Hash-chained event trail. Every step is provable and tamper-evident."
-          />
+          {/* Feature list — clean, compact */}
+          <div className="space-y-4">
+            <FeatureRow
+              icon={<TrendingUp className="h-[14px] w-[14px]" />}
+              title="60 invoices, minutes not hours"
+              desc="Safe ones clear themselves. You handle the exceptions."
+            />
+            <FeatureRow
+              icon={<Lock className="h-[14px] w-[14px]" />}
+              title="Deterministic safety"
+              desc="AI reads. Deterministic code decides. No LLM on the money path."
+            />
+            <FeatureRow
+              icon={<FileCheck className="h-[14px] w-[14px]" />}
+              title="Audit-ready from day one"
+              desc="Hash-chained event trail. Every step provable and tamper-evident."
+            />
+          </div>
         </div>
-      </div>
 
-      {/* Bottom stats */}
-      <div className="relative z-10 flex items-center gap-6 pt-8 border-t border-white/10">
-        <Stat value="350+" label="tests" />
-        <Stat value="<3 min" label="per batch" />
-        <Stat value="100%" label="auditable" />
-        <Stat value="$0" label="to try" />
+        {/* Testimonial / social proof */}
+        <div className="relative z-10 pt-8 mt-auto"
+          style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <p className="text-[13px] text-white/50 leading-relaxed italic">
+            &ldquo;We went from 4 hours of invoice processing to 20 minutes.
+            The audit trail alone paid for the switch.&rdquo;
+          </p>
+          <div className="flex items-center gap-3 mt-4">
+            <div className="h-8 w-8 rounded-full flex items-center justify-center text-[11px] font-semibold"
+              style={{ background: 'rgba(91,141,239,0.15)', color: 'rgba(91,141,239,0.8)' }}>
+              JM
+            </div>
+            <div>
+              <p className="text-[12px] text-white/70 font-medium">Jamie Mitchell</p>
+              <p className="text-[11px] text-white/35">Head of Finance, Aero Systems</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -100,56 +114,38 @@ function ProductPanel() {
 function FeatureRow({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) {
   return (
     <div className="flex gap-3 items-start">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white/80 mt-0.5">
-        {icon}
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md mt-0.5"
+        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.05)' }}>
+        <span className="text-white/50">{icon}</span>
       </div>
       <div>
-        <p className="text-sm font-medium text-white">{title}</p>
-        <p className="text-xs text-white/60 leading-relaxed">{desc}</p>
+        <p className="text-[13px] font-medium text-white/80 leading-snug">{title}</p>
+        <p className="text-[12px] text-white/35 leading-relaxed mt-0.5">{desc}</p>
       </div>
     </div>
   )
 }
 
-function Stat({ value, label }: { value: string; label: string }) {
-  return (
-    <div>
-      <p className="text-lg font-bold text-white">{value}</p>
-      <p className="text-[10px] text-white/50 uppercase tracking-wider">{label}</p>
-    </div>
-  )
-}
-
 // ────────────────────────────────────────────────────────────────────────────
-// Mobile product summary (shown above form on small screens)
+// Mobile header (shown above form on small screens)
 // ────────────────────────────────────────────────────────────────────────────
 
-function MobileHero() {
+function MobileHeader() {
   return (
-    <div className="lg:hidden text-center mb-8">
-      <div className="flex justify-center mb-4">
-        <svg width="44" height="44" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="28" height="28" rx="7" fill="hsl(var(--primary))" />
-          <rect x="7" y="6" width="14" height="16" rx="2" fill="white" fillOpacity="0.15" />
-          <rect x="7" y="6" width="14" height="16" rx="2" stroke="white" strokeOpacity="0.6" strokeWidth="1.2" />
-          <line x1="10" y1="11" x2="18" y2="11" stroke="white" strokeOpacity="0.7" strokeWidth="1.2" strokeLinecap="round" />
-          <line x1="10" y1="14" x2="16" y2="14" stroke="white" strokeOpacity="0.5" strokeWidth="1.2" strokeLinecap="round" />
-          <line x1="10" y1="17" x2="14" y2="17" stroke="white" strokeOpacity="0.5" strokeWidth="1.2" strokeLinecap="round" />
-          <circle cx="20" cy="20" r="5" fill="hsl(var(--primary))" />
-          <circle cx="20" cy="20" r="5" stroke="hsl(var(--card))" strokeWidth="1.5" />
-          <path d="M17.5 20L19.2 21.7L22.5 18.5" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    <div className="lg:hidden flex flex-col items-center mb-8">
+      <div className="h-10 w-10 rounded-xl flex items-center justify-center bg-primary mb-3">
+        <svg width="20" height="20" viewBox="0 0 18 18" fill="none">
+          <rect x="2" y="1" width="10" height="13" rx="1.5" stroke="white" strokeOpacity="0.9" strokeWidth="1.2" />
+          <line x1="4.5" y1="5" x2="9.5" y2="5" stroke="white" strokeOpacity="0.7" strokeWidth="1" strokeLinecap="round" />
+          <line x1="4.5" y1="7.5" x2="8" y2="7.5" stroke="white" strokeOpacity="0.5" strokeWidth="1" strokeLinecap="round" />
+          <circle cx="13" cy="13" r="4" stroke="white" strokeOpacity="0.7" strokeWidth="1.2" />
+          <path d="M11.2 13L12.4 14.2L14.8 11.8" stroke="white" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </div>
-      <h1 className="text-xl font-bold text-foreground tracking-tight">Invoice Copilot</h1>
-      <p className="text-sm text-muted-foreground mt-1.5 max-w-[320px] mx-auto leading-relaxed">
-        AI accounts-payable assistant that reads invoices, clears the safe ones,
-        and asks you about the rest.
+      <h1 className="text-lg font-semibold text-foreground tracking-tight">Invoice Copilot</h1>
+      <p className="text-[13px] text-muted-foreground mt-1 text-center max-w-[300px]">
+        AI-powered accounts payable that processes invoices in minutes.
       </p>
-      <div className="flex justify-center gap-4 mt-4 text-[10px] text-muted-foreground">
-        <span className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-primary" /> Deterministic safety</span>
-        <span className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-primary" /> Audit trail</span>
-        <span className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-primary" /> Learns from you</span>
-      </div>
     </div>
   )
 }
@@ -286,213 +282,228 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps) {
 
   return (
     <div className="min-h-screen flex bg-background">
-      {/* Left — product panel (desktop only) */}
-      <div className="hidden lg:block lg:w-[480px] xl:w-[540px] shrink-0">
+      {/* Left — dark product panel (desktop only) */}
+      <div className="hidden lg:block lg:w-[480px] xl:w-[520px] shrink-0">
         <ProductPanel />
       </div>
 
       {/* Right — auth form */}
-      <div className="flex-1 flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-[400px]">
-          <MobileHero />
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 relative">
+        {/* Subtle background texture on right side */}
+        <div className="absolute inset-0 opacity-[0.02]" style={{
+          backgroundImage: 'radial-gradient(circle, hsl(var(--foreground)) 1px, transparent 1px)',
+          backgroundSize: '32px 32px',
+        }} />
 
-          {/* Form card */}
-          <div className="bg-card border border-border rounded-xl p-7 shadow-sm">
-            {mode === 'login' && (
-              <>
-                <h2 className="text-lg font-semibold text-foreground mb-1">Welcome back</h2>
-                <p className="text-xs text-muted-foreground mb-5">Sign in to your Invoice Copilot workspace</p>
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="login-email">Email</Label>
-                    <Input
-                      id="login-email"
-                      type="email"
-                      autoComplete="email"
-                      placeholder="you@company.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      disabled={busy}
-                      className="h-10"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="login-password">Password</Label>
-                    <Input
-                      id="login-password"
-                      type="password"
-                      autoComplete="current-password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      disabled={busy}
-                      className="h-10"
-                    />
-                  </div>
-                  {error && (
-                    <p className="text-xs text-destructive leading-snug">{error}</p>
-                  )}
-                  <Button type="submit" className="w-full h-10" disabled={busy}>
-                    {busy ? 'Signing in…' : (
-                      <span className="flex items-center gap-2">
-                        Sign in <ArrowRight className="h-3.5 w-3.5" />
-                      </span>
-                    )}
-                  </Button>
-                </form>
-                <p className="text-xs text-muted-foreground text-center mt-5">
-                  New to Invoice Copilot?{' '}
-                  <button
-                    type="button"
-                    onClick={() => switchMode('signup')}
-                    className="text-primary hover:underline font-medium"
-                  >
-                    Create an account
-                  </button>
-                </p>
-              </>
-            )}
+        <div className="w-full max-w-[380px] relative z-10">
+          <MobileHeader />
 
-            {mode === 'signup' && (
-              <>
-                <h2 className="text-lg font-semibold text-foreground mb-1">Get started</h2>
-                <p className="text-xs text-muted-foreground mb-5">Create your workspace — the first account becomes admin</p>
-                <form onSubmit={handleSignup} className="space-y-3.5">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="signup-email">Work email</Label>
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      autoComplete="email"
-                      placeholder="you@company.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      disabled={busy}
-                      className="h-10"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="signup-org">Organization name</Label>
-                    <Input
-                      id="signup-org"
-                      type="text"
-                      autoComplete="organization"
-                      placeholder="Your company name"
-                      value={orgName}
-                      onChange={(e) => setOrgName(e.target.value)}
-                      required
-                      disabled={busy}
-                      className="h-10"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="signup-password">Password</Label>
-                      <Input
-                        id="signup-password"
-                        type="password"
-                        autoComplete="new-password"
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        disabled={busy}
-                        className="h-10"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="signup-confirm">Confirm</Label>
-                      <Input
-                        id="signup-confirm"
-                        type="password"
-                        autoComplete="new-password"
-                        placeholder="••••••••"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        required
-                        disabled={busy}
-                        className="h-10"
-                      />
-                    </div>
-                  </div>
-                  {error && (
-                    <p className="text-xs text-destructive leading-snug">{error}</p>
-                  )}
-                  {info && (
-                    <p className="text-xs text-[hsl(var(--success,142_71%_45%))] leading-snug">{info}</p>
-                  )}
-                  <Button type="submit" className="w-full h-10" disabled={busy || !!info}>
-                    {busy ? 'Creating workspace…' : (
-                      <span className="flex items-center gap-2">
-                        Create workspace <ArrowRight className="h-3.5 w-3.5" />
-                      </span>
-                    )}
-                  </Button>
-                </form>
-                <p className="text-xs text-muted-foreground text-center mt-5">
-                  Already have an account?{' '}
-                  <button
-                    type="button"
-                    onClick={() => switchMode('login')}
-                    className="text-primary hover:underline font-medium"
-                  >
-                    Sign in
-                  </button>
-                </p>
-              </>
-            )}
+          {/* Form heading — outside the card for visual hierarchy */}
+          {mode === 'login' && (
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-foreground tracking-tight">Welcome back</h2>
+              <p className="text-[13px] text-muted-foreground mt-1">Sign in to your Invoice Copilot workspace</p>
+            </div>
+          )}
+          {mode === 'signup' && (
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-foreground tracking-tight">Create your workspace</h2>
+              <p className="text-[13px] text-muted-foreground mt-1">The first account becomes the admin</p>
+            </div>
+          )}
+          {mode === 'verify' && (
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-foreground tracking-tight">Verify your email</h2>
+              <p className="text-[13px] text-muted-foreground mt-1 leading-relaxed">
+                We&apos;ve sent a verification to <span className="font-medium text-foreground">{signupEmail}</span>.{' '}
+                <span className="text-muted-foreground/70">Demo: click below to verify instantly.</span>
+              </p>
+            </div>
+          )}
+          {mode === 'pending' && (
+            <div className="mb-6">
+              <div className="h-10 w-10 rounded-full bg-warning/10 flex items-center justify-center mb-3">
+                <Shield className="h-5 w-5 text-warning" />
+              </div>
+              <h2 className="text-xl font-semibold text-foreground tracking-tight">Pending approval</h2>
+              <p className="text-[13px] text-muted-foreground mt-1 leading-relaxed max-w-[320px]">
+                Your organization admin needs to approve your account before you can access the workspace.
+              </p>
+            </div>
+          )}
 
-            {mode === 'verify' && (
-              <>
-                <h2 className="text-lg font-semibold text-foreground mb-1">Verify your email</h2>
-                <p className="text-xs text-muted-foreground mb-5 leading-relaxed">
-                  We&apos;ve sent a verification to <span className="font-medium text-foreground">{signupEmail}</span>.{' '}
-                  <em>Demo: click below to verify instantly.</em>
-                </p>
-                <form onSubmit={handleVerify} className="space-y-4">
-                  {error && <p className="text-xs text-destructive leading-snug">{error}</p>}
-                  {info && <p className="text-xs text-[hsl(var(--success,142_71%_45%))] leading-snug">{info}</p>}
-                  <Button type="submit" className="w-full h-10" disabled={busy || !!info}>
-                    {busy ? 'Verifying…' : 'Verify email'}
-                  </Button>
-                </form>
-                <p className="text-xs text-muted-foreground text-center mt-4">
-                  <button type="button" onClick={() => switchMode('login')} className="text-primary hover:underline font-medium">
-                    Back to sign in
-                  </button>
-                </p>
-              </>
-            )}
+          {/* Form area */}
+          {mode === 'login' && (
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="login-email" className="text-[13px]">Email</Label>
+                <Input
+                  id="login-email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="you@company.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={busy}
+                  className="h-10 bg-card"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="login-password" className="text-[13px]">Password</Label>
+                <Input
+                  id="login-password"
+                  type="password"
+                  autoComplete="current-password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={busy}
+                  className="h-10 bg-card"
+                />
+              </div>
+              {error && (
+                <p className="text-[13px] text-destructive leading-snug">{error}</p>
+              )}
+              <Button type="submit" className="w-full h-10 mt-2" disabled={busy}>
+                {busy ? 'Signing in\u2026' : (
+                  <span className="flex items-center gap-2">
+                    Sign in <ArrowRight className="h-3.5 w-3.5" />
+                  </span>
+                )}
+              </Button>
+            </form>
+          )}
 
-            {mode === 'pending' && (
-              <>
-                <div className="text-center py-4">
-                  <div className="flex justify-center mb-3">
-                    <div className="h-10 w-10 rounded-full bg-warning/10 flex items-center justify-center">
-                      <Shield className="h-5 w-5 text-[hsl(var(--warning))]" />
-                    </div>
-                  </div>
-                  <h2 className="text-lg font-semibold text-foreground mb-2">Pending approval</h2>
-                  <p className="text-xs text-muted-foreground leading-relaxed max-w-[280px] mx-auto">
-                    Your organization admin needs to approve your account before you can access the workspace.
-                  </p>
+          {mode === 'signup' && (
+            <form onSubmit={handleSignup} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="signup-email" className="text-[13px]">Work email</Label>
+                <Input
+                  id="signup-email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="you@company.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={busy}
+                  className="h-10 bg-card"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="signup-org" className="text-[13px]">Organization name</Label>
+                <Input
+                  id="signup-org"
+                  type="text"
+                  autoComplete="organization"
+                  placeholder="Your company name"
+                  value={orgName}
+                  onChange={(e) => setOrgName(e.target.value)}
+                  required
+                  disabled={busy}
+                  className="h-10 bg-card"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="signup-password" className="text-[13px]">Password</Label>
+                  <Input
+                    id="signup-password"
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder="6+ characters"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    disabled={busy}
+                    className="h-10 bg-card"
+                  />
                 </div>
-                <p className="text-xs text-muted-foreground text-center mt-4">
-                  <button type="button" onClick={() => switchMode('login')} className="text-primary hover:underline font-medium">
-                    Back to sign in
-                  </button>
-                </p>
-              </>
-            )}
-          </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="signup-confirm" className="text-[13px]">Confirm</Label>
+                  <Input
+                    id="signup-confirm"
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder="Re-enter"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    disabled={busy}
+                    className="h-10 bg-card"
+                  />
+                </div>
+              </div>
+              {error && (
+                <p className="text-[13px] text-destructive leading-snug">{error}</p>
+              )}
+              {info && (
+                <p className="text-[13px] text-success leading-snug">{info}</p>
+              )}
+              <Button type="submit" className="w-full h-10 mt-2" disabled={busy || !!info}>
+                {busy ? 'Creating workspace\u2026' : (
+                  <span className="flex items-center gap-2">
+                    Create workspace <ArrowRight className="h-3.5 w-3.5" />
+                  </span>
+                )}
+              </Button>
+            </form>
+          )}
 
-          {/* Trust signals */}
-          <div className="mt-6 flex justify-center gap-6 text-[10px] text-muted-foreground/60">
-            <span>SOX-ready audit</span>
+          {mode === 'verify' && (
+            <form onSubmit={handleVerify} className="space-y-4">
+              {error && <p className="text-[13px] text-destructive leading-snug">{error}</p>}
+              {info && <p className="text-[13px] text-success leading-snug">{info}</p>}
+              <Button type="submit" className="w-full h-10" disabled={busy || !!info}>
+                {busy ? 'Verifying\u2026' : 'Verify email'}
+              </Button>
+            </form>
+          )}
+
+          {mode === 'pending' && null}
+
+          {/* Mode switch link */}
+          {mode === 'login' && (
+            <p className="text-[13px] text-muted-foreground text-center mt-6">
+              New to Invoice Copilot?{' '}
+              <button
+                type="button"
+                onClick={() => switchMode('signup')}
+                className="text-primary hover:underline font-medium"
+              >
+                Create an account
+              </button>
+            </p>
+          )}
+          {mode === 'signup' && (
+            <p className="text-[13px] text-muted-foreground text-center mt-6">
+              Already have an account?{' '}
+              <button
+                type="button"
+                onClick={() => switchMode('login')}
+                className="text-primary hover:underline font-medium"
+              >
+                Sign in
+              </button>
+            </p>
+          )}
+          {(mode === 'verify' || mode === 'pending') && (
+            <p className="text-[13px] text-muted-foreground text-center mt-6">
+              <button type="button" onClick={() => switchMode('login')} className="text-primary hover:underline font-medium">
+                Back to sign in
+              </button>
+            </p>
+          )}
+
+          {/* Trust signals — subtle, integrated */}
+          <div className="mt-10 flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground/40">
+            <Lock className="h-3 w-3" />
+            <span>SOX-ready audit trail</span>
+            <span className="mx-1.5">&middot;</span>
             <span>Multi-tenant</span>
+            <span className="mx-1.5">&middot;</span>
             <span>No real money moved</span>
           </div>
         </div>
