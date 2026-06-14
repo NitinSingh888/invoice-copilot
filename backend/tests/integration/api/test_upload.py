@@ -88,11 +88,11 @@ def test_upload_spec_format_returns_201(seeded_client: TestClient) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_get_samples_returns_four_items(seeded_client: TestClient) -> None:
+def test_get_samples_returns_many_items(seeded_client: TestClient) -> None:
     resp = seeded_client.get("/api/v1/invoices/samples")
     assert resp.status_code == 200
     samples = resp.json()
-    assert len(samples) == 4
+    assert len(samples) >= 50, "Expected a large, diverse sample set"
 
 
 def test_get_samples_have_required_fields(seeded_client: TestClient) -> None:
@@ -104,44 +104,30 @@ def test_get_samples_have_required_fields(seeded_client: TestClient) -> None:
         assert "invoice_number" in sample
         assert "label" in sample
         assert "expected" in sample
-        # Every sample must now include a source_file for PDF preview
-        assert "source_file" in sample
-        assert sample["source_file"] is not None
-        assert sample["source_file"].endswith(".pdf")
+        assert "tags" in sample
+        assert isinstance(sample["tags"], list)
 
 
-def test_get_samples_invoice_numbers_are_new(seeded_client: TestClient) -> None:
-    """Non-duplicate samples use new invoice numbers distinct from the seed batch."""
+def test_get_samples_invoice_numbers_are_unique(seeded_client: TestClient) -> None:
+    """All samples have unique, non-empty invoice numbers."""
     resp = seeded_client.get("/api/v1/invoices/samples")
-    non_duplicate_samples = [
-        s for s in resp.json()
-        if s["label"] != "Exact duplicate"  # duplicate intentionally reuses a real invoice_number
-    ]
-    # Each should have a unique, non-empty invoice_number
-    invoice_numbers = [s["invoice_number"] for s in non_duplicate_samples]
+    invoice_numbers = [s["invoice_number"] for s in resp.json()]
     assert len(invoice_numbers) == len(set(invoice_numbers)), "Duplicate invoice numbers in samples"
     for inv_num in invoice_numbers:
         assert inv_num, "Invoice number must not be empty"
 
 
-def test_get_samples_known_invoice_numbers(seeded_client: TestClient) -> None:
-    """Verify the specific invoice numbers specified in the samples."""
+def test_get_samples_have_variety(seeded_client: TestClient) -> None:
+    """Samples cover auto-clear, escalate, and block scenarios."""
     resp = seeded_client.get("/api/v1/invoices/samples")
-    samples = {s["label"]: s for s in resp.json()}
-    assert samples["Clean auto-clear"]["invoice_number"] == "INV/2025/NEW/0001"
-    assert samples["Over-PO escalation"]["invoice_number"] == "CB-NEW-0001"
-    assert samples["Unknown vendor / no PO"]["invoice_number"] == "IBZY-NEW-01"
-    assert samples["Exact duplicate"]["invoice_number"] == "VF1005193039SCONL0303006280999"
-
-
-def test_get_samples_source_files(seeded_client: TestClient) -> None:
-    """Verify sample source_file mappings."""
-    resp = seeded_client.get("/api/v1/invoices/samples")
-    samples = {s["label"]: s for s in resp.json()}
-    assert samples["Clean auto-clear"]["source_file"] == "AzureInterior.pdf"
-    assert samples["Over-PO escalation"]["source_file"] == "coolblue1.pdf"
-    assert samples["Unknown vendor / no PO"]["source_file"] == "oyo.pdf"
-    assert samples["Exact duplicate"]["source_file"] == "saeco.pdf"
+    all_tags: set[str] = set()
+    for s in resp.json():
+        all_tags.update(s.get("tags", []))
+    assert "auto-clear" in all_tags
+    assert "escalate" in all_tags
+    assert "block" in all_tags
+    assert "under-100" in all_tags
+    assert "over-1000" in all_tags
 
 
 def test_post_sample_with_source_file_serves_pdf(demo_seeded_client: TestClient) -> None:
