@@ -56,7 +56,7 @@ export function PageHeader({
       <div className="flex items-center gap-3 shrink-0">
         {/* Real search input — Inbox only */}
         {showSearch && (
-          <div data-tour="search" className="hidden sm:flex items-center gap-2 h-8 px-3 rounded-md border border-border bg-muted/40 text-muted-foreground text-xs focus-within:border-primary/50 focus-within:bg-background transition-colors">
+          <div data-tour="search" className="hidden sm:flex items-center gap-2 h-8 px-3 rounded-md border border-border/80 bg-muted/60 text-muted-foreground text-sm focus-within:border-primary/50 focus-within:bg-background transition-colors">
             <svg className="h-3.5 w-3.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
               <circle cx="6.5" cy="6.5" r="4" />
               <path d="M10 10l3 3" strokeLinecap="round" />
@@ -67,7 +67,7 @@ export function PageHeader({
               value={searchQuery ?? ''}
               onChange={(e) => onSearchChange?.(e.target.value)}
               placeholder="Search vendor, ID, PO…"
-              className="bg-transparent outline-none placeholder:text-muted-foreground text-foreground w-48 md:w-72"
+              className="bg-transparent outline-none placeholder:text-muted-foreground/80 text-foreground text-sm w-64 md:w-96"
             />
             {searchQuery && (
               <button

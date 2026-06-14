@@ -1,5 +1,4 @@
 import {
-  CheckCircle2,
   AlertCircle,
   XCircle,
   Zap,
@@ -80,7 +79,7 @@ export function Dashboard({ invoices, loading, onProcessBatch, onSwitchToInbox }
   const queued = invoices.filter((i) => i.status === 'queued').length
   const needs = invoices.filter((i) => i.status === 'needs').length
   const blocked = invoices.filter((i) => i.status === 'blocked').length
-  const auto = queued
+  const held = invoices.filter((i) => i.status === 'held').length
 
   // Stacked bar widths
   const queuedPct = total > 0 ? (queued / total) * 100 : 0
@@ -113,11 +112,11 @@ export function Dashboard({ invoices, loading, onProcessBatch, onSwitchToInbox }
             loading={loading}
           />
           <KpiCard
-            label="Auto-Cleared"
-            value={auto}
-            sub="queued for payment"
-            icon={<CheckCircle2 className="h-3.5 w-3.5" />}
-            variant="success"
+            label="On Hold"
+            value={held}
+            sub={held > 0 ? 'awaiting follow-up' : 'none on hold'}
+            icon={<AlertCircle className="h-3.5 w-3.5" />}
+            variant={held > 0 ? 'warning' : 'default'}
             loading={loading}
           />
           <KpiCard

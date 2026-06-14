@@ -204,6 +204,7 @@ export function InvoiceQueue({ invoices, loading, onInvoiceClick, onRefresh }: I
           <AddInvoiceDialog onAdded={onRefresh} />
         </div>
         <div className="flex items-center gap-2">
+          <StatPill color="muted" label="All" count={allVisible.length} active={activeFilter === null} onClick={() => setActiveFilter(null)} />
           <StatPill color="warning" label="Needs review" count={needs} active={activeFilter === 'needs'} onClick={() => toggleFilter('needs')} />
           <StatPill color="muted" label="Received" count={received} active={activeFilter === 'received'} onClick={() => toggleFilter('received')} />
           <StatPill color="destructive" label="Blocked" count={blocked} active={activeFilter === 'blocked'} onClick={() => toggleFilter('blocked')} />
@@ -274,18 +275,24 @@ function StatPill({
   active?: boolean
   onClick?: () => void
 }) {
-  const colorClasses = {
+  const inactiveClasses = {
     warning: 'text-[hsl(var(--warning))] bg-warning/10',
     success: 'text-[hsl(var(--success))] bg-success/10',
     destructive: 'text-destructive bg-destructive/10',
     muted: 'text-muted-foreground bg-muted',
+  }
+  const activeClasses = {
+    warning: 'text-white bg-[hsl(var(--warning))]',
+    success: 'text-white bg-[hsl(var(--success))]',
+    destructive: 'text-white bg-destructive',
+    muted: 'text-white bg-foreground',
   }
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center gap-1 rounded px-1.5 py-0.5 cursor-pointer transition-all ${colorClasses[color]} ${active ? 'ring-2 ring-primary ring-offset-1' : 'hover:opacity-80'}`}
+      className={`flex items-center gap-1 rounded px-1.5 py-0.5 cursor-pointer transition-all ${active ? activeClasses[color] : inactiveClasses[color]} ${!active ? 'hover:opacity-80' : ''}`}
     >
       <span className="text-[10px] font-medium">{label}</span>
       <span className="text-[10px] font-mono font-semibold">{count}</span>
