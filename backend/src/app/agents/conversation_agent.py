@@ -250,7 +250,12 @@ def handle(
     if cmd.action in ("count", "sum"):
         base_all = _scope_base(db, message, org_id=org_id)
         candidates = _filter_invoices(db, cmd, base=base_all, org_id=org_id)
-        label = _filter_label(cmd) or "all"
+        # When no specific status filter, exclude resolved invoices from totals
+        # so "total amount pending" doesn't include already-approved ones
+        if not cmd.status:
+            _terminal = {"cleared", "queued", "rejected"}
+            candidates = [inv for inv in candidates if inv.status not in _terminal]
+        label = _filter_label(cmd) or "pending"
         if cmd.action == "count":
             value_str = str(len(candidates))
             text = f"There are {len(candidates)} invoice(s) matching [{label}]."
