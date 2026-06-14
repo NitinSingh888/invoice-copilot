@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -90,8 +89,8 @@ def test_extract_image_passes_b64(mock_client: MockClient) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_extract_pdf_uses_text_path(mock_client: MockClient) -> None:
-    """PDF branch extracts text via PdfReader; image_b64 stays None."""
+def test_extract_pdf_sends_as_base64(mock_client: MockClient) -> None:
+    """PDFs are sent directly to the LLM as base64 (vision/document path)."""
     called_with: dict[str, object] = {}
 
     original_extract = mock_client.extract_invoice
@@ -102,39 +101,36 @@ def test_extract_pdf_uses_text_path(mock_client: MockClient) -> None:
 
     mock_client.extract_invoice = capture  # type: ignore[method-assign]
 
-    # Build a minimal in-memory PDF (single page with text)
-    fake_page = MagicMock()
-    fake_page.extract_text.return_value = (
-        "vendor: Acme Corp\namount: 9800\npo: PO-1\ninvoice_number: A-1"
+    extraction_agent.extract(
+        mock_client,
+        file_bytes=b"%PDF-1.4 fake content",
+        filename="invoice.pdf",
+        content_type="application/pdf",
     )
-    fake_reader = MagicMock()
-    fake_reader.pages = [fake_page]
 
-    with patch("app.agents.extraction_agent.PdfReader", return_value=fake_reader):
-        result = extraction_agent.extract(
-            mock_client,
-            file_bytes=b"%PDF-1.4 fake",
-            filename="invoice.pdf",
-            content_type="application/pdf",
-        )
-
-    assert called_with.get("image_b64") is None
-    assert isinstance(called_with.get("text"), str)
-    assert result.vendor == "Acme Corp"
+    # PDF bytes should be sent as base64, not as extracted text
+    assert called_with.get("image_b64") is not None
+    assert called_with.get("text") == ""
 
 
 def test_extract_pdf_detected_by_filename(mock_client: MockClient) -> None:
-    """Filename ending .pdf triggers the PDF path even without matching content_type."""
-    fake_page = MagicMock()
-    fake_page.extract_text.return_value = ""
-    fake_reader = MagicMock()
-    fake_reader.pages = [fake_page]
+    """Filename ending .pdf triggers the document path even without matching content_type."""
+    called_with: dict[str, object] = {}
 
-    with patch("app.agents.extraction_agent.PdfReader", return_value=fake_reader):
-        # Should not raise — PDF path chosen by filename extension
-        extraction_agent.extract(
-            mock_client,
-            file_bytes=b"%PDF-1.4 fake",
-            filename="doc.pdf",
-            content_type="application/octet-stream",
-        )
+    original_extract = mock_client.extract_invoice
+
+    def capture(**kwargs: object) -> object:  # type: ignore[misc]
+        called_with.update(kwargs)
+        return original_extract(**kwargs)  # type: ignore[arg-type]
+
+    mock_client.extract_invoice = capture  # type: ignore[method-assign]
+
+    extraction_agent.extract(
+        mock_client,
+        file_bytes=b"%PDF-1.4 fake",
+        filename="doc.pdf",
+        content_type="application/octet-stream",
+    )
+
+    # Should use base64 path (not text) because filename ends with .pdf
+    assert called_with.get("image_b64") is not None
