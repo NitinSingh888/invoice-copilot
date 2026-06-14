@@ -18,8 +18,10 @@ import {
   getAudit,
   getHealth,
   getInvoice,
+  getThread,
   listInvoices,
   proposeRule,
+  saveThread,
 } from '@/lib/api'
 
 import { displayFinding, formatMoney } from '@/lib/utils'
@@ -80,14 +82,7 @@ export default function App({ userEmail, orgName, orgRole }: AppProps) {
       (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
   )
   const [invoices, setInvoices] = useState<InvoiceOut[]>([])
-  const [thread, setThread] = useState<ThreadMessage[]>(() => {
-    try {
-      const saved = localStorage.getItem('ic_thread')
-      return saved ? (JSON.parse(saved) as ThreadMessage[]) : []
-    } catch {
-      return []
-    }
-  })
+  const [thread, setThread] = useState<ThreadMessage[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
@@ -140,24 +135,32 @@ export default function App({ userEmail, orgName, orgRole }: AppProps) {
     return live
   }, [])
 
-  // initial load — load PERSISTED state (the backend seeds on boot; refresh
-  // preserves processed/pending status). Use the Reset button to start fresh.
+  // initial load — fetch invoices + conversation thread from server
   useEffect(() => {
     void (async () => {
       try {
-        await refreshInvoices()
+        const [, threadRes] = await Promise.all([
+          refreshInvoices(),
+          getThread().catch(() => ({ thread: [] as ThreadMessage[] })),
+        ])
+        if (threadRes.thread.length > 0) {
+          setThread(threadRes.thread)
+        }
       } finally {
         setLoading(false)
       }
     })()
   }, [refreshInvoices])
 
-  // Persist the conversation so a refresh keeps it.
+  // Persist conversation to server (debounced)
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
-    try {
-      localStorage.setItem('ic_thread', JSON.stringify(thread))
-    } catch {
-      /* ignore quota errors */
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = setTimeout(() => {
+      void saveThread(thread).catch(() => {/* ignore save errors */})
+    }, 500)
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     }
   }, [thread])
 

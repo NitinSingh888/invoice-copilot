@@ -25,6 +25,7 @@ class User(Base):
         default=None,
     )
     role: Mapped[str] = mapped_column(default="member")
+    thread_data: Mapped[str | None] = mapped_column(default=None)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

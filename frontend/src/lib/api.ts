@@ -382,3 +382,22 @@ export async function getPolicy(): Promise<Policy> {
 export async function updatePolicy(body: Partial<Policy>): Promise<Policy> {
   return request<Policy>('/policy', { method: 'PATCH', body: JSON.stringify(body) })
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// Conversation thread (server-side persistence)
+// ────────────────────────────────────────────────────────────────────────────
+
+export async function getThread(): Promise<{ thread: ThreadMessage[] }> {
+  // Import type inline to avoid circular dep
+  return request<{ thread: ThreadMessage[] }>('/thread')
+}
+
+export async function saveThread(thread: ThreadMessage[]): Promise<void> {
+  await request<null>('/thread', {
+    method: 'PUT',
+    body: JSON.stringify({ thread }),
+  })
+}
+
+// Re-export the type so callers can use it
+import type { ThreadMessage } from './types'
