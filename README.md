@@ -6,10 +6,16 @@ The design premise is the whole point: in finance automation the hard part isn't
 
 ---
 
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/1c9602b6-4da3-4eac-95f2-ffcef6e24022" />
-<img width="1919" height="1080" alt="image" src="https://github.com/user-attachments/assets/4f0f1941-1c3c-479c-8c55-13c8072837a0" />
-<img width="1913" height="1071" alt="image" src="https://github.com/user-attachments/assets/84c4aef3-3068-4f89-9303-597f6ac359ca" />
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/f07175c1-9408-497f-bf30-e28350847adb" />
+<table>
+  <tr>
+    <td><img alt="Inbox — chat-driven approval" src="https://github.com/user-attachments/assets/1c9602b6-4da3-4eac-95f2-ffcef6e24022" /></td>
+    <td><img alt="Dashboard — today's results" src="https://github.com/user-attachments/assets/4f0f1941-1c3c-479c-8c55-13c8072837a0" /></td>
+  </tr>
+  <tr>
+    <td><img alt="Rules — auto-approve policy" src="https://github.com/user-attachments/assets/84c4aef3-3068-4f89-9303-597f6ac359ca" /></td>
+    <td><img alt="Audit trail — hash-chained events" src="https://github.com/user-attachments/assets/f07175c1-9408-497f-bf30-e28350847adb" /></td>
+  </tr>
+</table>
 
 
 
