@@ -130,13 +130,17 @@ def handle(
         }
         total = queued + needs + blocked
         if total == 0:
-            # Nothing new to process — tell the user what already exists
+            # Nothing new to process — show existing counts instead
             from collections import Counter
 
             counts = Counter(inv.status for inv in today)
             existing_needs = counts.get("needs", 0)
             existing_blocked = counts.get("blocked", 0)
             existing_queued = counts.get("queued", 0)
+            # Update result dict so the frontend card shows real numbers
+            result["queued"] = existing_queued
+            result["needs"] = existing_needs
+            result["blocked"] = existing_blocked
             existing_total = existing_needs + existing_blocked + existing_queued
             if existing_total > 0:
                 parts: list[str] = []
