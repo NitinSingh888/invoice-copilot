@@ -4,6 +4,8 @@ An AI accounts-payable (AP) clerk you can talk to. It reads incoming supplier in
 
 The design premise is the whole point: in finance automation the hard part isn't the reasoning — it's *reliability, safety, and proof*. So the LLM only reads and proposes; **deterministic code makes every money-moving decision and guards it**, and the chat is just a faster interface to that machine.
 
+**Live demo:** [invoice-copilot-26ek.onrender.com](https://invoice-copilot-26ek.onrender.com) — credentials available on request from the admin.
+
 ---
 
 <table>
