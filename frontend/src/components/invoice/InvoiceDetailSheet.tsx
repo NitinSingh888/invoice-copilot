@@ -20,7 +20,7 @@ import {
   getInvoice,
   getAudit,
   invoiceAction,
-  invoiceFileUrl,
+  fetchInvoiceFile,
   getComments,
   addComment,
   rejectInvoice,
@@ -76,6 +76,9 @@ export function InvoiceDetailSheet({
   const [commentBusy, setCommentBusy] = useState(false)
   const commentInputRef = useRef<HTMLTextAreaElement>(null)
 
+  // Blob URL for secure file preview
+  const [fileUrl, setFileUrl] = useState<string | null>(null)
+
   useEffect(() => {
     if (!open || !invoiceId) return
     setLoading(true)
@@ -84,6 +87,7 @@ export function InvoiceDetailSheet({
     setRejectOpen(false)
     setRejectReason('')
     setComments([])
+    setFileUrl(null)
 
     Promise.all([getInvoice(invoiceId), getAudit(invoiceId)])
       .then(([inv, audit]) => {
@@ -93,6 +97,13 @@ export function InvoiceDetailSheet({
           (policyEvent?.outputs?.findings as string[] | undefined) ?? []
         ).filter((c) => c !== 'PO_MATCH_OK')
         setFindings(codes.map((c) => displayFinding(c, '')))
+
+        // Fetch file via Authorization header
+        if (inv.source_file) {
+          fetchInvoiceFile(inv.id)
+            .then(setFileUrl)
+            .catch(() => {/* ignore */})
+        }
       })
       .catch(console.error)
       .finally(() => setLoading(false))
@@ -103,6 +114,10 @@ export function InvoiceDetailSheet({
       .then(setComments)
       .catch(console.error)
       .finally(() => setCommentsLoading(false))
+
+    return () => {
+      setFileUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return null })
+    }
   }, [open, invoiceId])
 
   async function doAction(
@@ -281,10 +296,10 @@ export function InvoiceDetailSheet({
               </p>
               {loading ? (
                 <Skeleton className="w-full h-[70vh] rounded-lg" />
-              ) : invoice?.source_file ? (
+              ) : invoice?.source_file && fileUrl ? (
                 invoice.source_file.toLowerCase().endsWith('.pdf') ? (
                   <iframe
-                    src={invoiceFileUrl(invoice.id)}
+                    src={fileUrl}
                     className="w-full h-[70vh] rounded-lg border border-border bg-muted"
                     title={`Invoice from ${invoice?.vendor ?? ''}`}
                   />
@@ -292,7 +307,7 @@ export function InvoiceDetailSheet({
                   // Image: fit to width (zoomed out) in a scrollable frame.
                   <div className="w-full h-[70vh] overflow-auto rounded-lg border border-border bg-muted/40">
                     <img
-                      src={invoiceFileUrl(invoice.id)}
+                      src={fileUrl}
                       alt={`Invoice from ${invoice?.vendor ?? ''}`}
                       className="w-full h-auto block"
                     />

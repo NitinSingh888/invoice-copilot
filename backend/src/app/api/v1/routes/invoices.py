@@ -51,7 +51,9 @@ _UPLOADS_DIR = project_data_dir() / "uploads"
 
 
 @router.post("", status_code=201, response_model=ProcessResultOut)
+@limiter.limit("30/minute")
 def create_invoice(
+    request: Request,
     body: InvoiceIn,
     db: Session = Depends(get_db),
     org_id: str = Depends(get_current_org),
@@ -104,10 +106,10 @@ def upload_invoice(
     llm: LLMClient = Depends(get_llm),
     org_id: str = Depends(get_current_org),
 ) -> ProcessResultOut:
-    file_bytes = file.file.read()
+    file_bytes = file.file.read(MAX_UPLOAD_BYTES + 1)
     if len(file_bytes) > MAX_UPLOAD_BYTES:
         raise AppError(
-            f"File too large ({len(file_bytes) // (1024 * 1024)}MB). Maximum is 10MB."
+            "File too large. Maximum is 10MB."
         )
     filename = file.filename or ""
     content_type = file.content_type or "application/octet-stream"
@@ -429,10 +431,12 @@ def _generate_samples() -> list[dict[str, object]]:
 
     # Deduplicate invoice_numbers (add hash suffix to guarantee uniqueness)
     seen: set[str] = set()
+    dedup_seq = 0
     for s in samples:
         inv = str(s["invoice_number"])
         if inv in seen:
-            h = hashlib.md5(f"{inv}-{id(s)}".encode()).hexdigest()[:4]
+            dedup_seq += 1
+            h = hashlib.sha256(f"{inv}-{dedup_seq}".encode()).hexdigest()[:6]
             s["invoice_number"] = f"{inv}-{h}"
         seen.add(str(s["invoice_number"]))
 
@@ -456,9 +460,14 @@ def list_invoices(
 def list_all_invoices(
     db: Session = Depends(get_db),
     org_id: str = Depends(get_current_org),
+    limit: int = 200,
+    offset: int = 0,
 ) -> list[InvoiceOut]:
     """Return ALL invoices across all dates — used by the History page."""
-    return [InvoiceOut.model_validate(i) for i in invoice_repo.list_all(db, org_id=org_id)]
+    return [
+        InvoiceOut.model_validate(i)
+        for i in invoice_repo.list_all(db, org_id=org_id, limit=limit, offset=offset)
+    ]
 
 
 @router.post("/bulk-action", response_model=BulkActionOut)
@@ -530,6 +539,12 @@ def get_invoice_file(
     else:
         # Relative filename — seed sample_invoices directory
         file_path = _SAMPLE_INVOICES_DIR / source
+
+    # Validate resolved path is within allowed directories to prevent traversal
+    resolved = file_path.resolve()
+    allowed_dirs = [_SAMPLE_INVOICES_DIR.resolve(), _UPLOADS_DIR.resolve()]
+    if not any(resolved.is_relative_to(d) for d in allowed_dirs):
+        raise NotFoundError(f"file for invoice {invoice_id} not found on disk")
 
     if not file_path.exists():
         raise NotFoundError(f"file for invoice {invoice_id} not found on disk")

@@ -40,5 +40,10 @@ def save_thread(
     """Save the conversation thread for the current user."""
     import json
 
-    user.thread_data = json.dumps(body.thread)
+    from app.core.exceptions import AppError
+
+    serialized = json.dumps(body.thread)
+    if len(serialized) > 500_000:
+        raise AppError("Thread too large")
+    user.thread_data = serialized
     db.flush()

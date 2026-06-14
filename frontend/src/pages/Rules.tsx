@@ -393,14 +393,19 @@ function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {
 export function Rules({ orgRole }: { orgRole?: OrgRole | null }) {
   const [rules, setRules] = useState<RuleOut[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
   const isAdmin = orgRole === 'admin'
 
   useEffect(() => {
     setLoading(true)
+    setError(null)
     listRules()
       .then(setRules)
-      .catch(console.error)
+      .catch((err) => {
+        console.error(err)
+        setError((err as Error).message ?? 'Failed to load rules')
+      })
       .finally(() => setLoading(false))
   }, [])
 
@@ -443,6 +448,14 @@ export function Rules({ orgRole }: { orgRole?: OrgRole | null }) {
               <span className="font-medium text-foreground">{active}</span> active ·{' '}
               <span className="font-medium text-foreground">{rules.length}</span> total
             </span>
+          </div>
+        )}
+
+        {/* Error */}
+        {!loading && error && (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <p className="text-sm text-destructive font-medium mb-1">Failed to load rules</p>
+            <p className="text-xs text-muted-foreground">{error}</p>
           </div>
         )}
 

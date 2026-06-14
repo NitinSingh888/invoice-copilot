@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { ExternalLink, Pencil, CheckCircle2, PauseCircle } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { VendorAvatar } from './VendorAvatar'
 import { FindingChip } from './FindingChip'
-import { invoiceAction, getOrgMembers } from '@/lib/api'
+import { invoiceAction } from '@/lib/api'
 import { formatMoney } from '@/lib/utils'
 import type { InvoiceOut, FindingDisplay, OrgMember } from '@/lib/types'
 
@@ -15,6 +15,7 @@ interface ApprovalCardProps {
   invoice: InvoiceOut
   findings: FindingDisplay[]
   rationale: string
+  members: OrgMember[]
   onResolved: (invoice: InvoiceOut, action: string) => void
   onTrailOpen: (id: string) => void
 }
@@ -23,6 +24,7 @@ export function ApprovalCard({
   invoice,
   findings,
   rationale,
+  members,
   onResolved,
   onTrailOpen,
 }: ApprovalCardProps) {
@@ -30,13 +32,6 @@ export function ApprovalCard({
   const [editing, setEditing] = useState(false)
   const [editAmount, setEditAmount] = useState(invoice.amount)
   const [editRoute, setEditRoute] = useState(invoice.route ?? '')
-  const [members, setMembers] = useState<OrgMember[]>([])
-
-  useEffect(() => {
-    getOrgMembers()
-      .then(setMembers)
-      .catch(console.error)
-  }, [])
 
   async function doAction(action: 'approve' | 'hold' | 'edit' | 'route', extra?: Record<string, string>) {
     setLoading(action)

@@ -37,11 +37,17 @@ def get_by_invoice_number(
     return q.order_by(Invoice.created_at.desc()).first()
 
 
-def list_all(s: Session, *, org_id: str | None = None) -> list[Invoice]:
+def list_all(
+    s: Session,
+    *,
+    org_id: str | None = None,
+    limit: int = 200,
+    offset: int = 0,
+) -> list[Invoice]:
     q = s.query(Invoice).filter(Invoice.is_deleted.is_(False))
     if org_id is not None:
         q = q.filter(Invoice.org_id == org_id)
-    return list(q.all())
+    return list(q.offset(offset).limit(limit).all())
 
 
 def list_by_status(s: Session, status: str, *, org_id: str | None = None) -> list[Invoice]:

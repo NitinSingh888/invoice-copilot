@@ -85,7 +85,10 @@ def create_app() -> FastAPI:
         async def spa_fallback(path: str) -> FileResponse:
             """Serve static files or fall back to index.html for client-side routing."""
             requested = Path(static_dir) / path
-            if requested.is_file():
+            if (
+                requested.resolve().is_relative_to(Path(static_dir).resolve())
+                and requested.is_file()
+            ):
                 media_type = mimetypes.guess_type(str(requested))[0]
                 return FileResponse(requested, media_type=media_type)
             return FileResponse(index_html, media_type="text/html")

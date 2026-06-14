@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { VendorAvatar } from './VendorAvatar'
 import { StatusBadge } from './StatusBadge'
 import { AddInvoiceDialog } from './AddInvoiceDialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
 import { formatMoney } from '@/lib/utils'
-import { invoiceFileUrl } from '@/lib/api'
+import { fetchInvoiceFile } from '@/lib/api'
 import type { InvoiceOut, InvoiceStatus } from '@/lib/types'
 
 interface InvoiceQueueProps {
@@ -53,6 +53,25 @@ function truncate(s: string | null, max = 20): string {
   return s.length > max ? s.slice(0, max) + '…' : s
 }
 
+function useInvoiceFileUrl(invoiceId: string, hasFile: boolean) {
+  const [url, setUrl] = useState<string | null>(null)
+  useEffect(() => {
+    if (!hasFile) return
+    let revoked = false
+    fetchInvoiceFile(invoiceId)
+      .then((blobUrl) => {
+        if (!revoked) setUrl(blobUrl)
+        else URL.revokeObjectURL(blobUrl)
+      })
+      .catch(() => {/* ignore */})
+    return () => {
+      revoked = true
+      setUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return null })
+    }
+  }, [invoiceId, hasFile])
+  return url
+}
+
 function InvoiceRow({
   invoice,
   onClick,
@@ -60,6 +79,8 @@ function InvoiceRow({
   invoice: InvoiceOut
   onClick: () => void
 }) {
+  const fileUrl = useInvoiceFileUrl(invoice.id, !!invoice.source_file)
+
   return (
     <HoverCard openDelay={400} closeDelay={100}>
       <HoverCardTrigger asChild>
@@ -121,17 +142,17 @@ function InvoiceRow({
           <StatusBadge status={invoice.status} />
         </div>
         {/* Doc preview — only mount the iframe when the hover is open and source_file exists */}
-        {invoice.source_file ? (
+        {invoice.source_file && fileUrl ? (
           invoice.source_file.toLowerCase().endsWith('.pdf') ? (
             <iframe
-              src={invoiceFileUrl(invoice.id)}
+              src={fileUrl}
               className="w-[280px] h-[340px] pointer-events-none block"
               title={`Preview of ${invoice.vendor} invoice`}
             />
           ) : (
             <div className="w-[280px] h-[340px] overflow-hidden bg-muted/40">
               <img
-                src={invoiceFileUrl(invoice.id)}
+                src={fileUrl}
                 alt={`Preview of ${invoice.vendor} invoice`}
                 className="w-[280px] h-auto block"
               />

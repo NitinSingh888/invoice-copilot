@@ -51,7 +51,7 @@ def process_invoice(
     # ------------------------------------------------------------------ #
     # Stage 1 — Ensure invoice row exists                                 #
     # ------------------------------------------------------------------ #
-    existing = invoice_repo.get(s, inv_id)
+    existing = invoice_repo.get(s, inv_id, org_id=org_id)
     if existing is None:
         invoice_repo.add(
             s,

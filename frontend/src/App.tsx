@@ -18,6 +18,7 @@ import {
   getAudit,
   getHealth,
   getInvoice,
+  getOrgMembers,
   getThread,
   listInvoices,
   proposeRule,
@@ -29,6 +30,7 @@ import type {
   BatchResult,
   ChatMessage,
   InvoiceOut,
+  OrgMember,
   OrgRole,
   ThreadMessage,
   ReviewInvoiceResult,
@@ -90,12 +92,22 @@ export default function App({ userEmail, orgName, orgRole }: AppProps) {
   const [auditOpen, setAuditOpen] = useState(false)
   const [detailId, setDetailId] = useState<string | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
+  const [members, setMembers] = useState<OrgMember[]>([])
+
+  // Ref to avoid stale closure over `thread` in send()
+  const threadRef = useRef(thread)
+  threadRef.current = thread
+
+  // Guard: only persist thread after initial load completes
+  const loadedRef = useRef(false)
 
   // health state
   const [healthLive, setHealthLive] = useState<boolean | null>(null)
 
   // search query for Inbox
   const [searchQuery, setSearchQuery] = useState('')
+  // Pending send from Dashboard — fired once navigation to inbox completes
+  const pendingSendRef = useRef<string | null>(null)
 
   // The guided tour auto-runs on first visit and resumes on refresh entirely
   // from its own localStorage state — no coupling to the intro modal.
@@ -135,26 +147,29 @@ export default function App({ userEmail, orgName, orgRole }: AppProps) {
     return live
   }, [])
 
-  // initial load — fetch invoices + conversation thread from server
+  // initial load — fetch invoices + conversation thread + org members from server
   useEffect(() => {
     void (async () => {
       try {
         const [, threadRes] = await Promise.all([
           refreshInvoices(),
           getThread().catch(() => ({ thread: [] as ThreadMessage[] })),
+          getOrgMembers().then(setMembers).catch(() => {/* ignore */}),
         ])
         if (threadRes.thread.length > 0) {
           setThread(threadRes.thread)
         }
       } finally {
+        loadedRef.current = true
         setLoading(false)
       }
     })()
   }, [refreshInvoices])
 
-  // Persist conversation to server (debounced)
+  // Persist conversation to server (debounced) — skip the initial mount
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
+    if (!loadedRef.current) return
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     saveTimerRef.current = setTimeout(() => {
       void saveThread(thread).catch(() => {/* ignore save errors */})
@@ -208,7 +223,7 @@ export default function App({ userEmail, orgName, orgRole }: AppProps) {
     setBusy(true)
     push({ type: 'user', content: msg })
     try {
-      const history: ChatMessage[] = thread
+      const history: ChatMessage[] = threadRef.current
         .filter(
           (m): m is { type: 'user' | 'agent'; content: string } =>
             m.type === 'user' || m.type === 'agent',
@@ -290,6 +305,16 @@ export default function App({ userEmail, orgName, orgRole }: AppProps) {
     )
   }
 
+  // Fire pending send from Dashboard after navigating to inbox
+  // (useNavigate is async, so we check on each render after navigation)
+  useEffect(() => {
+    if (pendingSendRef.current && !busy) {
+      const msg = pendingSendRef.current
+      pendingSendRef.current = null
+      void send(msg)
+    }
+  })
+
   const needsCount = invoices.filter((i) => i.status === 'needs').length
 
   return (
@@ -317,6 +342,7 @@ export default function App({ userEmail, orgName, orgRole }: AppProps) {
                 input={input}
                 busy={busy}
                 live={healthLive}
+                members={members}
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
                 onInputChange={setInput}
@@ -347,8 +373,8 @@ export default function App({ userEmail, orgName, orgRole }: AppProps) {
                 invoices={invoices}
                 loading={loading}
                 onProcessBatch={() => {
+                  pendingSendRef.current = "Process today's invoices"
                   setView('inbox')
-                  setTimeout(() => send("Process today's invoices"), 100)
                 }}
                 onSwitchToInbox={() => setView('inbox')}
               />

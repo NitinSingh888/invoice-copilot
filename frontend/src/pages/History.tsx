@@ -25,13 +25,18 @@ function formatTime(isoString: string): string {
 export function History({ onInvoiceClick }: HistoryProps) {
   const [allInvoices, setAllInvoices] = useState<InvoiceOut[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     setLoading(true)
+    setError(null)
     listAllInvoices()
       .then((rows) => setAllInvoices(rows))
-      .catch(console.error)
+      .catch((err) => {
+        console.error(err)
+        setError((err as Error).message ?? 'Failed to load invoices')
+      })
       .finally(() => setLoading(false))
   }, [])
 
@@ -169,8 +174,16 @@ export function History({ onInvoiceClick }: HistoryProps) {
             </div>
           )}
 
+          {/* Error state */}
+          {!loading && error && (
+            <div className="flex flex-col items-center justify-center py-24 text-center">
+              <p className="text-sm text-destructive font-medium mb-1">Failed to load history</p>
+              <p className="text-xs text-muted-foreground">{error}</p>
+            </div>
+          )}
+
           {/* Empty state */}
-          {!loading && totalCount === 0 && !query && (
+          {!loading && !error && totalCount === 0 && !query && (
             <div className="flex flex-col items-center justify-center py-24 text-center">
               <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-muted">
                 <svg

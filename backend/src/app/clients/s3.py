@@ -3,15 +3,16 @@
 Uploads go to: s3://{bucket}/invoices/{org_id}/{invoice_id}{ext}
 Downloads use pre-signed URLs (valid 15 min, no credentials exposed).
 
-Configured via environment variables:
-  IC_S3_BUCKET, IC_S3_REGION, IC_S3_ACCESS_KEY, IC_S3_SECRET_KEY
+Configured via app settings (IC_S3_BUCKET, IC_S3_REGION, etc.).
 If IC_S3_BUCKET is not set, falls back to local file storage.
 """
 from __future__ import annotations
 
 import logging
-import os
+import threading
 from typing import TYPE_CHECKING
+
+from app.core.config import get_settings
 
 if TYPE_CHECKING:
     pass
@@ -19,23 +20,28 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 _client: object | None = None  # lazy singleton
+_client_lock = threading.Lock()
 
 
 def _bucket() -> str | None:
-    return os.environ.get("IC_S3_BUCKET")
+    b = get_settings().s3_bucket
+    return b if b else None
 
 
 def _get_client() -> object:
     global _client
     if _client is None:
-        import boto3  # type: ignore[import-untyped]
+        with _client_lock:
+            if _client is None:
+                import boto3  # type: ignore[import-untyped]
 
-        _client = boto3.client(
-            "s3",
-            region_name=os.environ.get("IC_S3_REGION", "us-east-1"),
-            aws_access_key_id=os.environ.get("IC_S3_ACCESS_KEY"),
-            aws_secret_access_key=os.environ.get("IC_S3_SECRET_KEY"),
-        )
+                settings = get_settings()
+                _client = boto3.client(
+                    "s3",
+                    region_name=settings.s3_region,
+                    aws_access_key_id=settings.s3_access_key or None,
+                    aws_secret_access_key=settings.s3_secret_key or None,
+                )
     return _client
 
 

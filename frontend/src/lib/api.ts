@@ -290,13 +290,28 @@ export async function demoReset(): Promise<DemoResetResponse> {
 // File preview
 // ────────────────────────────────────────────────────────────────────────────
 
+/**
+ * @deprecated Use {@link fetchInvoiceFile} instead — it sends the token via
+ * Authorization header rather than exposing it in the URL.
+ */
 export function invoiceFileUrl(id: string): string {
-  // <iframe>/<img> can't send the Authorization header, so pass the JWT as a
-  // query param; the /file endpoint accepts it as a fallback and still enforces
-  // org ownership.
   const t = getToken()
   const q = t ? `?token=${encodeURIComponent(t)}` : ''
   return `${BASE}/invoices/${id}/file${q}`
+}
+
+/**
+ * Fetch an invoice file via Authorization header and return an object URL.
+ * Callers must revoke the URL when done (e.g. on unmount) via
+ * `URL.revokeObjectURL(url)`.
+ */
+export async function fetchInvoiceFile(id: string): Promise<string> {
+  const res = await fetch(`${BASE}/invoices/${id}/file`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  })
+  if (!res.ok) throw new Error(`Failed to load file`)
+  const blob = await res.blob()
+  return URL.createObjectURL(blob)
 }
 
 // ────────────────────────────────────────────────────────────────────────────

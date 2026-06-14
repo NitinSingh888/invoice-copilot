@@ -89,7 +89,7 @@ export function Dashboard({ invoices, loading, onProcessBatch, onSwitchToInbox }
   const otherPct = 100 - queuedPct - needsPct - blockedPct
 
   // Recent activity: last 8 invoices
-  const recent = [...invoices].slice(0, 8)
+  const recent = invoices.slice(0, 8)
 
   const hasActivity = total > 0
 

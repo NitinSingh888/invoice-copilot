@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Shield, ArrowRight, Lock, FileCheck, TrendingUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -154,6 +154,19 @@ function MobileHeader() {
 
 export function AuthScreen({ onAuthenticated }: AuthScreenProps) {
   const [mode, setMode] = useState<Mode>('login')
+  const timeoutRefs = useRef<ReturnType<typeof setTimeout>[]>([])
+
+  useEffect(() => {
+    return () => {
+      timeoutRefs.current.forEach(clearTimeout)
+    }
+  }, [])
+
+  function trackedTimeout(fn: () => void, ms: number) {
+    const id = setTimeout(fn, ms)
+    timeoutRefs.current.push(id)
+    return id
+  }
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -221,7 +234,7 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps) {
         setPassword('')
         setConfirmPassword('')
         setOrgName('')
-        setTimeout(() => {
+        trackedTimeout(() => {
           setInfo('')
           setEmail(savedEmail)
           switchMode('login')
@@ -238,7 +251,7 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps) {
         setPassword('')
         setConfirmPassword('')
         setOrgName('')
-        setTimeout(() => {
+        trackedTimeout(() => {
           setInfo('')
           setEmail(savedEmail)
           switchMode('login')
@@ -267,7 +280,7 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps) {
       setEmail(signupEmail)
       setPassword('')
       setConfirmPassword('')
-      setTimeout(() => {
+      trackedTimeout(() => {
         setInfo('')
         switchMode('login')
       }, 1500)

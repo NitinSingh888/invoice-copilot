@@ -13,7 +13,7 @@ import { IntroModal } from '@/components/invoice/IntroModal'
 import { VendorAvatar } from '@/components/invoice/VendorAvatar'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { formatMoney } from '@/lib/utils'
-import type { InvoiceOut, ThreadMessage, BulkConfirmState } from '@/lib/types'
+import type { InvoiceOut, OrgMember, ThreadMessage, BulkConfirmState } from '@/lib/types'
 
 const SUGGESTIONS = [
   "Process today's invoices",
@@ -29,6 +29,7 @@ interface InboxProps {
   input: string
   busy: boolean
   live?: boolean | null
+  members: OrgMember[]
   searchQuery: string
   onSearchChange: (q: string) => void
   onInputChange: (v: string) => void
@@ -55,6 +56,7 @@ export function Inbox({
   input,
   busy,
   live,
+  members,
   searchQuery,
   onSearchChange,
   onInputChange,
@@ -220,10 +222,11 @@ export function Inbox({
               ) : (
                 <div className="space-y-4">
                   {thread.map((m, i) => (
-                    <div key={i} className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div key={`${m.type}-${i}`} className="animate-in fade-in slide-in-from-bottom-2 duration-300">
                       <ThreadItem
                         idx={i}
                         m={m}
+                        members={members}
                         onResolved={onResolved}
                         onTrail={onTrail}
                         onRuleApproved={onRuleApproved}
@@ -306,6 +309,7 @@ export function Inbox({
 function ThreadItem({
   m,
   idx,
+  members,
   onResolved,
   onTrail,
   onRuleApproved,
@@ -316,6 +320,7 @@ function ThreadItem({
 }: {
   m: ThreadMessage
   idx: number
+  members: OrgMember[]
   onResolved: (inv: InvoiceOut, action: string) => void
   onTrail: (id: string) => void
   onRuleApproved: () => void
@@ -367,6 +372,7 @@ function ThreadItem({
           invoice={m.invoice}
           findings={m.findings}
           rationale={m.rationale}
+          members={members}
           onResolved={onResolved}
           onTrailOpen={onTrail}
         />

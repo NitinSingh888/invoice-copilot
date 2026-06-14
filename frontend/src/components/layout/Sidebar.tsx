@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { LayoutDashboard, Inbox, BookOpen, ScrollText, Sun, Moon, GraduationCap, History, LogOut, Users, Coins } from 'lucide-react'
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { TeamDialog } from './TeamDialog'
 import type { OrgRole } from '@/lib/types'
@@ -46,7 +46,7 @@ export function Sidebar({
   const isAdmin = orgRole === 'admin'
 
   return (
-    <TooltipProvider>
+    <>
       <aside
         className="w-[220px] shrink-0 flex flex-col h-full bg-card border-r border-border select-none"
         data-tour="sidebar"
@@ -234,6 +234,6 @@ export function Sidebar({
       </aside>
 
       <TeamDialog open={teamOpen} onOpenChange={setTeamOpen} />
-    </TooltipProvider>
+    </>
   )
 }
