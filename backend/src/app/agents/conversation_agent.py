@@ -106,7 +106,8 @@ def handle(
     # Base = today's received invoices; filters narrow the set.           #
     # ------------------------------------------------------------------ #
     if cmd.action == "process":
-        base = invoice_repo.list_by_status(db, "received", org_id=org_id)
+        today = invoice_repo.list_today(db, org_id=org_id)
+        base = [inv for inv in today if inv.status == "received"]
         candidates = _filter_invoices(db, cmd, base=base, org_id=org_id)
         label = _filter_label(cmd) or "today"
         queued = needs = blocked = 0

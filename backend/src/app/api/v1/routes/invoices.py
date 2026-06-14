@@ -424,7 +424,12 @@ def list_invoices(
     db: Session = Depends(get_db),
     org_id: str = Depends(get_current_org),
 ) -> list[InvoiceOut]:
-    return [InvoiceOut.model_validate(i) for i in invoice_repo.list_all(db, org_id=org_id)]
+    """Return today's invoices — the live working queue.
+
+    The Inbox sidebar and chat both scope to today, so the API does too.
+    Historical invoices are available via the History page (separate endpoint).
+    """
+    return [InvoiceOut.model_validate(i) for i in invoice_repo.list_today(db, org_id=org_id)]
 
 
 @router.post("/bulk-action", response_model=BulkActionOut)
