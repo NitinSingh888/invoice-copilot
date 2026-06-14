@@ -40,6 +40,13 @@ class Settings(BaseSettings):
     # Set IC_SAMPLE_INVOICES_DIR to override (e.g. a Docker volume mount path).
     sample_invoices_dir: str = ""
 
+    # S3 storage — set IC_S3_BUCKET to enable cloud storage for invoice docs.
+    # When unset, falls back to local file storage.
+    s3_bucket: str = ""
+    s3_region: str = "us-east-1"
+    s3_access_key: str = ""
+    s3_secret_key: str = ""
+
     # LLM provider settings
     llm_provider: str = "mock"
     anthropic_api_key: str | None = None

@@ -7,7 +7,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, Request, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from sqlalchemy.orm import Session
 
 from app.agents import extraction_agent
@@ -68,9 +68,22 @@ def create_invoice(
     inv = invoice_repo.get(db, result.invoice_id, org_id=org_id)
     if inv is None:
         raise NotFoundError(f"invoice {result.invoice_id} not found after processing")
-    # Persist the source_file so the /file route can serve it for preview
+    # Persist the source_file for preview.  When S3 is enabled and the
+    # source_file names a local sample PDF, upload it to S3 automatically.
     if body.source_file and not inv.source_file:
-        inv.source_file = body.source_file
+        from app.clients import s3
+
+        if s3.is_enabled():
+            local_path = _SAMPLE_INVOICES_DIR / body.source_file
+            if local_path.exists():
+                ext = local_path.suffix
+                key = s3.make_key(org_id, invoice_id, ext)
+                s3.upload(local_path.read_bytes(), key)
+                inv.source_file = f"s3://{key}"
+            else:
+                inv.source_file = body.source_file
+        else:
+            inv.source_file = body.source_file
         db.flush()
     return ProcessResultOut(
         invoice_id=result.invoice_id,
@@ -123,14 +136,21 @@ def upload_invoice(
     if inv is None:
         raise NotFoundError(f"invoice {result.invoice_id} not found after processing")
 
-    # Persist the uploaded file so it can be previewed later
+    # Persist the uploaded file for later preview
     if file_bytes:
         ext = Path(filename).suffix if filename else ""
-        _UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
-        stored_name = f"{invoice_id}{ext}"
-        stored_path = _UPLOADS_DIR / stored_name
-        stored_path.write_bytes(file_bytes)
-        inv.source_file = str(stored_path)
+        from app.clients import s3
+
+        if s3.is_enabled():
+            key = s3.make_key(org_id, invoice_id, ext)
+            s3.upload(file_bytes, key, content_type)
+            inv.source_file = f"s3://{key}"
+        else:
+            _UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+            stored_name = f"{invoice_id}{ext}"
+            stored_path = _UPLOADS_DIR / stored_name
+            stored_path.write_bytes(file_bytes)
+            inv.source_file = str(stored_path)
         db.flush()
 
     return ProcessResultOut(
@@ -480,8 +500,16 @@ def get_invoice_file(
     invoice_id: str,
     db: Session = Depends(get_db),
     org_id: str = Depends(get_current_org),
-) -> FileResponse:
-    """Return the source document for an invoice as a file download/preview."""
+) -> Response:
+    """Return the source document for an invoice.
+
+    If stored on S3 (source_file starts with 's3://'), redirects to a
+    pre-signed URL. Otherwise serves from local disk.
+    """
+    from fastapi.responses import RedirectResponse
+
+    from app.clients import s3
+
     inv = invoice_repo.get(db, invoice_id, org_id=org_id)
     if inv is None:
         raise NotFoundError(f"invoice {invoice_id} not found")
@@ -490,11 +518,17 @@ def get_invoice_file(
     if not source:
         raise NotFoundError(f"invoice {invoice_id} has no associated file")
 
-    # Absolute path — uploaded files are stored as absolute paths
+    # S3 path — redirect to pre-signed URL
+    if source.startswith("s3://"):
+        key = source[5:]  # strip "s3://"
+        url = s3.presigned_url(key)
+        return RedirectResponse(url=url, status_code=302)
+
+    # Local absolute path
     if os.path.isabs(source):
         file_path = Path(source)
     else:
-        # Relative filename — look up in the seed sample_invoices directory
+        # Relative filename — seed sample_invoices directory
         file_path = _SAMPLE_INVOICES_DIR / source
 
     if not file_path.exists():
@@ -508,7 +542,6 @@ def get_invoice_file(
         path=str(file_path),
         media_type=media_type,
         filename=file_path.name,
-        # inline so the browser renders it in the preview iframe instead of downloading
         content_disposition_type="inline",
     )
 
