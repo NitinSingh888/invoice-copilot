@@ -62,7 +62,7 @@ function ProductPanel() {
             Accounts payable
             <br />on autopilot.
           </h2>
-          <p className="text-[13px] text-white/45 leading-relaxed max-w-[340px] mb-10">
+          <p className="text-sm text-white/45 leading-relaxed max-w-[340px] mb-10">
             Invoice Copilot reads every invoice, matches POs, auto-clears safe
             payments, and surfaces the rest for your review. Every action logged
             to a tamper-proof audit trail.
@@ -88,22 +88,20 @@ function ProductPanel() {
           </div>
         </div>
 
-        {/* Testimonial / social proof */}
-        <div className="relative z-10 pt-8 mt-auto"
+        {/* Bottom stats — real, verifiable numbers */}
+        <div className="relative z-10 pt-6 mt-auto flex items-center gap-8"
           style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-          <p className="text-[13px] text-white/50 leading-relaxed italic">
-            &ldquo;We went from 4 hours of invoice processing to 20 minutes.
-            The audit trail alone paid for the switch.&rdquo;
-          </p>
-          <div className="flex items-center gap-3 mt-4">
-            <div className="h-8 w-8 rounded-full flex items-center justify-center text-[11px] font-semibold"
-              style={{ background: 'rgba(91,141,239,0.15)', color: 'rgba(91,141,239,0.8)' }}>
-              JM
-            </div>
-            <div>
-              <p className="text-[12px] text-white/70 font-medium">Jamie Mitchell</p>
-              <p className="text-[11px] text-white/35">Head of Finance, Aero Systems</p>
-            </div>
+          <div>
+            <p className="text-[18px] font-semibold text-white/80">350+</p>
+            <p className="text-[10px] text-white/30 uppercase tracking-widest mt-0.5">Tests</p>
+          </div>
+          <div>
+            <p className="text-[18px] font-semibold text-white/80">100%</p>
+            <p className="text-[10px] text-white/30 uppercase tracking-widest mt-0.5">Auditable</p>
+          </div>
+          <div>
+            <p className="text-[18px] font-semibold text-white/80">0</p>
+            <p className="text-[10px] text-white/30 uppercase tracking-widest mt-0.5">LLM decisions</p>
           </div>
         </div>
       </div>
@@ -119,7 +117,7 @@ function FeatureRow({ icon, title, desc }: { icon: React.ReactNode; title: strin
         <span className="text-white/50">{icon}</span>
       </div>
       <div>
-        <p className="text-[13px] font-medium text-white/80 leading-snug">{title}</p>
+        <p className="text-sm font-medium text-white/80 leading-snug">{title}</p>
         <p className="text-[12px] text-white/35 leading-relaxed mt-0.5">{desc}</p>
       </div>
     </div>
@@ -143,7 +141,7 @@ function MobileHeader() {
         </svg>
       </div>
       <h1 className="text-lg font-semibold text-foreground tracking-tight">Invoice Copilot</h1>
-      <p className="text-[13px] text-muted-foreground mt-1 text-center max-w-[300px]">
+      <p className="text-sm text-muted-foreground mt-1 text-center max-w-[300px]">
         AI-powered accounts payable that processes invoices in minutes.
       </p>
     </div>
@@ -301,20 +299,20 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps) {
           {/* Form heading — outside the card for visual hierarchy */}
           {mode === 'login' && (
             <div className="mb-6">
-              <h2 className="text-xl font-semibold text-foreground tracking-tight">Welcome back</h2>
-              <p className="text-[13px] text-muted-foreground mt-1">Sign in to your Invoice Copilot workspace</p>
+              <h2 className="text-2xl font-semibold text-foreground tracking-tight">Welcome back</h2>
+              <p className="text-sm text-muted-foreground mt-1">Sign in to your Invoice Copilot workspace</p>
             </div>
           )}
           {mode === 'signup' && (
             <div className="mb-6">
-              <h2 className="text-xl font-semibold text-foreground tracking-tight">Create your workspace</h2>
-              <p className="text-[13px] text-muted-foreground mt-1">The first account becomes the admin</p>
+              <h2 className="text-2xl font-semibold text-foreground tracking-tight">Create your workspace</h2>
+              <p className="text-sm text-muted-foreground mt-1">The first account becomes the admin</p>
             </div>
           )}
           {mode === 'verify' && (
             <div className="mb-6">
-              <h2 className="text-xl font-semibold text-foreground tracking-tight">Verify your email</h2>
-              <p className="text-[13px] text-muted-foreground mt-1 leading-relaxed">
+              <h2 className="text-2xl font-semibold text-foreground tracking-tight">Verify your email</h2>
+              <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
                 We&apos;ve sent a verification to <span className="font-medium text-foreground">{signupEmail}</span>.{' '}
                 <span className="text-muted-foreground/70">Demo: click below to verify instantly.</span>
               </p>
@@ -325,8 +323,8 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps) {
               <div className="h-10 w-10 rounded-full bg-warning/10 flex items-center justify-center mb-3">
                 <Shield className="h-5 w-5 text-warning" />
               </div>
-              <h2 className="text-xl font-semibold text-foreground tracking-tight">Pending approval</h2>
-              <p className="text-[13px] text-muted-foreground mt-1 leading-relaxed max-w-[320px]">
+              <h2 className="text-2xl font-semibold text-foreground tracking-tight">Pending approval</h2>
+              <p className="text-sm text-muted-foreground mt-1 leading-relaxed max-w-[320px]">
                 Your organization admin needs to approve your account before you can access the workspace.
               </p>
             </div>
@@ -336,7 +334,7 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps) {
           {mode === 'login' && (
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="login-email" className="text-[13px]">Email</Label>
+                <Label htmlFor="login-email" className="text-sm">Email</Label>
                 <Input
                   id="login-email"
                   type="email"
@@ -346,11 +344,11 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps) {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={busy}
-                  className="h-10 bg-card"
+                  className="h-11 bg-card text-sm"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="login-password" className="text-[13px]">Password</Label>
+                <Label htmlFor="login-password" className="text-sm">Password</Label>
                 <Input
                   id="login-password"
                   type="password"
@@ -360,13 +358,13 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps) {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   disabled={busy}
-                  className="h-10 bg-card"
+                  className="h-11 bg-card text-sm"
                 />
               </div>
               {error && (
-                <p className="text-[13px] text-destructive leading-snug">{error}</p>
+                <p className="text-sm text-destructive leading-snug">{error}</p>
               )}
-              <Button type="submit" className="w-full h-10 mt-2" disabled={busy}>
+              <Button type="submit" className="w-full h-11 text-sm mt-2" disabled={busy}>
                 {busy ? 'Signing in\u2026' : (
                   <span className="flex items-center gap-2">
                     Sign in <ArrowRight className="h-3.5 w-3.5" />
@@ -379,7 +377,7 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps) {
           {mode === 'signup' && (
             <form onSubmit={handleSignup} className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="signup-email" className="text-[13px]">Work email</Label>
+                <Label htmlFor="signup-email" className="text-sm">Work email</Label>
                 <Input
                   id="signup-email"
                   type="email"
@@ -389,11 +387,11 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps) {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={busy}
-                  className="h-10 bg-card"
+                  className="h-11 bg-card text-sm"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="signup-org" className="text-[13px]">Organization name</Label>
+                <Label htmlFor="signup-org" className="text-sm">Organization name</Label>
                 <Input
                   id="signup-org"
                   type="text"
@@ -403,12 +401,12 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps) {
                   onChange={(e) => setOrgName(e.target.value)}
                   required
                   disabled={busy}
-                  className="h-10 bg-card"
+                  className="h-11 bg-card text-sm"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="signup-password" className="text-[13px]">Password</Label>
+                  <Label htmlFor="signup-password" className="text-sm">Password</Label>
                   <Input
                     id="signup-password"
                     type="password"
@@ -418,11 +416,11 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps) {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     disabled={busy}
-                    className="h-10 bg-card"
+                    className="h-11 bg-card text-sm"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="signup-confirm" className="text-[13px]">Confirm</Label>
+                  <Label htmlFor="signup-confirm" className="text-sm">Confirm</Label>
                   <Input
                     id="signup-confirm"
                     type="password"
@@ -432,17 +430,17 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps) {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
                     disabled={busy}
-                    className="h-10 bg-card"
+                    className="h-11 bg-card text-sm"
                   />
                 </div>
               </div>
               {error && (
-                <p className="text-[13px] text-destructive leading-snug">{error}</p>
+                <p className="text-sm text-destructive leading-snug">{error}</p>
               )}
               {info && (
-                <p className="text-[13px] text-success leading-snug">{info}</p>
+                <p className="text-sm text-success leading-snug">{info}</p>
               )}
-              <Button type="submit" className="w-full h-10 mt-2" disabled={busy || !!info}>
+              <Button type="submit" className="w-full h-11 text-sm mt-2" disabled={busy || !!info}>
                 {busy ? 'Creating workspace\u2026' : (
                   <span className="flex items-center gap-2">
                     Create workspace <ArrowRight className="h-3.5 w-3.5" />
@@ -454,9 +452,9 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps) {
 
           {mode === 'verify' && (
             <form onSubmit={handleVerify} className="space-y-4">
-              {error && <p className="text-[13px] text-destructive leading-snug">{error}</p>}
-              {info && <p className="text-[13px] text-success leading-snug">{info}</p>}
-              <Button type="submit" className="w-full h-10" disabled={busy || !!info}>
+              {error && <p className="text-sm text-destructive leading-snug">{error}</p>}
+              {info && <p className="text-sm text-success leading-snug">{info}</p>}
+              <Button type="submit" className="w-full h-11 text-sm" disabled={busy || !!info}>
                 {busy ? 'Verifying\u2026' : 'Verify email'}
               </Button>
             </form>
@@ -466,7 +464,7 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps) {
 
           {/* Mode switch link */}
           {mode === 'login' && (
-            <p className="text-[13px] text-muted-foreground text-center mt-6">
+            <p className="text-sm text-muted-foreground text-center mt-6">
               New to Invoice Copilot?{' '}
               <button
                 type="button"
@@ -478,7 +476,7 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps) {
             </p>
           )}
           {mode === 'signup' && (
-            <p className="text-[13px] text-muted-foreground text-center mt-6">
+            <p className="text-sm text-muted-foreground text-center mt-6">
               Already have an account?{' '}
               <button
                 type="button"
@@ -490,7 +488,7 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps) {
             </p>
           )}
           {(mode === 'verify' || mode === 'pending') && (
-            <p className="text-[13px] text-muted-foreground text-center mt-6">
+            <p className="text-sm text-muted-foreground text-center mt-6">
               <button type="button" onClick={() => switchMode('login')} className="text-primary hover:underline font-medium">
                 Back to sign in
               </button>
