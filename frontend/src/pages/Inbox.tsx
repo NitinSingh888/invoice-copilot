@@ -224,19 +224,37 @@ export function Inbox({
               ) : (
                 <div className="space-y-4">
                   {thread.map((m, i) => (
-                    <ThreadItem
-                      key={i}
-                      idx={i}
-                      m={m}
-                      onResolved={onResolved}
-                      onTrail={onTrail}
-                      onRuleApproved={onRuleApproved}
-                      onRuleDismiss={onRuleDismiss}
-                      onInvoiceClick={onInvoiceClick}
-                      onBulkConfirmed={onBulkConfirmed}
-                      onBulkStateChange={onBulkStateChange}
-                    />
+                    <div key={i} className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <ThreadItem
+                        idx={i}
+                        m={m}
+                        onResolved={onResolved}
+                        onTrail={onTrail}
+                        onRuleApproved={onRuleApproved}
+                        onRuleDismiss={onRuleDismiss}
+                        onInvoiceClick={onInvoiceClick}
+                        onBulkConfirmed={onBulkConfirmed}
+                        onBulkStateChange={onBulkStateChange}
+                      />
+                    </div>
                   ))}
+
+                  {/* Thinking indicator while waiting for AI response */}
+                  {busy && (
+                    <div className="flex items-start gap-2.5 animate-in fade-in duration-200">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                        <Sparkles className="h-4 w-4 animate-pulse" />
+                      </div>
+                      <div className="bg-muted/50 rounded-xl rounded-tl-sm px-4 py-3 max-w-[280px]">
+                        <div className="flex items-center gap-1.5">
+                          <span className="h-2 w-2 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: '0ms' }} />
+                          <span className="h-2 w-2 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: '150ms' }} />
+                          <span className="h-2 w-2 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: '300ms' }} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div ref={threadEndRef} />
                 </div>
               )}
