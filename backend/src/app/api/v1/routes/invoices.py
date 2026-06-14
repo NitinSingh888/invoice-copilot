@@ -145,96 +145,278 @@ def upload_invoice(
 
 @router.get("/samples")
 def get_sample_invoices() -> list[dict[str, object]]:
-    """Return sample invoices covering each interesting pipeline outcome.
+    """Return ~100 sample invoices with realistic variety.
 
-    Each sample has extra hint fields (``label``, ``expected``, ``tags``)
-    so the frontend can group / filter them.  ``tags`` is a list of category
-    strings: ``auto-clear``, ``escalate``, ``block``, ``under-100``,
-    ``over-1000``, ``over-po``, ``no-po``, ``unknown-vendor``, ``duplicate``,
-    ``low-confidence``.
+    Generated deterministically from seed vendor/PO data so results are
+    consistent across restarts.  Each sample has ``tags`` for frontend
+    filtering: ``auto-clear``, ``escalate``, ``block``, ``under-100``,
+    ``over-100``, ``over-1000``, ``over-po``, ``no-po``, ``unknown-vendor``,
+    ``duplicate``, ``low-confidence``, ``high-amount``.
     """
-    return [
-        # ---- auto-clear (safe, routine) ----
-        {
-            "label": "Clean auto-clear",
-            "expected": "AUTO_CLEAR — approved vendor, amount matches PO exactly",
-            "tags": ["auto-clear", "over-100"],
-            "vendor": "Azure Interior",
-            "amount": "279.84",
-            "invoice_number": "INV/2025/NEW/0001",
-            "po_number": "CUSTREF123",
-            "confidence": "HIGH",
-            "source_file": "AzureInterior.pdf",
-        },
-        {
-            "label": "Small auto-clear",
-            "expected": "AUTO_CLEAR — approved vendor, under $100, exact PO match",
-            "tags": ["auto-clear", "under-100"],
-            "vendor": "QualityHosting AG",
-            "amount": "34.73",
-            "invoice_number": "QH-SAMPLE-001",
-            "po_number": "47774",
-            "confidence": "HIGH",
-            "source_file": None,
-        },
-        # ---- escalations ----
-        {
-            "label": "Over-PO escalation",
-            "expected": "ESCALATE — known vendor but amount ~7 % over its PO",
-            "tags": ["escalate", "over-po", "over-100"],
-            "vendor": "Coolblue B.V.",
-            "amount": "717.97",
-            "invoice_number": "CB-NEW-0001",
-            "po_number": "12572103",
-            "confidence": "HIGH",
-            "source_file": "coolblue1.pdf",
-        },
-        {
-            "label": "Unknown vendor / no PO",
-            "expected": "ESCALATE — unknown vendor (new in registry), no PO referenced",
-            "tags": ["escalate", "unknown-vendor", "no-po", "over-1000", "low-confidence"],
-            "vendor": "OYO / Oravel Stays Private Limited",
-            "amount": "1939",
-            "invoice_number": "IBZY-NEW-01",
-            "po_number": None,
-            "confidence": "LOW",
-            "source_file": "oyo.pdf",
-        },
-        {
-            "label": "High amount, needs sign-off",
-            "expected": "ESCALATE — clean invoice but above the auto-approve limit",
-            "tags": ["escalate", "over-1000"],
-            "vendor": "Azure Interior",
-            "amount": "4500.00",
-            "invoice_number": "INV/2025/BIG/0001",
-            "po_number": "CUSTREF123",
-            "confidence": "HIGH",
-            "source_file": "AzureInterior.pdf",
-        },
-        {
-            "label": "Low confidence extraction",
-            "expected": "ESCALATE — extraction confidence too low for auto-clear",
-            "tags": ["escalate", "low-confidence", "under-100"],
-            "vendor": "NETPRESSE",
-            "amount": "56.02",
-            "invoice_number": "NP-SAMPLE-001",
-            "po_number": "2022089083",
-            "confidence": "LOW",
-            "source_file": None,
-        },
-        # ---- blocks ----
-        {
-            "label": "Exact duplicate",
-            "expected": "BLOCK — exact duplicate of a previously cleared invoice",
-            "tags": ["block", "duplicate", "under-100"],
-            "vendor": "SAECO",
-            "amount": "49.99",
-            "invoice_number": "VF1005193039SCONL0303006280999",
-            "po_number": "SCONL000000444",
-            "confidence": "MED",
-            "source_file": "saeco.pdf",
-        },
+    return _generate_samples()
+
+
+def _generate_samples() -> list[dict[str, object]]:
+    """Build ~100 diverse sample invoices from the seed vendor/PO catalog."""
+    import hashlib
+
+    # ---- vendor + PO catalog (mirrors seed.py) ----
+    approved_with_po: list[dict[str, str]] = [
+        {"vendor": "Azure Interior", "po": "CUSTREF123", "po_amt": "279.84"},
+        {"vendor": "WS Retail Services Pvt. Ltd", "po": "OD304175096047380001", "po_amt": "319.00"},
+        {"vendor": "NETPRESSE", "po": "365146", "po_amt": "56.02"},
+        {"vendor": "QualityHosting AG", "po": "CON02858", "po_amt": "34.73"},
+        {"vendor": "Klein and Sons", "po": "PO-KLEIN-3290", "po_amt": "3.29"},
+        {"vendor": "Herrera PLC", "po": "PO-HERRERA-1645", "po_amt": "16.45"},
+        {"vendor": "Tran, Hurst and Rodgers", "po": "PO-TRAN-2495", "po_amt": "24.95"},
+        {"vendor": "Coolblue B.V.", "po": "12572103", "po_amt": "670.99"},
+        {"vendor": "Coolblue B.V.", "po": "12508334", "po_amt": "4584.06"},
+        {"vendor": "SAECO", "po": "SCONL000000444", "po_amt": "49.99"},
     ]
+    approved_no_po = ["Amazon Web Services, Inc.", "Free SAS", "Carter Inc"]
+    unknown_vendors = [
+        "OYO / Oravel Stays Private Limited",
+        "Daniel Group",
+        "Spencer Group",
+        "West Group",
+        "Stark Logistics GmbH",
+        "Pinnacle Supplies Ltd",
+        "Redwood Digital Inc",
+        "Marquez & Associates",
+        "Northwind Trading Co",
+        "Apex Global Services",
+    ]
+
+    samples: list[dict[str, object]] = []
+    seq = 0
+
+    def _inv_num(prefix: str, n: int) -> str:
+        return f"{prefix}-{n:04d}"
+
+    def _amount_tag(amt: float) -> str:
+        if amt < 100:
+            return "under-100"
+        if amt > 1000:
+            return "over-1000"
+        return "over-100"
+
+    # ── Category 1: Clean auto-clear (approved vendor, exact PO, HIGH) ── ~25
+    for i, vpo in enumerate(approved_with_po):
+        po_amt = float(vpo["po_amt"])
+        # Exact match
+        samples.append({
+            "label": f"Clean · {vpo['vendor']}",
+            "expected": "AUTO_CLEAR — approved vendor, PO match, HIGH confidence",
+            "tags": ["auto-clear", _amount_tag(po_amt)],
+            "vendor": vpo["vendor"],
+            "amount": vpo["po_amt"],
+            "invoice_number": _inv_num("CLN", seq),
+            "po_number": vpo["po"],
+            "confidence": "HIGH",
+            "source_file": None,
+        })
+        seq += 1
+        # Second invoice, slightly different amount but within 5% tolerance
+        within = round(po_amt * 1.03, 2)
+        samples.append({
+            "label": f"Within tolerance · {vpo['vendor']}",
+            "expected": "AUTO_CLEAR — amount 3% over PO, within 5% tolerance",
+            "tags": ["auto-clear", _amount_tag(within)],
+            "vendor": vpo["vendor"],
+            "amount": str(within),
+            "invoice_number": _inv_num("TOL", seq),
+            "po_number": vpo["po"],
+            "confidence": "HIGH",
+            "source_file": None,
+        })
+        seq += 1
+
+    # Add some with varied small amounts
+    small_amounts = [12.50, 27.99, 45.00, 67.80, 89.95]
+    for i, amt in enumerate(small_amounts):
+        vpo = approved_with_po[i % len(approved_with_po)]
+        samples.append({
+            "label": f"Small · {vpo['vendor']}",
+            "expected": "AUTO_CLEAR — small amount, approved vendor",
+            "tags": ["auto-clear", "under-100"],
+            "vendor": vpo["vendor"],
+            "amount": str(amt),
+            "invoice_number": _inv_num("SML", seq),
+            "po_number": vpo["po"],
+            "confidence": "HIGH",
+            "source_file": None,
+        })
+        seq += 1
+
+    # ── Category 2: Over-PO escalation (amount > PO + tolerance) ── ~15
+    over_pcts = [0.06, 0.08, 0.10, 0.12, 0.15, 0.20, 0.25, 0.30, 0.07, 0.09,
+                 0.11, 0.18, 0.22, 0.14, 0.35]
+    for i, pct in enumerate(over_pcts):
+        vpo = approved_with_po[i % len(approved_with_po)]
+        po_amt = float(vpo["po_amt"])
+        over_amt = round(po_amt * (1 + pct), 2)
+        pct_label = f"{int(pct * 100)}%"
+        samples.append({
+            "label": f"Over PO {pct_label} · {vpo['vendor']}",
+            "expected": f"ESCALATE — amount {pct_label} over PO, exceeds 5% tolerance",
+            "tags": ["escalate", "over-po", _amount_tag(over_amt)],
+            "vendor": vpo["vendor"],
+            "amount": str(over_amt),
+            "invoice_number": _inv_num("OVR", seq),
+            "po_number": vpo["po"],
+            "confidence": "HIGH",
+            "source_file": None,
+        })
+        seq += 1
+
+    # ── Category 3: High amount, needs sign-off (above auto-approve limit) ── ~10
+    high_amounts = [150.00, 250.00, 500.00, 1200.00, 2500.00,
+                    3750.00, 5000.00, 7500.00, 10000.00, 15000.00]
+    for i, amt in enumerate(high_amounts):
+        vpo = approved_with_po[i % len(approved_with_po)]
+        samples.append({
+            "label": f"High amount ${amt:,.0f} · {vpo['vendor']}",
+            "expected": "ESCALATE — clean but above auto-approve limit, needs sign-off",
+            "tags": ["escalate", "high-amount", _amount_tag(amt)],
+            "vendor": vpo["vendor"],
+            "amount": str(amt),
+            "invoice_number": _inv_num("HI", seq),
+            "po_number": vpo["po"],
+            "confidence": "HIGH",
+            "source_file": None,
+        })
+        seq += 1
+
+    # ── Category 4: No PO referenced (approved vendor) ── ~10
+    no_po_amounts = [42.50, 88.00, 155.00, 299.99, 510.00,
+                     725.00, 1100.00, 1850.00, 3200.00, 4999.00]
+    for i, amt in enumerate(no_po_amounts):
+        v = approved_no_po[i % len(approved_no_po)]
+        samples.append({
+            "label": f"No PO · {v}",
+            "expected": "ESCALATE — approved vendor but no purchase order referenced",
+            "tags": ["escalate", "no-po", _amount_tag(amt)],
+            "vendor": v,
+            "amount": str(amt),
+            "invoice_number": _inv_num("NPO", seq),
+            "po_number": None,
+            "confidence": "HIGH",
+            "source_file": None,
+        })
+        seq += 1
+
+    # ── Category 5: Unknown vendor ── ~15
+    unk_amounts = [35.00, 78.50, 120.00, 245.00, 499.99,
+                   650.00, 890.00, 1350.00, 1999.00, 2750.00,
+                   3500.00, 4200.00, 5800.00, 7999.00, 12500.00]
+    for i, amt in enumerate(unk_amounts):
+        v = unknown_vendors[i % len(unknown_vendors)]
+        has_po = i % 3 == 0  # 1/3 have a PO, 2/3 don't
+        tags: list[str] = ["escalate", "unknown-vendor", _amount_tag(amt)]
+        if not has_po:
+            tags.append("no-po")
+        samples.append({
+            "label": f"Unknown vendor · {v}",
+            "expected": "ESCALATE — vendor not on approved list"
+            + (", no PO" if not has_po else ""),
+            "tags": tags,
+            "vendor": v,
+            "amount": str(amt),
+            "invoice_number": _inv_num("UNK", seq),
+            "po_number": f"PO-EXT-{seq}" if has_po else None,
+            "confidence": "MED" if i % 2 == 0 else "LOW",
+            "source_file": None,
+        })
+        seq += 1
+
+    # ── Category 6: Low confidence extraction ── ~10
+    low_conf_amounts = [19.99, 55.00, 132.50, 267.00, 445.00,
+                        678.00, 950.00, 1400.00, 2100.00, 3800.00]
+    for i, amt in enumerate(low_conf_amounts):
+        vpo = approved_with_po[i % len(approved_with_po)]
+        samples.append({
+            "label": f"Low confidence · {vpo['vendor']}",
+            "expected": "ESCALATE — extraction confidence too low for auto-clear",
+            "tags": ["escalate", "low-confidence", _amount_tag(amt)],
+            "vendor": vpo["vendor"],
+            "amount": str(amt),
+            "invoice_number": _inv_num("LOW", seq),
+            "po_number": vpo["po"],
+            "confidence": "LOW",
+            "source_file": None,
+        })
+        seq += 1
+
+    # ── Category 7: Exact duplicates (blocked) ── ~5
+    dup_invoices = [
+        ("SAECO", "49.99", "VF1005193039SCONL0303006280999", "SCONL000000444"),
+        ("Azure Interior", "279.84", "INV/2025/NEW/0001", "CUSTREF123"),
+        ("NETPRESSE", "56.02", "365146-DUP", "365146"),
+        ("QualityHosting AG", "34.73", "CON02858-DUP", "CON02858"),
+        ("Klein and Sons", "3.29", "PO-KLEIN-3290-DUP", "PO-KLEIN-3290"),
+    ]
+    for d_vendor, d_amt, d_inv_num, d_po in dup_invoices:
+        samples.append({
+            "label": f"Duplicate · {d_vendor}",
+            "expected": "BLOCK — exact duplicate of a previously cleared invoice",
+            "tags": ["block", "duplicate", _amount_tag(float(d_amt))],
+            "vendor": d_vendor,
+            "amount": d_amt,
+            "invoice_number": d_inv_num,
+            "po_number": d_po,
+            "confidence": "MED",
+            "source_file": None,
+        })
+        seq += 1
+
+    # ── Category 8: Mixed scenarios (realistic variety) ── ~10
+    mixed: list[tuple[str, str, str | None, str, str]] = [
+        ("Herrera PLC", "16.45", "PO-HERRERA-1645", "HIGH", "Clean tiny invoice"),
+        ("Tran, Hurst and Rodgers", "750.00", "PO-TRAN-2495", "HIGH", "Way over PO"),
+        ("Coolblue B.V.", "670.99", "12572103", "LOW", "Exact PO but low confidence"),
+        ("Carter Inc", "2999.00", None, "HIGH", "Big invoice, no PO"),
+        ("Apex Global Services", "0.99", None, "LOW", "Tiny unknown vendor"),
+        ("Azure Interior", "279.84", "CUSTREF123", "MED", "Exact PO but medium confidence"),
+        ("Free SAS", "15000.00", None, "HIGH", "Huge amount, no PO"),
+        ("Spencer Group", "50.00", "PO-SPENCER-17883", "HIGH", "Unknown vendor with PO"),
+        ("West Group", "99.99", "PO-WEST-19126", "MED", "Unknown vendor, under limit"),
+        ("Daniel Group", "104.97", "PO-DANIEL-10497", "LOW", "Unknown vendor, low confidence"),
+    ]
+    for m_vendor, m_amt, m_po, m_conf, m_desc in mixed:
+        m_tags: list[str] = [_amount_tag(float(m_amt))]
+        if m_vendor in ("Apex Global Services", "Spencer Group", "West Group",
+                         "Daniel Group", "Pinnacle Supplies Ltd"):
+            m_tags.append("unknown-vendor")
+        if m_po is None:
+            m_tags.append("no-po")
+        if m_conf == "LOW":
+            m_tags.append("low-confidence")
+        if float(m_amt) > 1000:
+            m_tags.append("high-amount")
+        m_tags.append("escalate")  # all mixed scenarios escalate
+        samples.append({
+            "label": f"Mixed · {m_desc}",
+            "expected": f"ESCALATE — {m_desc.lower()}",
+            "tags": m_tags,
+            "vendor": m_vendor,
+            "amount": m_amt,
+            "invoice_number": _inv_num("MIX", seq),
+            "po_number": m_po,
+            "confidence": m_conf,
+            "source_file": None,
+        })
+        seq += 1
+
+    # Deduplicate invoice_numbers (add hash suffix to guarantee uniqueness)
+    seen: set[str] = set()
+    for s in samples:
+        inv = str(s["invoice_number"])
+        if inv in seen:
+            h = hashlib.md5(f"{inv}-{id(s)}".encode()).hexdigest()[:4]
+            s["invoice_number"] = f"{inv}-{h}"
+        seen.add(str(s["invoice_number"]))
+
+    return samples
 
 
 @router.get("", response_model=list[InvoiceOut])
