@@ -22,7 +22,7 @@ import {
   proposeRule,
 } from '@/lib/api'
 
-import { displayFinding, formatMoney, isToday } from '@/lib/utils'
+import { displayFinding, formatMoney } from '@/lib/utils'
 import type {
   BatchResult,
   ChatMessage,
@@ -136,11 +136,9 @@ export default function App({ userEmail, orgName, orgRole }: AppProps) {
 
   const refreshInvoices = useCallback(async (): Promise<InvoiceOut[]> => {
     const rows = await listInvoices()
-    // Inbox shows only actionable invoices from today — exclude terminal states
+    // Show all actionable invoices — exclude terminal states (already resolved)
     const terminal = new Set(['cleared', 'queued', 'rejected'])
-    const live = rows.filter(
-      (i) => !terminal.has(i.status) && isToday(i.created_at),
-    )
+    const live = rows.filter((i) => !terminal.has(i.status))
     setInvoices(live)
     return live
   }, [])
