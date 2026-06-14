@@ -165,10 +165,25 @@ function UploadTab({ onSuccess }: { onSuccess: () => void }) {
 // Samples tab
 // ────────────────────────────────────────────────────────────────────────────
 
+const TAG_LABELS: Record<string, string> = {
+  'auto-clear': 'Auto-clear',
+  'escalate': 'Escalate',
+  'block': 'Block',
+  'under-100': 'Under $100',
+  'over-1000': 'Over $1,000',
+  'over-po': 'Over PO',
+  'no-po': 'No PO',
+  'unknown-vendor': 'Unknown vendor',
+  'duplicate': 'Duplicate',
+  'low-confidence': 'Low confidence',
+}
+
 function SamplesTab({ onSuccess }: { onSuccess: () => void }) {
   const [samples, setSamples] = useState<SampleInvoice[]>([])
   const [loadingSamples, setLoadingSamples] = useState(true)
   const [adding, setAdding] = useState<string | null>(null)
+  const [addingAll, setAddingAll] = useState(false)
+  const [activeTag, setActiveTag] = useState<string | null>(null)
 
   useEffect(() => {
     getSamples()
@@ -176,6 +191,14 @@ function SamplesTab({ onSuccess }: { onSuccess: () => void }) {
       .catch(() => setSamples([]))
       .finally(() => setLoadingSamples(false))
   }, [])
+
+  const filtered = activeTag
+    ? samples.filter((s) => s.tags?.includes(activeTag))
+    : samples
+
+  const allTags = Array.from(
+    new Set(samples.flatMap((s) => s.tags ?? [])),
+  )
 
   async function handleAdd(s: SampleInvoice) {
     setAdding(s.invoice_number)
@@ -197,6 +220,30 @@ function SamplesTab({ onSuccess }: { onSuccess: () => void }) {
     }
   }
 
+  async function handleAddAll() {
+    setAddingAll(true)
+    let added = 0
+    try {
+      for (const s of filtered) {
+        await createInvoice({
+          vendor: s.vendor,
+          amount: s.amount,
+          invoice_number: s.invoice_number,
+          po_number: s.po_number,
+          confidence: s.confidence,
+          source_file: s.source_file,
+        })
+        added++
+      }
+      toast.success(`Added ${added} sample invoice${added === 1 ? '' : 's'}`)
+      onSuccess()
+    } catch (e) {
+      toast.error(`Added ${added}, then failed: ${(e as Error).message}`)
+    } finally {
+      setAddingAll(false)
+    }
+  }
+
   if (loadingSamples) {
     return (
       <div className="mt-4 flex items-center justify-center py-10">
@@ -214,45 +261,92 @@ function SamplesTab({ onSuccess }: { onSuccess: () => void }) {
   }
 
   return (
-    <div className="mt-3 space-y-2">
-      {samples.map((s) => (
-        <div
-          key={s.invoice_number}
-          className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5 hover:bg-muted/40 transition-colors"
+    <div className="mt-3 space-y-3">
+      {/* Tag filters */}
+      <div className="flex flex-wrap gap-1.5">
+        <button
+          onClick={() => setActiveTag(null)}
+          className={[
+            'rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors',
+            activeTag === null
+              ? 'border-primary bg-primary/10 text-primary'
+              : 'border-border text-muted-foreground hover:border-primary/50',
+          ].join(' ')}
         >
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-            <FileText className="h-4 w-4" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-medium text-foreground">{s.label}</span>
-              <span className="text-[10px] text-muted-foreground bg-muted rounded px-1 py-0.5">
-                {s.expected}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="text-xs text-muted-foreground">{s.vendor}</span>
-              <span className="text-[10px] text-muted-foreground">·</span>
-              <span className="text-xs font-mono text-muted-foreground">
-                {formatMoney(s.amount)}
-              </span>
-            </div>
-          </div>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 text-xs shrink-0"
-            disabled={adding !== null}
-            onClick={() => void handleAdd(s)}
+          All ({samples.length})
+        </button>
+        {allTags.map((tag) => (
+          <button
+            key={tag}
+            onClick={() => setActiveTag(activeTag === tag ? null : tag)}
+            className={[
+              'rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors',
+              activeTag === tag
+                ? 'border-primary bg-primary/10 text-primary'
+                : 'border-border text-muted-foreground hover:border-primary/50',
+            ].join(' ')}
           >
-            {adding === s.invoice_number ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              'Add'
-            )}
-          </Button>
-        </div>
-      ))}
+            {TAG_LABELS[tag] ?? tag}
+          </button>
+        ))}
+      </div>
+
+      {/* Bulk add button */}
+      <Button
+        size="sm"
+        variant="outline"
+        className="w-full h-8 text-xs"
+        disabled={addingAll || adding !== null || filtered.length === 0}
+        onClick={() => void handleAddAll()}
+      >
+        {addingAll ? (
+          <><Loader2 className="h-3 w-3 animate-spin mr-1.5" /> Adding…</>
+        ) : (
+          <><Plus className="h-3 w-3 mr-1.5" /> Add all {filtered.length} sample{filtered.length === 1 ? '' : 's'}</>
+        )}
+      </Button>
+
+      {/* Sample list */}
+      <div className="space-y-2 max-h-[300px] overflow-y-auto">
+        {filtered.map((s) => (
+          <div
+            key={s.invoice_number}
+            className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5 hover:bg-muted/40 transition-colors"
+          >
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+              <FileText className="h-4 w-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-medium text-foreground">{s.label}</span>
+              </div>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="text-xs text-muted-foreground">{s.vendor}</span>
+                <span className="text-[10px] text-muted-foreground">·</span>
+                <span className="text-xs font-mono text-muted-foreground">
+                  {formatMoney(s.amount)}
+                </span>
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">
+                {s.expected}
+              </p>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs shrink-0"
+              disabled={adding !== null || addingAll}
+              onClick={() => void handleAdd(s)}
+            >
+              {adding === s.invoice_number ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                'Add'
+              )}
+            </Button>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

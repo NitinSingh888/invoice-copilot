@@ -145,20 +145,20 @@ def upload_invoice(
 
 @router.get("/samples")
 def get_sample_invoices() -> list[dict[str, object]]:
-    """Return ~4 ready-to-POST sample invoices (InvoiceIn-shaped) covering
-    each interesting pipeline outcome.  Use these to demo the upload UI before
-    the user has real invoices.
+    """Return sample invoices covering each interesting pipeline outcome.
 
-    Each sample has ``label`` and ``expected`` hint fields (extra, not part of
-    InvoiceIn) so the frontend can display context.
-
-    Note: sample (d) produces DUPLICATE_EXACT only when the demo seed has been
-    loaded (so the prior cleared SAECO invoice exists in the DB).
+    Each sample has extra hint fields (``label``, ``expected``, ``tags``)
+    so the frontend can group / filter them.  ``tags`` is a list of category
+    strings: ``auto-clear``, ``escalate``, ``block``, ``under-100``,
+    ``over-1000``, ``over-po``, ``no-po``, ``unknown-vendor``, ``duplicate``,
+    ``low-confidence``.
     """
     return [
+        # ---- auto-clear (safe, routine) ----
         {
             "label": "Clean auto-clear",
             "expected": "AUTO_CLEAR — approved vendor, amount matches PO exactly",
+            "tags": ["auto-clear", "over-100"],
             "vendor": "Azure Interior",
             "amount": "279.84",
             "invoice_number": "INV/2025/NEW/0001",
@@ -167,8 +167,21 @@ def get_sample_invoices() -> list[dict[str, object]]:
             "source_file": "AzureInterior.pdf",
         },
         {
+            "label": "Small auto-clear",
+            "expected": "AUTO_CLEAR — approved vendor, under $100, exact PO match",
+            "tags": ["auto-clear", "under-100"],
+            "vendor": "QualityHosting AG",
+            "amount": "34.73",
+            "invoice_number": "QH-SAMPLE-001",
+            "po_number": "47774",
+            "confidence": "HIGH",
+            "source_file": None,
+        },
+        # ---- escalations ----
+        {
             "label": "Over-PO escalation",
             "expected": "ESCALATE — known vendor but amount ~7 % over its PO",
+            "tags": ["escalate", "over-po", "over-100"],
             "vendor": "Coolblue B.V.",
             "amount": "717.97",
             "invoice_number": "CB-NEW-0001",
@@ -179,6 +192,7 @@ def get_sample_invoices() -> list[dict[str, object]]:
         {
             "label": "Unknown vendor / no PO",
             "expected": "ESCALATE — unknown vendor (new in registry), no PO referenced",
+            "tags": ["escalate", "unknown-vendor", "no-po", "over-1000", "low-confidence"],
             "vendor": "OYO / Oravel Stays Private Limited",
             "amount": "1939",
             "invoice_number": "IBZY-NEW-01",
@@ -187,11 +201,35 @@ def get_sample_invoices() -> list[dict[str, object]]:
             "source_file": "oyo.pdf",
         },
         {
+            "label": "High amount, needs sign-off",
+            "expected": "ESCALATE — clean invoice but above the auto-approve limit",
+            "tags": ["escalate", "over-1000"],
+            "vendor": "Azure Interior",
+            "amount": "4500.00",
+            "invoice_number": "INV/2025/BIG/0001",
+            "po_number": "CUSTREF123",
+            "confidence": "HIGH",
+            "source_file": "AzureInterior.pdf",
+        },
+        {
+            "label": "Low confidence extraction",
+            "expected": "ESCALATE — extraction confidence too low for auto-clear",
+            "tags": ["escalate", "low-confidence", "under-100"],
+            "vendor": "NETPRESSE",
+            "amount": "56.02",
+            "invoice_number": "NP-SAMPLE-001",
+            "po_number": "2022089083",
+            "confidence": "LOW",
+            "source_file": None,
+        },
+        # ---- blocks ----
+        {
             "label": "Exact duplicate",
-            "expected": "BLOCK — exact duplicate of a previously cleared invoice (requires demo seed loaded)",
+            "expected": "BLOCK — exact duplicate of a previously cleared invoice",
+            "tags": ["block", "duplicate", "under-100"],
             "vendor": "SAECO",
             "amount": "49.99",
-            "invoice_number": "VF1005193039SCONL0303006280999",  # same as cleared inv-saeco-prior
+            "invoice_number": "VF1005193039SCONL0303006280999",
             "po_number": "SCONL000000444",
             "confidence": "MED",
             "source_file": "saeco.pdf",

@@ -187,6 +187,7 @@ export interface ChatResponse {
 export interface SampleInvoice {
   label: string
   expected: string
+  tags?: string[]
   vendor: string
   amount: string
   invoice_number: string
