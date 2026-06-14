@@ -37,9 +37,11 @@ def _get_client() -> object:
                 from botocore.config import Config  # type: ignore[import-untyped]
 
                 settings = get_settings()
+                region = settings.s3_region or "us-east-1"
                 _client = boto3.client(
                     "s3",
-                    region_name=settings.s3_region,
+                    region_name=region,
+                    endpoint_url=f"https://s3.{region}.amazonaws.com",
                     aws_access_key_id=settings.s3_access_key or None,
                     aws_secret_access_key=settings.s3_secret_key or None,
                     config=Config(signature_version="s3v4"),
