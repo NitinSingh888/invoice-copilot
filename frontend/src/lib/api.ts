@@ -291,27 +291,27 @@ export async function demoReset(): Promise<DemoResetResponse> {
 // ────────────────────────────────────────────────────────────────────────────
 
 /**
- * @deprecated Use {@link fetchInvoiceFile} instead — it sends the token via
- * Authorization header rather than exposing it in the URL.
+ * Get a preview URL for an invoice document.
+ * For S3 files: returns a pre-signed URL directly usable in <img>/<iframe>.
+ * For local files: returns a relative URL (use with token query param).
  */
+export async function getInvoiceFileUrl(id: string): Promise<string> {
+  const data = await request<{ url: string }>(`/invoices/${id}/file-url`)
+  const url = data.url
+  // If it's a relative URL (local file), add token for auth
+  if (url.startsWith('/')) {
+    const t = getToken()
+    return t ? `${url}?token=${encodeURIComponent(t)}` : url
+  }
+  // S3 pre-signed URL — use directly
+  return url
+}
+
+/** @deprecated Use getInvoiceFileUrl instead */
 export function invoiceFileUrl(id: string): string {
   const t = getToken()
   const q = t ? `?token=${encodeURIComponent(t)}` : ''
   return `${BASE}/invoices/${id}/file${q}`
-}
-
-/**
- * Fetch an invoice file via Authorization header and return an object URL.
- * Callers must revoke the URL when done (e.g. on unmount) via
- * `URL.revokeObjectURL(url)`.
- */
-export async function fetchInvoiceFile(id: string): Promise<string> {
-  const res = await fetch(`${BASE}/invoices/${id}/file`, {
-    headers: { Authorization: `Bearer ${getToken()}` },
-  })
-  if (!res.ok) throw new Error(`Failed to load file`)
-  const blob = await res.blob()
-  return URL.createObjectURL(blob)
 }
 
 // ────────────────────────────────────────────────────────────────────────────

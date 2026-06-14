@@ -20,7 +20,7 @@ import {
   getInvoice,
   getAudit,
   invoiceAction,
-  fetchInvoiceFile,
+  getInvoiceFileUrl,
   getComments,
   addComment,
   rejectInvoice,
@@ -98,9 +98,9 @@ export function InvoiceDetailSheet({
         ).filter((c) => c !== 'PO_MATCH_OK')
         setFindings(codes.map((c) => displayFinding(c, '')))
 
-        // Fetch file via Authorization header
+        // Get pre-signed URL for file preview
         if (inv.source_file) {
-          fetchInvoiceFile(inv.id)
+          getInvoiceFileUrl(inv.id)
             .then(setFileUrl)
             .catch(() => {/* ignore */})
         }
@@ -116,7 +116,7 @@ export function InvoiceDetailSheet({
       .finally(() => setCommentsLoading(false))
 
     return () => {
-      setFileUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return null })
+      setFileUrl(null)
     }
   }, [open, invoiceId])
 

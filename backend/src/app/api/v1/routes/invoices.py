@@ -504,19 +504,17 @@ def bulk_action(
     return BulkActionOut(applied=applied, results=results)
 
 
-@router.get("/{invoice_id}/file")
-def get_invoice_file(
+@router.get("/{invoice_id}/file-url")
+def get_invoice_file_url(
     invoice_id: str,
     db: Session = Depends(get_db),
     org_id: str = Depends(get_current_org),
-) -> Response:
-    """Return the source document for an invoice.
+) -> dict[str, str]:
+    """Return a URL to preview the invoice document.
 
-    If stored on S3 (source_file starts with 's3://'), redirects to a
-    pre-signed URL. Otherwise serves from local disk.
+    For S3 files: returns a pre-signed URL (15 min expiry).
+    For local files: returns a token-authenticated URL.
     """
-    from fastapi.responses import RedirectResponse
-
     from app.clients import s3
 
     inv = invoice_repo.get(db, invoice_id, org_id=org_id)
@@ -527,11 +525,37 @@ def get_invoice_file(
     if not source:
         raise NotFoundError(f"invoice {invoice_id} has no associated file")
 
-    # S3 path — redirect to pre-signed URL
     if source.startswith("s3://"):
-        key = source[5:]  # strip "s3://"
-        url = s3.presigned_url(key)
-        return RedirectResponse(url=url, status_code=302)
+        key = source[5:]
+        return {"url": s3.presigned_url(key)}
+
+    # Local file — fall back to the /file endpoint with token auth
+    return {"url": f"/api/v1/invoices/{invoice_id}/file"}
+
+
+@router.get("/{invoice_id}/file")
+def get_invoice_file(
+    invoice_id: str,
+    db: Session = Depends(get_db),
+    org_id: str = Depends(get_current_org),
+) -> Response:
+    """Serve local files directly. S3 files should use /file-url instead."""
+    inv = invoice_repo.get(db, invoice_id, org_id=org_id)
+    if inv is None:
+        raise NotFoundError(f"invoice {invoice_id} not found")
+
+    source = inv.source_file
+    if not source:
+        raise NotFoundError(f"invoice {invoice_id} has no associated file")
+
+    # S3 files should go through /file-url endpoint
+    if source.startswith("s3://"):
+        from app.clients import s3
+
+        key = source[5:]
+        from fastapi.responses import RedirectResponse
+
+        return RedirectResponse(url=s3.presigned_url(key), status_code=302)
 
     # Local absolute path
     if os.path.isabs(source):

@@ -5,7 +5,7 @@ import { AddInvoiceDialog } from './AddInvoiceDialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
 import { formatMoney } from '@/lib/utils'
-import { fetchInvoiceFile } from '@/lib/api'
+import { getInvoiceFileUrl } from '@/lib/api'
 import type { InvoiceOut, InvoiceStatus } from '@/lib/types'
 
 interface InvoiceQueueProps {
@@ -53,21 +53,15 @@ function truncate(s: string | null, max = 20): string {
   return s.length > max ? s.slice(0, max) + '…' : s
 }
 
-function useInvoiceFileUrl(invoiceId: string, hasFile: boolean) {
+function useFilePreviewUrl(invoiceId: string, hasFile: boolean) {
   const [url, setUrl] = useState<string | null>(null)
   useEffect(() => {
     if (!hasFile) return
-    let revoked = false
-    fetchInvoiceFile(invoiceId)
-      .then((blobUrl) => {
-        if (!revoked) setUrl(blobUrl)
-        else URL.revokeObjectURL(blobUrl)
-      })
+    let cancelled = false
+    getInvoiceFileUrl(invoiceId)
+      .then((u) => { if (!cancelled) setUrl(u) })
       .catch(() => {/* ignore */})
-    return () => {
-      revoked = true
-      setUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return null })
-    }
+    return () => { cancelled = true; setUrl(null) }
   }, [invoiceId, hasFile])
   return url
 }
@@ -79,7 +73,7 @@ function InvoiceRow({
   invoice: InvoiceOut
   onClick: () => void
 }) {
-  const fileUrl = useInvoiceFileUrl(invoice.id, !!invoice.source_file)
+  const fileUrl = useFilePreviewUrl(invoice.id, !!invoice.source_file)
 
   return (
     <HoverCard openDelay={400} closeDelay={100}>
