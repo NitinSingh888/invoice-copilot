@@ -69,7 +69,7 @@
 
   body {
     @apply bg-background text-foreground font-sans;
-    font-size: 14px;
+    font-size: 15px;
     line-height: 1.55;
     font-feature-settings: "rlig" 1, "calt" 1, "tnum" 0;
     -webkit-font-smoothing: antialiased;

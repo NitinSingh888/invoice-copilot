@@ -55,6 +55,10 @@ export default {
         success: 'hsl(var(--success))',
         warning: 'hsl(var(--warning))',
       },
+      fontSize: {
+        xs: ['13px', { lineHeight: '1.4' }],
+        sm: ['14.5px', { lineHeight: '1.5' }],
+      },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
