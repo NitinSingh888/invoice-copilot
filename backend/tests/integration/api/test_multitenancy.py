@@ -147,8 +147,8 @@ def test_user_cannot_comment_on_other_org_invoice(raw_client: TestClient, db: Se
 # ---------------------------------------------------------------------------
 
 
-def test_founder_signup_creates_org_with_invoices(raw_client: TestClient, db: Session) -> None:
-    """When a founder signs up, the org is seeded with demo invoices."""
+def test_founder_signup_starts_with_empty_workspace(raw_client: TestClient, db: Session) -> None:
+    """A new org starts empty — no demo data seeded."""
     raw_client.post(
         _SIGNUP_URL,
         json={"email": "founder@newco.com", "password": "pass1234", "org_name": "NewCo"},
@@ -158,8 +158,7 @@ def test_founder_signup_creates_org_with_invoices(raw_client: TestClient, db: Se
 
     inv_resp = raw_client.get(_INVOICES_URL, headers={"Authorization": f"Bearer {token}"})
     assert inv_resp.status_code == 200
-    # The seed produces at least some invoices
-    assert len(inv_resp.json()) > 0
+    assert len(inv_resp.json()) == 0
 
 
 # ---------------------------------------------------------------------------
