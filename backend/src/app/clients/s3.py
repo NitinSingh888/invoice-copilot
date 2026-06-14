@@ -44,8 +44,12 @@ def is_enabled() -> bool:
     return bool(_bucket())
 
 
-def upload(file_bytes: bytes, key: str, content_type: str = "application/pdf") -> str:
+def upload(file_bytes: bytes, key: str, content_type: str | None = None) -> str:
     """Upload bytes to S3 and return the key."""
+    if content_type is None:
+        import mimetypes as _mt
+
+        content_type = _mt.guess_type(key)[0] or "application/octet-stream"
     bucket = _bucket()
     if not bucket:
         raise RuntimeError("S3 not configured (IC_S3_BUCKET not set)")

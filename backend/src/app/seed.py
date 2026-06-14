@@ -269,20 +269,52 @@ _BASE_SEED_INVOICES = [
 
 
 def _make_seed_invoices(org_id: str) -> list[Invoice]:
-    return [
-        Invoice(
-            id=f"inv-{d['id_suffix']}-{org_id}",
-            invoice_number=d["invoice_number"],
-            status="received",
-            vendor=d["vendor"],
-            amount=d["amount"],
-            po_number=d["po_number"],
-            confidence=d["confidence"],
-            source_file=d["source_file"],
-            org_id=org_id,
+    invoices: list[Invoice] = []
+    for d in _BASE_SEED_INVOICES:
+        inv_id = f"inv-{d['id_suffix']}-{org_id}"
+        source = str(d["source_file"]) if d.get("source_file") else None
+
+        # Upload seed document to S3 if configured
+        source_ref = _upload_seed_file_to_s3(source, org_id, inv_id)
+
+        invoices.append(
+            Invoice(
+                id=inv_id,
+                invoice_number=d["invoice_number"],
+                status="received",
+                vendor=d["vendor"],
+                amount=d["amount"],
+                po_number=d["po_number"],
+                confidence=d["confidence"],
+                source_file=source_ref,
+                org_id=org_id,
+            )
         )
-        for d in _BASE_SEED_INVOICES
-    ]
+    return invoices
+
+
+def _upload_seed_file_to_s3(
+    filename: str | None, org_id: str, invoice_id: str
+) -> str | None:
+    """Upload a seed file to S3 if configured, returning the S3 key.
+    Falls back to the local filename if S3 is not available."""
+    if not filename:
+        return None
+    try:
+        from app.clients import s3
+
+        if not s3.is_enabled():
+            return filename
+        local_path = _DATA_DIR / "sample_invoices" / filename
+        if not local_path.exists():
+            return filename
+        ext = local_path.suffix
+        key = s3.make_key(org_id, invoice_id, ext)
+        s3.upload(local_path.read_bytes(), key)
+        return f"s3://{key}"
+    except Exception:
+        logger.warning("Failed to upload seed file %s to S3, using local", filename)
+        return filename
 
 
 # Backward-compat shim used by tests
@@ -305,15 +337,17 @@ SEED_INVOICES: list[Invoice] = [
 # ---------------------------------------------------------------------------
 
 def _make_saeco_prior(org_id: str) -> Invoice:
+    inv_id = f"inv-saeco-prior-{org_id}"
+    source_ref = _upload_seed_file_to_s3("saeco.pdf", org_id, inv_id)
     return Invoice(
-        id=f"inv-saeco-prior-{org_id}",
+        id=inv_id,
         invoice_number="VF1005193039SCONL0303006280999",
         status="cleared",
         vendor="SAECO",
         amount=Decimal("49.99"),
         po_number="SCONL000000444",
         confidence="MED",
-        source_file="saeco.pdf",
+        source_file=source_ref,
         org_id=org_id,
     )
 
@@ -448,7 +482,8 @@ def _make_corpus_invoices(
         amount = Decimal(str(entry["amount"]))
         invoice_number: str | None = entry.get("invoice_number")
         confidence: str = entry.get("confidence", "LOW")
-        source_file: str = entry["file"]
+        raw_source_file: str = entry["file"]
+        source_file = _upload_seed_file_to_s3(raw_source_file, org_id, inv_id_org) or raw_source_file
 
         # Register vendor (deduped by canonical_name)
         if vendor_name not in seen_vendors:
