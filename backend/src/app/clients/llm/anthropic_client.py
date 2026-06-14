@@ -61,16 +61,19 @@ Return ONLY a JSON object with these exact keys (all optional except "action"):
   route_to     – person/team name if action=route (else null)
 
 Status vocabulary (map the user's words to a status):
-- received = not yet processed / pending / waiting / unprocessed / "to be processed" / "to process"
+- received = not yet processed / unprocessed / "to be processed" / "to process"
 - needs    = needs review / escalated / waiting on a human / "need my call"
 - queued   = auto-approved / cleared / queued for payment / ready to pay
 - blocked  = blocked / rejected (hard stop)
 - held     = on hold ; routed = routed to someone
+- "pending" / "outstanding" = do NOT map to any single status (leave status null) —
+  these mean "everything not yet resolved" and the system will include all statuses.
 
 Rules:
 - "process" = run the processing pipeline on matching invoices
-- A "how many / count" question about work still "to be processed" or "pending"
+- A "how many / count" question about work "to be processed" or "unprocessed"
   is a COUNT with status=received — NOT queued.
+- "pending" or "outstanding" means ALL unresolved invoices — leave status null.
 - "review" = show details / list matching invoices
 - "approve" = approve matching invoices (return bulk confirm — do NOT execute)
 - "hold" = place matching invoices on hold (return bulk confirm — do NOT execute)
@@ -85,7 +88,7 @@ Examples (JSON output shown after →):
   "approve all under $50" → {"action":"approve","amount_op":"<","amount_value":"50"}
   "how many need review?" → {"action":"count","status":"needs"}
   "how many need to be processed?" → {"action":"count","status":"received"}
-  "how many are pending?" → {"action":"count","status":"received"}
+  "what is the total amount pending?" → {"action":"sum"}
   "how many are queued for payment?" → {"action":"count","status":"queued"}
   "process those over 1000" → {"action":"process","amount_op":">","amount_value":"1000"}
   "review invoice 72128555" → {"action":"review","invoice_ref":"72128555"}

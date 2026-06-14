@@ -200,12 +200,15 @@ class MockClient:
         elif re.search(r"\brouted\b", low):
             status = "routed"
         elif (
-            re.search(r"\b(received|pending|unprocessed)\b", low)
+            re.search(r"\b(received|unprocessed)\b", low)
             or "to be processed" in low
             or "to process" in low
             or "waiting to" in low
         ):
             status = "received"
+        # NOTE: "pending" intentionally does NOT map to a status — it means
+        # "everything outstanding" (received + needs + blocked), so leaving
+        # status=None lets the query include all of today's invoices.
 
         # ---- invoice_ref (specific invoice id / number) ----
         invoice_ref: str | None = None
