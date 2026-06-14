@@ -35,6 +35,9 @@ CLAUDE.local.md
 .cursor/
 .aider*
 
+# Internal docs — plans, specs, decisions (kept local, not on GitHub)
+docs/
+
 # Playwright / chrome-devtools / e2e artifacts
 playwright-report/
 test-results/
