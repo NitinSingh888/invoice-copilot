@@ -18,8 +18,8 @@ import type { InvoiceOut, ThreadMessage, BulkConfirmState } from '@/lib/types'
 const SUGGESTIONS = [
   "Process today's invoices",
   'How many need review?',
-  'Review vendor Acme invoices',
-  'Open the rules',
+  'Show me held invoices',
+  'What is the total amount pending?',
 ]
 
 interface InboxProps {
@@ -38,7 +38,6 @@ interface InboxProps {
   onRuleApproved: () => void
   onRuleDismiss: () => void
   onInvoiceClick: (id: string) => void
-  onNavigateRules: () => void
   onRefresh: () => void
   onBulkConfirmed: () => void
   onBulkStateChange: (idx: number, state: BulkConfirmState, applied?: number) => void
@@ -64,7 +63,6 @@ export function Inbox({
   onRuleApproved,
   onRuleDismiss,
   onInvoiceClick,
-  onNavigateRules,
   onRefresh,
   onBulkConfirmed,
   onBulkStateChange,
@@ -238,10 +236,7 @@ export function Inbox({
                   {SUGGESTIONS.map((s) => (
                     <button
                       key={s}
-                      onClick={() => {
-                        if (s === 'Open the rules') onNavigateRules()
-                        else onSend(s)
-                      }}
+                      onClick={() => onSend(s)}
                       className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
                     >
                       {s}

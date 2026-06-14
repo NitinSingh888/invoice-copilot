@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ExternalLink, CheckCircle2, PauseCircle, ArrowRight } from 'lucide-react'
+import { ExternalLink, CheckCircle2, PauseCircle } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -24,10 +24,6 @@ export function InvoiceInspectionCard({
   const { invoice, findings, summary } = data
   const [loading, setLoading] = useState<string | null>(null)
 
-  const isAcmeOverPO =
-    invoice.vendor.toLowerCase().includes('acme') &&
-    findings.some((f) => f.code === 'OVER_TOLERANCE')
-  const showRouteToPriya = isAcmeOverPO
   const canAct = invoice.status === 'needs'
 
   const displayFindings = findings
@@ -112,49 +108,26 @@ export function InvoiceInspectionCard({
         <div className="flex items-center gap-2 flex-wrap pt-1">
           {canAct && (
             <>
-              {showRouteToPriya ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="sm"
-                      onClick={() => doAction('route', { route: 'priya' })}
-                      disabled={loading !== null}
-                      className="h-7 text-xs"
-                    >
-                      {loading === 'route' ? (
-                        <span className="animate-pulse">Routing…</span>
-                      ) : (
-                        <>
-                          <ArrowRight className="h-3 w-3" />
-                          Route to Priya
-                        </>
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Send to a colleague to approve</TooltipContent>
-                </Tooltip>
-              ) : (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="sm"
-                      onClick={() => doAction('approve')}
-                      disabled={loading !== null}
-                      className="h-7 text-xs"
-                    >
-                      {loading === 'approve' ? (
-                        <span className="animate-pulse">Approving…</span>
-                      ) : (
-                        <>
-                          <CheckCircle2 className="h-3 w-3" />
-                          Approve
-                        </>
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Approve &amp; queue for payment</TooltipContent>
-                </Tooltip>
-              )}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    onClick={() => doAction('approve')}
+                    disabled={loading !== null}
+                    className="h-7 text-xs"
+                  >
+                    {loading === 'approve' ? (
+                      <span className="animate-pulse">Approving…</span>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="h-3 w-3" />
+                        Approve
+                      </>
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Approve &amp; queue for payment</TooltipContent>
+              </Tooltip>
 
               <Tooltip>
                 <TooltipTrigger asChild>

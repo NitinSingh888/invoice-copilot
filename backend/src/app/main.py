@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import mimetypes
 import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -8,12 +9,14 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, JSONResponse
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.core.exceptions import AppError, NotFoundError
+from app.core.limiter import limiter
 from app.db.session import SessionLocal, run_migrations
 
 logging.basicConfig(
@@ -45,6 +48,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 def create_app() -> FastAPI:
     application = FastAPI(lifespan=lifespan)
 
+    # Rate limiting
+    application.state.limiter = limiter
+    application.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
     origins = [o.strip() for o in get_settings().cors_origins.split(",") if o.strip()]
     application.add_middleware(
         CORSMiddleware,
@@ -69,7 +76,16 @@ def create_app() -> FastAPI:
     # server (which proxies /api to this backend), so this directory is absent.
     static_dir = os.environ.get("IC_STATIC_DIR", "static")
     if Path(static_dir).is_dir():
-        application.mount("/", StaticFiles(directory=static_dir, html=True), name="web")
+        index_html = Path(static_dir) / "index.html"
+
+        @application.get("/{path:path}")
+        async def spa_fallback(path: str) -> FileResponse:
+            """Serve static files or fall back to index.html for client-side routing."""
+            requested = Path(static_dir) / path
+            if requested.is_file():
+                media_type = mimetypes.guess_type(str(requested))[0]
+                return FileResponse(requested, media_type=media_type)
+            return FileResponse(index_html, media_type="text/html")
 
     return application
 

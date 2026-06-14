@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Routes, Route, useNavigate, Navigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Toaster } from '@/components/ui/sonner'
 import { Sidebar, type View } from '@/components/layout/Sidebar'
@@ -66,10 +67,18 @@ interface AppProps {
 }
 
 export default function App({ userEmail, orgName, orgRole }: AppProps) {
-  const [theme, setTheme] = useState<'light' | 'dark'>(
-    () => (localStorage.getItem('ic-theme') as 'light' | 'dark') || 'light',
+  const navigate = useNavigate()
+
+  const setView = useCallback(
+    (v: View) => navigate(v === 'inbox' ? '/' : `/${v}`),
+    [navigate],
   )
-  const [view, setView] = useState<View>('inbox')
+
+  const [theme, setTheme] = useState<'light' | 'dark'>(
+    () =>
+      (localStorage.getItem('ic-theme') as 'light' | 'dark') ||
+      (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
+  )
   const [invoices, setInvoices] = useState<InvoiceOut[]>([])
   const [thread, setThread] = useState<ThreadMessage[]>(() => {
     try {
@@ -287,8 +296,6 @@ export default function App({ userEmail, orgName, orgRole }: AppProps) {
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground">
       <Sidebar
-        view={view}
-        onViewChange={setView}
         inboxCount={needsCount}
         theme={theme}
         onThemeToggle={toggleTheme}
@@ -301,51 +308,60 @@ export default function App({ userEmail, orgName, orgRole }: AppProps) {
       />
 
       <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden">
-        {view === 'dashboard' && (
-          <Dashboard
-            invoices={invoices}
-            loading={loading}
-            onProcessBatch={() => send("Process today's invoices")}
-            onSwitchToInbox={() => setView('inbox')}
-          />
-        )}
-        {view === 'inbox' && (
-          <Inbox
-            invoices={invoices}
-            loading={loading}
-            thread={thread}
-            input={input}
-            busy={busy}
-            live={healthLive}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            onInputChange={setInput}
-            onSend={send}
-            onResolved={onResolved}
-            onTrail={openTrail}
-            onRuleApproved={() => {
-              void refreshInvoices()
-              setThread((t) => t.filter((x) => x.type !== 'rule_proposal'))
-              toast.success('Rule activated — agent will apply it going forward')
-            }}
-            onRuleDismiss={() =>
-              setThread((t) => t.filter((x) => x.type !== 'rule_proposal'))
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <Inbox
+                invoices={invoices}
+                loading={loading}
+                thread={thread}
+                input={input}
+                busy={busy}
+                live={healthLive}
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                onInputChange={setInput}
+                onSend={send}
+                onResolved={onResolved}
+                onTrail={openTrail}
+                onRuleApproved={() => {
+                  void refreshInvoices()
+                  setThread((t) => t.filter((x) => x.type !== 'rule_proposal'))
+                  toast.success('Rule activated — agent will apply it going forward')
+                }}
+                onRuleDismiss={() =>
+                  setThread((t) => t.filter((x) => x.type !== 'rule_proposal'))
+                }
+                onInvoiceClick={openDetail}
+                onRefresh={() => void refreshInvoices()}
+                onBulkConfirmed={() => void refreshInvoices()}
+                onBulkStateChange={handleBulkStateChange}
+                onTakeTour={startTour}
+              />
             }
-            onInvoiceClick={openDetail}
-            onNavigateRules={() => setView('rules')}
-            onRefresh={() => void refreshInvoices()}
-            onBulkConfirmed={() => void refreshInvoices()}
-            onBulkStateChange={handleBulkStateChange}
-            onTakeTour={startTour}
           />
-        )}
-        {view === 'history' && (
-          <History onInvoiceClick={openDetail} />
-        )}
-        {view === 'rules' && <Rules orgRole={orgRole} />}
-        {view === 'audit' && <AuditLog live={healthLive} />}
-        {view === 'guide' && <Guide onStartTour={startTour} />}
-        {view === 'usage' && <Usage />}
+          <Route
+            path="/dashboard"
+            element={
+              <Dashboard
+                invoices={invoices}
+                loading={loading}
+                onProcessBatch={() => {
+                  setView('inbox')
+                  setTimeout(() => send("Process today's invoices"), 100)
+                }}
+                onSwitchToInbox={() => setView('inbox')}
+              />
+            }
+          />
+          <Route path="/history" element={<History onInvoiceClick={openDetail} />} />
+          <Route path="/rules" element={<Rules orgRole={orgRole} />} />
+          <Route path="/audit" element={<AuditLog live={healthLive} />} />
+          <Route path="/guide" element={<Guide onStartTour={startTour} />} />
+          <Route path="/usage" element={<Usage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </div>
 
       <AuditSheet invoiceId={auditId} open={auditOpen} onOpenChange={setAuditOpen} />

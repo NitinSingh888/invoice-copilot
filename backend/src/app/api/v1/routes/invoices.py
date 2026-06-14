@@ -6,7 +6,7 @@ from decimal import Decimal
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, Request, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
@@ -15,7 +15,7 @@ from app.api.deps import get_current_org, get_current_user, get_db, get_llm
 from app.clients.llm.base import LLMClient
 from app.clients.llm.usage import entity_context
 from app.core.config import get_settings
-from app.core.exceptions import NotFoundError
+from app.core.exceptions import AppError, NotFoundError
 from app.core.paths import project_data_dir
 from app.db.models.user import User
 from app.domain.policy.findings import Severity
@@ -34,7 +34,11 @@ from app.schemas.invoice import (
 )
 from app.services import enrichment_service, execution_service, learning_service, pipeline_service, policy_service
 
+from app.core.limiter import limiter
+
 router = APIRouter()
+
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB
 
 # Directory containing the seed invoice documents (resolved for source *and*
 # installed layouts). Override with IC_SAMPLE_INVOICES_DIR for alternative mounts.
@@ -79,13 +83,19 @@ def create_invoice(
 
 
 @router.post("/upload", status_code=201, response_model=ProcessResultOut)
+@limiter.limit("10/minute")
 def upload_invoice(
+    request: Request,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     llm: LLMClient = Depends(get_llm),
     org_id: str = Depends(get_current_org),
 ) -> ProcessResultOut:
     file_bytes = file.file.read()
+    if len(file_bytes) > MAX_UPLOAD_BYTES:
+        raise AppError(
+            f"File too large ({len(file_bytes) // (1024 * 1024)}MB). Maximum is 10MB."
+        )
     filename = file.filename or ""
     content_type = file.content_type or "application/octet-stream"
 

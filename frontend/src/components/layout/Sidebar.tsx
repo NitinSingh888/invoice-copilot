@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { LayoutDashboard, Inbox, BookOpen, ScrollText, Sun, Moon, GraduationCap, History, LogOut, Users, Coins } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
@@ -8,8 +9,6 @@ import type { OrgRole } from '@/lib/types'
 export type View = 'dashboard' | 'inbox' | 'history' | 'rules' | 'audit' | 'guide' | 'usage'
 
 interface SidebarProps {
-  view: View
-  onViewChange: (v: View) => void
   inboxCount: number
   theme: 'light' | 'dark'
   onThemeToggle: () => void
@@ -30,8 +29,6 @@ const NAV = [
 ]
 
 export function Sidebar({
-  view,
-  onViewChange,
   inboxCount,
   theme,
   onThemeToggle,
@@ -42,6 +39,11 @@ export function Sidebar({
   orgRole,
   onLogout,
 }: SidebarProps) {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const view = (location.pathname.slice(1) || 'inbox') as View
+  const onViewChange = (v: View) => navigate(v === 'inbox' ? '/' : `/${v}`)
+
   const [teamOpen, setTeamOpen] = useState(false)
   const isAdmin = orgRole === 'admin'
 

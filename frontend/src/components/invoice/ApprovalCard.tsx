@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ExternalLink, Pencil, CheckCircle2, PauseCircle, ArrowRight } from 'lucide-react'
+import { ExternalLink, Pencil, CheckCircle2, PauseCircle } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -31,12 +31,6 @@ export function ApprovalCard({
   const [editAmount, setEditAmount] = useState(invoice.amount)
   const [editRoute, setEditRoute] = useState(invoice.route ?? '')
 
-  // Acme over-PO = route to Priya is primary
-  const isAcmeOverPO =
-    invoice.vendor.toLowerCase().includes('acme') &&
-    findings.some((f) => f.code === 'OVER_TOLERANCE')
-  const showRouteToPriya = isAcmeOverPO
-
   async function doAction(action: 'approve' | 'hold' | 'edit' | 'route', extra?: Record<string, string>) {
     setLoading(action)
     try {
@@ -54,9 +48,6 @@ export function ApprovalCard({
   }
   function handleHold() {
     doAction('hold')
-  }
-  function handleRouteToPriya() {
-    doAction('route', { route: 'priya' })
   }
   function handleEdit() {
     if (!editing) {
@@ -138,49 +129,26 @@ export function ApprovalCard({
 
         {/* Actions */}
         <div className="flex items-center gap-2 flex-wrap pt-1">
-          {showRouteToPriya ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  onClick={handleRouteToPriya}
-                  disabled={loading !== null}
-                  className="h-7 text-xs"
-                >
-                  {loading === 'route' ? (
-                    <span className="animate-pulse">Routing…</span>
-                  ) : (
-                    <>
-                      <ArrowRight className="h-3 w-3" />
-                      Route to Priya
-                    </>
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Send to a colleague to approve</TooltipContent>
-            </Tooltip>
-          ) : (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  onClick={handleApprove}
-                  disabled={loading !== null}
-                  className="h-7 text-xs"
-                >
-                  {loading === 'approve' ? (
-                    <span className="animate-pulse">Approving…</span>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="h-3 w-3" />
-                      Approve
-                    </>
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Approve &amp; queue for payment</TooltipContent>
-            </Tooltip>
-          )}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="sm"
+                onClick={handleApprove}
+                disabled={loading !== null}
+                className="h-7 text-xs"
+              >
+                {loading === 'approve' ? (
+                  <span className="animate-pulse">Approving…</span>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-3 w-3" />
+                    Approve
+                  </>
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Approve &amp; queue for payment</TooltipContent>
+          </Tooltip>
 
           <Tooltip>
             <TooltipTrigger asChild>

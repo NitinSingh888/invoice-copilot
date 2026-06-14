@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db
+from app.core.limiter import limiter
 from app.db.models.user import User
 from app.repositories import org_repo, user_repo
 from app.schemas.auth import (
@@ -22,7 +23,8 @@ router = APIRouter()
 
 
 @router.post("/signup", status_code=201, response_model=SignupOut)
-def signup(body: SignupIn, db: Session = Depends(get_db)) -> SignupOut:
+@limiter.limit("5/minute")
+def signup(request: Request, body: SignupIn, db: Session = Depends(get_db)) -> SignupOut:
     """Sign up a new user.
 
     - If ``org_name`` does not exist: creates the org, makes the user admin + verified.
@@ -44,7 +46,8 @@ def verify(body: VerifyIn, db: Session = Depends(get_db)) -> dict[str, bool]:
 
 
 @router.post("/login", response_model=TokenOut)
-def login(body: LoginIn, db: Session = Depends(get_db)) -> TokenOut:
+@limiter.limit("5/minute")
+def login(request: Request, body: LoginIn, db: Session = Depends(get_db)) -> TokenOut:
     user = auth_service.authenticate(db, body.email, body.password)
     if not user.is_verified:
         raise HTTPException(

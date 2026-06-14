@@ -186,8 +186,12 @@ One Docker web service serves the API **and** the built SPA, connecting out to a
 ## Tech stack
 
 **Backend** — Python 3.12 · FastAPI · SQLAlchemy 2.0 · PostgreSQL · Alembic · pydantic-settings · PyJWT + bcrypt · Anthropic / OpenAI SDKs (with a mock + failover) · pypdf · pytest · ruff · mypy.
-**Frontend** — React 18 · Vite · TypeScript · Tailwind CSS · shadcn/ui · Geist.
+**Frontend** — React 19 · Vite · TypeScript · Tailwind CSS · shadcn/ui · Geist.
 **Infra** — Docker (multi-stage) · GitHub Actions CI · Render.
+
+## API documentation
+
+FastAPI auto-generates interactive API docs. Once running, open **http://localhost:8123/docs** (Swagger UI) or **http://localhost:8123/redoc** (ReDoc).
 
 ## Scope — what it is, and isn't
 
