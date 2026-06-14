@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { VendorAvatar } from '@/components/invoice/VendorAvatar'
@@ -23,11 +24,13 @@ function formatTime(isoString: string): string {
 }
 
 export function History({ onInvoiceClick }: HistoryProps) {
+  const location = useLocation()
   const [allInvoices, setAllInvoices] = useState<InvoiceOut[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
 
+  // Re-fetch every time we navigate to this page
   useEffect(() => {
     setLoading(true)
     setError(null)
@@ -38,7 +41,7 @@ export function History({ onInvoiceClick }: HistoryProps) {
         setError((err as Error).message ?? 'Failed to load invoices')
       })
       .finally(() => setLoading(false))
-  }, [])
+  }, [location.key])
 
   // History = every invoice that has been decided (approved, routed, held,
   // rejected, blocked, cleared). Today's still-pending invoices (received /
