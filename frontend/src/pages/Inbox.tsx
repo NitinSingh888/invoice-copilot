@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react'
-import { Map, Send, Sparkles } from 'lucide-react'
+import { Map, Send, Sparkles, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -41,6 +41,7 @@ interface InboxProps {
   onRefresh: () => void
   onBulkConfirmed: () => void
   onBulkStateChange: (idx: number, state: BulkConfirmState, applied?: number) => void
+  onClearThread?: () => void
   /** Called when IntroModal is dismissed — used to trigger the tour auto-launch */
   onIntroModalDismiss?: () => void
   /** Called when user wants to start / replay the tour */
@@ -66,6 +67,7 @@ export function Inbox({
   onRefresh,
   onBulkConfirmed,
   onBulkStateChange,
+  onClearThread,
   onIntroModalDismiss,
   onTakeTour,
 }: InboxProps) {
@@ -148,14 +150,27 @@ export function Inbox({
                 AP agent · acting on your behalf
               </div>
             </div>
-            <div className="ml-auto flex items-center gap-1.5">
-              <span className={[
-                'h-1.5 w-1.5 rounded-full',
-                live === null ? 'bg-muted-foreground' : live ? 'bg-[hsl(var(--success))] animate-pulse' : 'bg-amber-500',
-              ].join(' ')} />
-              <span className="text-xs text-muted-foreground">
-                {live === null ? 'Connecting…' : live ? 'Connected' : 'Offline'}
-              </span>
+            <div className="ml-auto flex items-center gap-3">
+              {thread.length > 0 && onClearThread && (
+                <button
+                  type="button"
+                  onClick={onClearThread}
+                  className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                  title="Clear conversation"
+                >
+                  <Trash2 className="h-3 w-3" />
+                  Clear
+                </button>
+              )}
+              <div className="flex items-center gap-1.5">
+                <span className={[
+                  'h-1.5 w-1.5 rounded-full',
+                  live === null ? 'bg-muted-foreground' : live ? 'bg-[hsl(var(--success))] animate-pulse' : 'bg-amber-500',
+                ].join(' ')} />
+                <span className="text-xs text-muted-foreground">
+                  {live === null ? 'Connecting…' : live ? 'Connected' : 'Offline'}
+                </span>
+              </div>
             </div>
           </div>
 

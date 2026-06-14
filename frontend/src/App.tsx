@@ -338,6 +338,7 @@ export default function App({ userEmail, orgName, orgRole }: AppProps) {
                 onRefresh={() => void refreshInvoices()}
                 onBulkConfirmed={() => void refreshInvoices()}
                 onBulkStateChange={handleBulkStateChange}
+                onClearThread={() => setThread([])}
                 onTakeTour={startTour}
               />
             }
