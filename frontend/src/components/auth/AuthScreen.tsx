@@ -185,7 +185,7 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps) {
     } catch (err) {
       const status = getApiStatus(err)
       if (status === 403) {
-        setError('Your account is pending admin approval.')
+        switchMode('pending')
       } else if (status === 401) {
         setError('Wrong email or password.')
       } else {
@@ -319,14 +319,22 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps) {
             </div>
           )}
           {mode === 'pending' && (
-            <div className="mb-6">
-              <div className="h-10 w-10 rounded-full bg-warning/10 flex items-center justify-center mb-3">
-                <Shield className="h-5 w-5 text-warning" />
+            <div className="mb-6 text-center py-6">
+              <div className="h-14 w-14 rounded-full bg-warning/10 flex items-center justify-center mb-4 mx-auto">
+                <Shield className="h-7 w-7 text-[hsl(var(--warning))]" />
               </div>
-              <h2 className="text-2xl font-semibold text-foreground tracking-tight">Pending approval</h2>
-              <p className="text-sm text-muted-foreground mt-1 leading-relaxed max-w-[320px]">
-                Your organization admin needs to approve your account before you can access the workspace.
+              <h2 className="text-2xl font-semibold text-foreground tracking-tight">Verification required</h2>
+              <p className="text-sm text-muted-foreground mt-2 leading-relaxed max-w-[340px] mx-auto">
+                Your account needs to be approved by your organization admin before you can access the workspace.
               </p>
+              <div className="mt-6 bg-muted/50 rounded-lg px-4 py-3 text-left max-w-[340px] mx-auto">
+                <p className="text-xs font-medium text-foreground mb-2">What happens next?</p>
+                <ol className="text-xs text-muted-foreground space-y-1.5 list-decimal list-inside">
+                  <li>Your admin receives a notification</li>
+                  <li>They verify your account from the Team page</li>
+                  <li>You can sign in once approved</li>
+                </ol>
+              </div>
             </div>
           )}
 
