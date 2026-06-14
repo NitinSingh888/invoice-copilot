@@ -9,11 +9,9 @@
 
 # ---- build frontend ----
 FROM node:22-slim AS frontend
-# Upgrade npm to match host version (npm 11.6.2 / Node 25) so the lockfile is accepted by npm ci.
-RUN npm install -g npm@11.6.2
 WORKDIR /fe
 COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci
+RUN npm install
 COPY frontend/ ./
 RUN npm run build
 
