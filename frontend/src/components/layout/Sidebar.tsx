@@ -12,7 +12,6 @@ interface SidebarProps {
   inboxCount: number
   theme: 'light' | 'dark'
   onThemeToggle: () => void
-  providerLabel: string
   providerLive: boolean
   userEmail?: string
   orgName?: string | null
@@ -32,7 +31,6 @@ export function Sidebar({
   inboxCount,
   theme,
   onThemeToggle,
-  providerLabel,
   providerLive,
   userEmail,
   orgName,
@@ -222,14 +220,14 @@ export function Sidebar({
             </div>
           )}
 
-          {/* Provider pill — driven from health endpoint */}
+          {/* Status pill — simple online/offline, no provider name */}
           <div className="flex justify-center">
-            <span className="flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground border border-border rounded px-2 py-0.5">
+            <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
               <span className={cn(
                 'h-1.5 w-1.5 rounded-full shrink-0',
                 providerLive ? 'bg-[hsl(var(--success))]' : 'bg-muted-foreground',
               )} />
-              {providerLabel}
+              {providerLive ? 'Online' : 'Offline'}
             </span>
           </div>
         </div>

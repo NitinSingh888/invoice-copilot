@@ -98,7 +98,6 @@ export default function App({ userEmail, orgName, orgRole }: AppProps) {
 
   // health state
   const [healthLive, setHealthLive] = useState<boolean | null>(null)
-  const [providerLabel, setProviderLabel] = useState('…')
 
   // search query for Inbox
   const [searchQuery, setSearchQuery] = useState('')
@@ -121,10 +120,8 @@ export default function App({ userEmail, orgName, orgRole }: AppProps) {
     try {
       const h = await getHealth()
       setHealthLive(h.live)
-      setProviderLabel(h.live ? `${h.provider} · live` : `${h.provider} · safe`)
     } catch {
       setHealthLive(false)
-      setProviderLabel('offline')
     }
   }, [])
 
@@ -298,7 +295,6 @@ export default function App({ userEmail, orgName, orgRole }: AppProps) {
         inboxCount={needsCount}
         theme={theme}
         onThemeToggle={toggleTheme}
-        providerLabel={providerLabel}
         providerLive={healthLive === true}
         userEmail={userEmail}
         orgName={orgName}

@@ -1,10 +1,9 @@
-import { Clock } from 'lucide-react'
 import { VendorAvatar } from './VendorAvatar'
 import { StatusBadge } from './StatusBadge'
 import { AddInvoiceDialog } from './AddInvoiceDialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
-import { formatMoney, minutesSaved } from '@/lib/utils'
+import { formatMoney } from '@/lib/utils'
 import { invoiceFileUrl } from '@/lib/api'
 import type { InvoiceOut, InvoiceStatus } from '@/lib/types'
 
@@ -165,10 +164,9 @@ function InvoiceRow({
 
 export function InvoiceQueue({ invoices, loading, onInvoiceClick, onRefresh }: InvoiceQueueProps) {
   const visible = invoices.filter((i) => i.status !== 'cleared')
-  const queued = invoices.filter((i) => i.status === 'queued').length
   const needs = invoices.filter((i) => i.status === 'needs').length
   const blocked = invoices.filter((i) => i.status === 'blocked').length
-  const saved = minutesSaved(queued)
+  const received = invoices.filter((i) => i.status === 'received').length
 
   return (
     <div className="flex flex-col h-full border-r border-border">
@@ -176,17 +174,11 @@ export function InvoiceQueue({ invoices, loading, onInvoiceClick, onRefresh }: I
       <div className="px-3 py-3 border-b border-border">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-xs font-semibold text-foreground">Invoice Queue</h2>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-              <Clock className="h-3 w-3" />
-              <span>~{saved} min saved</span>
-            </div>
-            <AddInvoiceDialog onAdded={onRefresh} />
-          </div>
+          <AddInvoiceDialog onAdded={onRefresh} />
         </div>
         <div className="flex items-center gap-2">
-          <StatPill color="warning" label="Needs" count={needs} />
-          <StatPill color="success" label="Queued" count={queued} />
+          <StatPill color="warning" label="Needs review" count={needs} />
+          <StatPill color="muted" label="Received" count={received} />
           <StatPill color="destructive" label="Blocked" count={blocked} />
         </div>
       </div>
@@ -247,7 +239,7 @@ function StatPill({
   label,
   count,
 }: {
-  color: 'warning' | 'success' | 'destructive'
+  color: 'warning' | 'success' | 'destructive' | 'muted'
   label: string
   count: number
 }) {
@@ -255,6 +247,7 @@ function StatPill({
     warning: 'text-[hsl(var(--warning))] bg-warning/10',
     success: 'text-[hsl(var(--success))] bg-success/10',
     destructive: 'text-destructive bg-destructive/10',
+    muted: 'text-muted-foreground bg-muted',
   }
 
   return (

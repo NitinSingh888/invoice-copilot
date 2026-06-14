@@ -103,7 +103,6 @@ export function Inbox({
       <PageHeader
         title="Inbox"
         subtitle="Your invoice queue — Copilot clears the safe ones and asks you about the rest"
-        savedCount={invoices.filter((i) => i.status === 'queued').length}
         live={live}
         showSearch
         searchQuery={searchQuery}
