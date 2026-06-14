@@ -100,8 +100,8 @@ function ProductPanel() {
             <p className="text-[10px] text-white/30 uppercase tracking-widest mt-0.5">Auditable</p>
           </div>
           <div>
-            <p className="text-[18px] font-semibold text-white/80">0</p>
-            <p className="text-[10px] text-white/30 uppercase tracking-widest mt-0.5">LLM decisions</p>
+            <p className="text-[18px] font-semibold text-white/80">Multi</p>
+            <p className="text-[10px] text-white/30 uppercase tracking-widest mt-0.5">Tenant</p>
           </div>
         </div>
       </div>
