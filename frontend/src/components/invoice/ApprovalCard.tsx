@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { ExternalLink, Pencil, CheckCircle2, PauseCircle } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { ExternalLink, Pencil, CheckCircle2, PauseCircle, FileText } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { VendorAvatar } from './VendorAvatar'
 import { FindingChip } from './FindingChip'
-import { invoiceAction } from '@/lib/api'
+import { invoiceAction, getInvoiceFileUrl } from '@/lib/api'
 import { formatMoney } from '@/lib/utils'
 import type { InvoiceOut, FindingDisplay, OrgMember } from '@/lib/types'
 
@@ -32,6 +32,15 @@ export function ApprovalCard({
   const [editing, setEditing] = useState(false)
   const [editAmount, setEditAmount] = useState(invoice.amount)
   const [editRoute, setEditRoute] = useState(invoice.route ?? '')
+  const [fileUrl, setFileUrl] = useState<string | null>(null)
+  const [showDoc, setShowDoc] = useState(false)
+
+  // Load document preview URL
+  useEffect(() => {
+    if (invoice.source_file) {
+      getInvoiceFileUrl(invoice.id).then(setFileUrl).catch(() => {})
+    }
+  }, [invoice.id, invoice.source_file])
 
   async function doAction(action: 'approve' | 'hold' | 'edit' | 'route', extra?: Record<string, string>) {
     setLoading(action)
@@ -56,9 +65,13 @@ export function ApprovalCard({
       setEditing(true)
       return
     }
-    const extra: Record<string, string> = { amount: editAmount }
-    if (editRoute) extra.route = editRoute
-    doAction('edit', extra)
+    // Save edits: if route is set, route the invoice; otherwise just update amount
+    if (editRoute) {
+      doAction('route', { amount: editAmount, route: editRoute })
+    } else {
+      // Just update the amount — keep the invoice in 'needs' status for further action
+      doAction('edit', { amount: editAmount })
+    }
   }
 
   return (
@@ -84,6 +97,41 @@ export function ApprovalCard({
       </CardHeader>
 
       <CardContent className="space-y-3">
+        {/* Document preview */}
+        {fileUrl && (
+          <div>
+            {showDoc ? (
+              <div className="rounded-md border border-border overflow-hidden">
+                <div className="flex items-center justify-between px-3 py-1.5 bg-muted/50 border-b border-border">
+                  <span className="text-[10px] font-medium text-muted-foreground">DOCUMENT</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowDoc(false)}
+                    className="text-[10px] text-muted-foreground hover:text-foreground"
+                  >
+                    Hide
+                  </button>
+                </div>
+                <iframe
+                  src={fileUrl}
+                  className="w-full h-[300px] bg-white"
+                  title="Invoice document"
+                />
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1.5 w-full"
+                onClick={() => setShowDoc(true)}
+              >
+                <FileText className="h-3 w-3" />
+                View document
+              </Button>
+            )}
+          </div>
+        )}
+
         {/* Findings */}
         <div>
           <p className="text-[10px] font-semibold text-muted-foreground mb-1.5 tracking-wide">
@@ -118,13 +166,13 @@ export function ApprovalCard({
               />
             </div>
             <div>
-              <label className="text-[10px] text-muted-foreground mb-1 block">Route to</label>
+              <label className="text-[10px] text-muted-foreground mb-1 block">Route to (optional)</label>
               <select
                 value={editRoute}
                 onChange={(e) => setEditRoute(e.target.value)}
                 className="flex h-7 w-full rounded-md border border-input bg-background px-2 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
-                <option value="">Select team member…</option>
+                <option value="">No routing — just update amount</option>
                 {members.map((m) => (
                   <option key={m.id} value={m.email}>
                     {m.email}
@@ -189,7 +237,7 @@ export function ApprovalCard({
                 disabled={loading !== null}
                 className="h-7 text-xs"
               >
-                {loading === 'edit' ? (
+                {loading === 'edit' || loading === 'route' ? (
                   <span className="animate-pulse">Saving…</span>
                 ) : (
                   <>
@@ -199,7 +247,7 @@ export function ApprovalCard({
                 )}
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Adjust amount or routing first</TooltipContent>
+            <TooltipContent>{editing ? 'Save changes' : 'Adjust amount or routing'}</TooltipContent>
           </Tooltip>
 
           <Tooltip>
