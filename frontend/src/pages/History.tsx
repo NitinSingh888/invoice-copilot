@@ -4,7 +4,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { VendorAvatar } from '@/components/invoice/VendorAvatar'
 import { StatusBadge } from '@/components/invoice/StatusBadge'
 import { listAllInvoices } from '@/lib/api'
-import { formatMoney, isToday, formatDayHeader, localDateKey } from '@/lib/utils'
+import { formatMoney, formatDayHeader, localDateKey } from '@/lib/utils'
 import type { InvoiceOut } from '@/lib/types'
 import { X } from 'lucide-react'
 
@@ -40,10 +40,9 @@ export function History({ onInvoiceClick }: HistoryProps) {
       .finally(() => setLoading(false))
   }, [])
 
-  // History = a record of completed work: every past invoice, PLUS today's
-  // already-decided ones (approved/queued, routed, held, rejected, blocked,
-  // cleared). Today's still-pending invoices (received / needs you) stay in the
-  // Inbox. Cold-start placeholders (no source_file) are excluded.
+  // History = every invoice that has been decided (approved, routed, held,
+  // rejected, blocked, cleared). Today's still-pending invoices (received /
+  // needs) stay in the Inbox only.
   const DECIDED = new Set([
     'queued',
     'cleared',
@@ -53,12 +52,7 @@ export function History({ onInvoiceClick }: HistoryProps) {
     'blocked',
   ])
   const pastInvoices = useMemo(
-    () =>
-      allInvoices.filter(
-        (inv) =>
-          inv.source_file !== null &&
-          (!isToday(inv.created_at) || DECIDED.has(inv.status)),
-      ),
+    () => allInvoices.filter((inv) => DECIDED.has(inv.status)),
     [allInvoices],
   )
 
