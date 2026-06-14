@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { VendorAvatar } from './VendorAvatar'
 import { StatusBadge } from './StatusBadge'
 import { AddInvoiceDialog } from './AddInvoiceDialog'
@@ -162,11 +163,22 @@ function InvoiceRow({
   )
 }
 
+type StatusFilter = 'needs' | 'received' | 'blocked' | null
+
 export function InvoiceQueue({ invoices, loading, onInvoiceClick, onRefresh }: InvoiceQueueProps) {
-  const visible = invoices.filter((i) => i.status !== 'cleared')
+  const [activeFilter, setActiveFilter] = useState<StatusFilter>(null)
+  const allVisible = invoices.filter((i) => i.status !== 'cleared')
   const needs = invoices.filter((i) => i.status === 'needs').length
   const blocked = invoices.filter((i) => i.status === 'blocked').length
   const received = invoices.filter((i) => i.status === 'received').length
+
+  const visible = activeFilter
+    ? allVisible.filter((i) => i.status === activeFilter)
+    : allVisible
+
+  function toggleFilter(status: StatusFilter) {
+    setActiveFilter((prev) => (prev === status ? null : status))
+  }
 
   return (
     <div className="flex flex-col h-full border-r border-border">
@@ -177,9 +189,9 @@ export function InvoiceQueue({ invoices, loading, onInvoiceClick, onRefresh }: I
           <AddInvoiceDialog onAdded={onRefresh} />
         </div>
         <div className="flex items-center gap-2">
-          <StatPill color="warning" label="Needs review" count={needs} />
-          <StatPill color="muted" label="Received" count={received} />
-          <StatPill color="destructive" label="Blocked" count={blocked} />
+          <StatPill color="warning" label="Needs review" count={needs} active={activeFilter === 'needs'} onClick={() => toggleFilter('needs')} />
+          <StatPill color="muted" label="Received" count={received} active={activeFilter === 'received'} onClick={() => toggleFilter('received')} />
+          <StatPill color="destructive" label="Blocked" count={blocked} active={activeFilter === 'blocked'} onClick={() => toggleFilter('blocked')} />
         </div>
       </div>
 
@@ -238,10 +250,14 @@ function StatPill({
   color,
   label,
   count,
+  active,
+  onClick,
 }: {
   color: 'warning' | 'success' | 'destructive' | 'muted'
   label: string
   count: number
+  active?: boolean
+  onClick?: () => void
 }) {
   const colorClasses = {
     warning: 'text-[hsl(var(--warning))] bg-warning/10',
@@ -251,11 +267,13 @@ function StatPill({
   }
 
   return (
-    <div
-      className={`flex items-center gap-1 rounded px-1.5 py-0.5 ${colorClasses[color]}`}
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex items-center gap-1 rounded px-1.5 py-0.5 cursor-pointer transition-all ${colorClasses[color]} ${active ? 'ring-2 ring-primary ring-offset-1' : 'hover:opacity-80'}`}
     >
       <span className="text-[10px] font-medium">{label}</span>
       <span className="text-[10px] font-mono font-semibold">{count}</span>
-    </div>
+    </button>
   )
 }

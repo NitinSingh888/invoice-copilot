@@ -129,10 +129,33 @@ def handle(
             "label": label,
         }
         total = queued + needs + blocked
-        text = (
-            f"Processed {total} invoice(s) [{label}]: "
-            f"{queued} queued, {needs} need review, {blocked} blocked."
-        )
+        if total == 0:
+            # Nothing new to process — tell the user what already exists
+            from collections import Counter
+
+            counts = Counter(inv.status for inv in today)
+            existing_needs = counts.get("needs", 0)
+            existing_blocked = counts.get("blocked", 0)
+            existing_queued = counts.get("queued", 0)
+            existing_total = existing_needs + existing_blocked + existing_queued
+            if existing_total > 0:
+                parts: list[str] = []
+                if existing_needs:
+                    parts.append(f"{existing_needs} awaiting your review")
+                if existing_blocked:
+                    parts.append(f"{existing_blocked} blocked")
+                if existing_queued:
+                    parts.append(f"{existing_queued} already queued for payment")
+                text = (
+                    f"No new invoices to process — {', '.join(parts)}."
+                )
+            else:
+                text = "No invoices to process today."
+        else:
+            text = (
+                f"Processed {total} invoice(s) [{label}]: "
+                f"{queued} queued, {needs} need review, {blocked} blocked."
+            )
         return (text, "process_batch", result)
 
     # ------------------------------------------------------------------ #

@@ -3,8 +3,6 @@ import {
   AlertCircle,
   XCircle,
   Zap,
-  Clock,
-  TrendingUp,
   ArrowRight,
   Sparkles,
 } from 'lucide-react'
@@ -13,7 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { VendorAvatar } from '@/components/invoice/VendorAvatar'
 import { StatusBadge } from '@/components/invoice/StatusBadge'
 import { PageHeader } from '@/components/layout/PageHeader'
-import { formatMoney, minutesSaved } from '@/lib/utils'
+import { formatMoney } from '@/lib/utils'
 import type { InvoiceOut } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
@@ -83,9 +81,6 @@ export function Dashboard({ invoices, loading, onProcessBatch, onSwitchToInbox }
   const needs = invoices.filter((i) => i.status === 'needs').length
   const blocked = invoices.filter((i) => i.status === 'blocked').length
   const auto = queued
-  const mins = minutesSaved(queued) // time saved = invoices the agent auto-cleared
-  const hours = (mins / 60).toFixed(1)
-  const throughputPct = total > 0 ? Math.round((queued / total) * 100) : 0
 
   // Stacked bar widths
   const queuedPct = total > 0 ? (queued / total) * 100 : 0
@@ -108,7 +103,7 @@ export function Dashboard({ invoices, loading, onProcessBatch, onSwitchToInbox }
 
       <div className="flex-1 p-6 space-y-6">
         {/* KPI grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <KpiCard
             label="Total Today"
             value={total}
@@ -139,22 +134,6 @@ export function Dashboard({ invoices, loading, onProcessBatch, onSwitchToInbox }
             sub={blocked > 0 ? 'requires attention' : 'none blocked'}
             icon={<XCircle className="h-3.5 w-3.5" />}
             variant={blocked > 0 ? 'destructive' : 'default'}
-            loading={loading}
-          />
-          <KpiCard
-            label="Hours Saved"
-            value={`~${hours}h`}
-            sub={`${mins} min vs. manual`}
-            icon={<Clock className="h-3.5 w-3.5" />}
-            variant="success"
-            loading={loading}
-          />
-          <KpiCard
-            label="Straight-Through"
-            value={`${throughputPct}%`}
-            sub="of invoices auto-cleared"
-            icon={<TrendingUp className="h-3.5 w-3.5" />}
-            variant={throughputPct >= 50 ? 'success' : 'warning'}
             loading={loading}
           />
         </div>

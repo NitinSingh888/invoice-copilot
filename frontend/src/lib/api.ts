@@ -164,6 +164,10 @@ export async function listInvoices(): Promise<InvoiceOut[]> {
   return request('/invoices')
 }
 
+export async function listAllInvoices(): Promise<InvoiceOut[]> {
+  return request('/invoices/all')
+}
+
 export async function getInvoice(id: string): Promise<InvoiceOut> {
   return request(`/invoices/${id}`)
 }
@@ -199,10 +203,21 @@ export async function getSamples(): Promise<SampleInvoice[]> {
 export async function uploadInvoice(file: File): Promise<ProcessResultOut> {
   const form = new FormData()
   form.append('file', file)
+  const headers: Record<string, string> = {}
+  const token = getToken()
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
   const res = await fetch(`${BASE}/invoices/upload`, {
     method: 'POST',
+    headers,
     body: form,
   })
+  if (res.status === 401) {
+    clearToken()
+    window.dispatchEvent(new Event('ic-unauthorized'))
+    throw new Error('Unauthorized')
+  }
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText)
     throw new Error(`API ${res.status}: ${text}`)

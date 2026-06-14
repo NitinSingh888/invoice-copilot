@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ExternalLink, Pencil, CheckCircle2, PauseCircle } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -7,9 +7,9 @@ import { Input } from '@/components/ui/input'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { VendorAvatar } from './VendorAvatar'
 import { FindingChip } from './FindingChip'
-import { invoiceAction } from '@/lib/api'
+import { invoiceAction, getOrgMembers } from '@/lib/api'
 import { formatMoney } from '@/lib/utils'
-import type { InvoiceOut, FindingDisplay } from '@/lib/types'
+import type { InvoiceOut, FindingDisplay, OrgMember } from '@/lib/types'
 
 interface ApprovalCardProps {
   invoice: InvoiceOut
@@ -30,6 +30,13 @@ export function ApprovalCard({
   const [editing, setEditing] = useState(false)
   const [editAmount, setEditAmount] = useState(invoice.amount)
   const [editRoute, setEditRoute] = useState(invoice.route ?? '')
+  const [members, setMembers] = useState<OrgMember[]>([])
+
+  useEffect(() => {
+    getOrgMembers()
+      .then(setMembers)
+      .catch(console.error)
+  }, [])
 
   async function doAction(action: 'approve' | 'hold' | 'edit' | 'route', extra?: Record<string, string>) {
     setLoading(action)
@@ -117,12 +124,18 @@ export function ApprovalCard({
             </div>
             <div>
               <label className="text-[10px] text-muted-foreground mb-1 block">Route to</label>
-              <Input
+              <select
                 value={editRoute}
                 onChange={(e) => setEditRoute(e.target.value)}
-                placeholder="priya / finance"
-                className="text-xs h-7"
-              />
+                className="flex h-7 w-full rounded-md border border-input bg-background px-2 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="">Select team member…</option>
+                {members.map((m) => (
+                  <option key={m.id} value={m.email}>
+                    {m.email}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         )}

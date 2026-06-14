@@ -67,7 +67,7 @@ export function PageHeader({
               value={searchQuery ?? ''}
               onChange={(e) => onSearchChange?.(e.target.value)}
               placeholder="Search vendor, ID, PO…"
-              className="bg-transparent outline-none placeholder:text-muted-foreground text-foreground w-36 md:w-48"
+              className="bg-transparent outline-none placeholder:text-muted-foreground text-foreground w-48 md:w-72"
             />
             {searchQuery && (
               <button

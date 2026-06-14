@@ -9,7 +9,7 @@ import { LearnedRuleCard } from '@/components/invoice/LearnedRuleCard'
 import { InvoiceInspectionCard } from '@/components/invoice/InvoiceInspectionCard'
 import { InvoiceListCard } from '@/components/invoice/InvoiceListCard'
 import { BulkConfirmCard } from '@/components/invoice/BulkConfirmCard'
-import { IntroModal, HelpButton } from '@/components/invoice/IntroModal'
+import { IntroModal } from '@/components/invoice/IntroModal'
 import { VendorAvatar } from '@/components/invoice/VendorAvatar'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { formatMoney } from '@/lib/utils'
@@ -108,20 +108,17 @@ export function Inbox({
         searchQuery={searchQuery}
         onSearchChange={onSearchChange}
         actions={
-          <div className="flex items-center gap-1">
-            <HelpButton onClick={() => setHelpOpen(true)} />
-            {onTakeTour && (
-              <button
-                type="button"
-                onClick={onTakeTour}
-                className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                title="Take the product tour"
-              >
-                <Map className="h-3.5 w-3.5" />
-                Tour
-              </button>
-            )}
-          </div>
+          onTakeTour ? (
+            <button
+              type="button"
+              onClick={onTakeTour}
+              className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              title="Take the product tour"
+            >
+              <Map className="h-3.5 w-3.5" />
+              Tour
+            </button>
+          ) : undefined
         }
       />
 

@@ -3,7 +3,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { VendorAvatar } from '@/components/invoice/VendorAvatar'
 import { StatusBadge } from '@/components/invoice/StatusBadge'
-import { listInvoices } from '@/lib/api'
+import { listAllInvoices } from '@/lib/api'
 import { formatMoney, isToday, formatDayHeader, localDateKey } from '@/lib/utils'
 import type { InvoiceOut } from '@/lib/types'
 import { X } from 'lucide-react'
@@ -29,7 +29,7 @@ export function History({ onInvoiceClick }: HistoryProps) {
 
   useEffect(() => {
     setLoading(true)
-    listInvoices()
+    listAllInvoices()
       .then((rows) => setAllInvoices(rows))
       .catch(console.error)
       .finally(() => setLoading(false))
