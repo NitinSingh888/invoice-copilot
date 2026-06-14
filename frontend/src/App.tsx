@@ -22,7 +22,7 @@ import {
   proposeRule,
 } from '@/lib/api'
 
-import { displayFinding, formatMoney } from '@/lib/utils'
+import { displayFinding, formatMoney, isToday } from '@/lib/utils'
 import type {
   BatchResult,
   ChatMessage,
@@ -136,9 +136,15 @@ export default function App({ userEmail, orgName, orgRole }: AppProps) {
 
   const refreshInvoices = useCallback(async (): Promise<InvoiceOut[]> => {
     const rows = await listInvoices()
-    // Show all actionable invoices — exclude terminal states (already resolved)
+    // Show actionable invoices that were created or touched today.
+    // Excludes terminal states (queued/cleared/rejected = already resolved)
+    // and old seed history that hasn't been touched today.
     const terminal = new Set(['cleared', 'queued', 'rejected'])
-    const live = rows.filter((i) => !terminal.has(i.status))
+    const live = rows.filter(
+      (i) =>
+        !terminal.has(i.status) &&
+        (isToday(i.created_at) || (i.updated_at != null && isToday(i.updated_at))),
+    )
     setInvoices(live)
     return live
   }, [])
