@@ -88,22 +88,6 @@ function ProductPanel() {
           </div>
         </div>
 
-        {/* Bottom stats — real, verifiable numbers */}
-        <div className="relative z-10 pt-6 mt-auto flex items-center gap-8"
-          style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-          <div>
-            <p className="text-[18px] font-semibold text-white/80">350+</p>
-            <p className="text-[10px] text-white/30 uppercase tracking-widest mt-0.5">Tests</p>
-          </div>
-          <div>
-            <p className="text-[18px] font-semibold text-white/80">100%</p>
-            <p className="text-[10px] text-white/30 uppercase tracking-widest mt-0.5">Auditable</p>
-          </div>
-          <div>
-            <p className="text-[18px] font-semibold text-white/80">Multi</p>
-            <p className="text-[10px] text-white/30 uppercase tracking-widest mt-0.5">Tenant</p>
-          </div>
-        </div>
       </div>
     </div>
   )
