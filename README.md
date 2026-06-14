@@ -6,6 +6,13 @@ The design premise is the whole point: in finance automation the hard part isn't
 
 ---
 
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/1c9602b6-4da3-4eac-95f2-ffcef6e24022" />
+<img width="1919" height="1080" alt="image" src="https://github.com/user-attachments/assets/4f0f1941-1c3c-479c-8c55-13c8072837a0" />
+<img width="1913" height="1071" alt="image" src="https://github.com/user-attachments/assets/84c4aef3-3068-4f89-9303-597f6ac359ca" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/f07175c1-9408-497f-bf30-e28350847adb" />
+
+
+
 ## The problem
 
 Every company that pays suppliers has someone in accounts payable clearing a queue of invoices by hand. For each one they open the document, read off the vendor, amount and PO number, match it against the purchase order, check policy (Is it a duplicate? Over the PO? An unknown vendor? Over budget?), and then **approve it for payment, route it for sign-off, or hold it.**
