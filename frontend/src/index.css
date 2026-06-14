@@ -4,55 +4,61 @@
 
 @layer base {
   :root {
-    /* Linear Light Theme */
-    --background: 216 20% 98%;       /* #fafbfc */
-    --foreground: 228 8% 10%;        /* #16171a */
-    --card: 0 0% 100%;               /* #ffffff */
-    --card-foreground: 228 8% 10%;   /* #16171a */
-    --popover: 0 0% 100%;            /* #ffffff */
-    --popover-foreground: 228 8% 10%;
-    --primary: 233 57% 59%;          /* #5e6ad2 */
-    --primary-foreground: 0 0% 100%; /* #ffffff */
-    --secondary: 220 14% 95%;        /* #f1f2f4 */
-    --secondary-foreground: 228 8% 10%;
-    --muted: 220 14% 95%;            /* #f1f2f4 */
-    --muted-foreground: 225 6% 45%;  /* #6f737c */
-    --accent: 232 66% 95%;           /* #eef0fb */
-    --accent-foreground: 234 51% 52%;/* #4853c4 */
-    --destructive: 358 75% 59%;      /* #e5484d */
+    /*
+     * Fintech-grade palette — inspired by Mercury, Linear, Vercel.
+     * Neutral foundation, intentional accents, high data contrast.
+     */
+    --background: 0 0% 98.5%;           /* #fbfbfb — warm white, not blue-tinted */
+    --foreground: 240 6% 10%;            /* #17181a — near-black, easy on eyes */
+    --card: 0 0% 100%;                   /* #ffffff */
+    --card-foreground: 240 6% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 6% 10%;
+    --primary: 230 65% 52%;              /* #3b5ed6 — confident blue, not playful purple */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 16% 96%;            /* #f3f4f6 */
+    --secondary-foreground: 240 6% 10%;
+    --muted: 220 16% 96%;               /* #f3f4f6 */
+    --muted-foreground: 220 6% 44%;      /* #6b6f76 */
+    --accent: 220 20% 95%;              /* #eef1f5 */
+    --accent-foreground: 230 60% 48%;    /* #3150b8 */
+    --destructive: 0 72% 51%;            /* #dc2626 — standard red */
     --destructive-foreground: 0 0% 100%;
-    --border: 220 15% 91%;           /* #e6e7eb */
-    --input: 220 15% 91%;            /* #e6e7eb */
-    --ring: 233 57% 59%;             /* #5e6ad2 */
-    --success: 155 44% 42%;          /* #3d9a70 */
-    --warning: 38 72% 47%;           /* #cf9220 */
-    --radius: 6px;
+    --border: 220 13% 91%;              /* #e5e7eb */
+    --input: 220 13% 91%;
+    --ring: 230 65% 52%;
+    --success: 152 56% 39%;              /* #16a34a — clean green */
+    --warning: 38 92% 50%;               /* #f59e0b — amber */
+    --radius: 8px;
   }
 
   .dark {
-    /* Linear Dark Theme */
-    --background: 222 16% 6%;        /* #0b0c0e */
-    --foreground: 180 6% 97%;        /* #f7f8f8 */
-    --card: 228 11% 9%;              /* #141518 */
-    --card-foreground: 180 6% 97%;
-    --popover: 228 11% 9%;
-    --popover-foreground: 180 6% 97%;
-    --primary: 233 70% 70%;          /* #7c84e8 */
-    --primary-foreground: 234 30% 6%;/* #0b0c10 */
-    --secondary: 228 9% 11%;         /* #1b1c20 */
-    --secondary-foreground: 180 6% 97%;
-    --muted: 228 9% 11%;             /* #1b1c20 */
-    --muted-foreground: 221 6% 57%;  /* #8a8f98 */
-    --accent: 235 30% 18%;           /* #20223b */
-    --accent-foreground: 233 70% 82%;/* #b3b8f2 */
-    --destructive: 358 82% 65%;      /* #f0575c */
+    /*
+     * Dark: deep charcoal, not pure black.
+     * Mercury-inspired depth with readable contrast.
+     */
+    --background: 230 15% 8%;            /* #111318 — deep navy-charcoal */
+    --foreground: 220 14% 92%;           /* #e8eaed */
+    --card: 230 12% 11%;                /* #171a21 */
+    --card-foreground: 220 14% 92%;
+    --popover: 230 12% 11%;
+    --popover-foreground: 220 14% 92%;
+    --primary: 224 70% 62%;              /* #5b8def — brighter blue for dark bg */
+    --primary-foreground: 230 15% 8%;
+    --secondary: 228 10% 14%;            /* #1f2128 */
+    --secondary-foreground: 220 14% 92%;
+    --muted: 228 10% 14%;
+    --muted-foreground: 220 6% 55%;      /* #858890 */
+    --accent: 230 20% 17%;              /* #222740 */
+    --accent-foreground: 224 80% 75%;    /* #8bb4f7 */
+    --destructive: 0 72% 60%;            /* #ef4444 */
     --destructive-foreground: 0 0% 100%;
-    --border: 225 8% 16%;            /* #26282d */
-    --input: 225 8% 16%;             /* #26282d */
-    --ring: 233 70% 70%;             /* #7c84e8 */
-    --success: 145 45% 50%;          /* #4cb782 */
-    --warning: 38 75% 57%;           /* #e6a33a */
-    --radius: 6px;
+    --border: 228 10% 18%;              /* #282b33 */
+    --input: 228 10% 18%;
+    --ring: 224 70% 62%;
+    --success: 152 56% 48%;              /* #22c55e */
+    --warning: 38 92% 55%;               /* #fbbf24 */
+    --radius: 8px;
   }
 }
 
@@ -64,15 +70,15 @@
   body {
     @apply bg-background text-foreground font-sans;
     font-size: 14px;
-    line-height: 1.5;
+    line-height: 1.55;
     font-feature-settings: "rlig" 1, "calt" 1, "tnum" 0;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    letter-spacing: -0.005em;
+    letter-spacing: -0.01em;
   }
 
   h1, h2, h3, h4 {
-    letter-spacing: -0.02em;
+    letter-spacing: -0.025em;
   }
 
   html {
