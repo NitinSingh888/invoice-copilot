@@ -34,6 +34,7 @@ def _get_client() -> object:
         with _client_lock:
             if _client is None:
                 import boto3  # type: ignore[import-untyped]
+                from botocore.config import Config  # type: ignore[import-untyped]
 
                 settings = get_settings()
                 _client = boto3.client(
@@ -41,6 +42,7 @@ def _get_client() -> object:
                     region_name=settings.s3_region,
                     aws_access_key_id=settings.s3_access_key or None,
                     aws_secret_access_key=settings.s3_secret_key or None,
+                    config=Config(signature_version="s3v4"),
                 )
     return _client
 
