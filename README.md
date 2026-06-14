@@ -118,14 +118,8 @@ PostgreSQL via SQLAlchemy 2.0 (typed `Mapped`) with **Alembic migrations**. Core
 docker compose up
 ```
 
-Then open **http://localhost:5173** and sign in with a seeded account. The demo
-team ships with two real, separate logins (one org, distinct credentials) — the
-AP clerk (admin) and an approver (member):
-
-```
-clerk     demo@example.com   / demo1234
-approver  priya@example.com  / priya1234
-```
+Then open **http://localhost:5173** and sign up or sign in. The first account
+you create becomes the org admin.
 
 No API keys are required — it runs on a deterministic mock LLM out of the box. To use a real model, create `backend/.env` (copy `backend/.env.example`) and set:
 

@@ -489,24 +489,6 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps) {
             )}
           </div>
 
-          {/* Demo hint */}
-          <div className="mt-5 text-center">
-            <p className="text-[11px] text-muted-foreground">
-              Try the demo:{' '}
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail('demo@example.com')
-                  setPassword('demo1234')
-                  switchMode('login')
-                }}
-                className="font-mono text-[11px] text-primary hover:underline"
-              >
-                demo@example.com / demo1234
-              </button>
-            </p>
-          </div>
-
           {/* Trust signals */}
           <div className="mt-6 flex justify-center gap-6 text-[10px] text-muted-foreground/60">
             <span>SOX-ready audit</span>

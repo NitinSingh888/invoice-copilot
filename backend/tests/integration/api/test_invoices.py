@@ -143,19 +143,18 @@ def test_get_corpus_image_file_returns_200(demo_seeded_client: TestClient) -> No
     assert resp.status_code == 200
 
 
-def test_corpus_history_invoice_has_old_created_at(demo_seeded_client: TestClient) -> None:
-    """A corpus history invoice must have a created_at older than its today sibling."""
-    from datetime import datetime
+def test_corpus_today_invoices_are_from_today(demo_seeded_client: TestClient) -> None:
+    """GET /invoices (list_today) returns only today's corpus invoices."""
+    from datetime import date, datetime
 
     rows = demo_seeded_client.get("/api/v1/invoices").json()
     corpus = [r for r in rows if (r.get("source_file") or "").lower().endswith(".jpg")]
-    today = [r for r in corpus if r["status"] == "received"]
-    history = [r for r in corpus if r["status"] != "received"]
-    assert today and history
+    today_rows = [r for r in corpus if r["status"] == "received"]
+    assert today_rows, "Expected at least one today corpus invoice"
 
-    today_ts = datetime.fromisoformat(today[0]["created_at"])
-    hist_ts = datetime.fromisoformat(history[0]["created_at"])
-    assert hist_ts < today_ts
+    for r in today_rows:
+        created = datetime.fromisoformat(r["created_at"]).date()
+        assert created == date.today(), f"Invoice {r['id']} created_at {created} is not today"
 
 
 def test_get_invoice_file_no_file_returns_404(client: TestClient, db: Session) -> None:
