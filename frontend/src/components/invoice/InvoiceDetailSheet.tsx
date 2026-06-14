@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { FileText, ExternalLink, CheckCircle2, PauseCircle, ArrowRight, XCircle, Send } from 'lucide-react'
+import { FileText, ExternalLink, CheckCircle2, PauseCircle, XCircle, Send } from 'lucide-react'
 import {
   Sheet,
   SheetContent,
@@ -177,11 +177,10 @@ export function InvoiceDetailSheet({
     }
   }
 
-  const isAcmeOverPO =
-    invoice?.vendor.toLowerCase().includes('acme') &&
-    findings.some((f) => f.code === 'OVER_TOLERANCE')
-  const showRouteToPriya = isAcmeOverPO
-  const canAct = invoice?.status === 'needs' || invoice?.status === 'received'
+  // Actionable: needs review, received, blocked, held, routed — anything not terminal
+  const terminal = new Set(['cleared', 'queued', 'rejected'])
+  const canAct = invoice ? !terminal.has(invoice.status) : false
+  const isHeldOrBlocked = invoice?.status === 'held' || invoice?.status === 'blocked' || invoice?.status === 'routed'
 
   // Truncate long invoice/po numbers for display while preserving full value in title attr
   function truncate(s: string | null, max = 24): string {
@@ -341,71 +340,54 @@ export function InvoiceDetailSheet({
                 <div className="flex items-center gap-2 flex-wrap pt-1">
                   {canAct && (
                     <>
-                      {showRouteToPriya ? (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              size="sm"
-                              onClick={() => doAction('route', { route: 'priya' })}
-                              disabled={actionLoading !== null || rejectOpen}
-                              className="h-7 text-xs"
-                            >
-                              {actionLoading === 'route' ? (
-                                <span className="animate-pulse">Routing…</span>
-                              ) : (
-                                <>
-                                  <ArrowRight className="h-3 w-3" />
-                                  Route to Priya
-                                </>
-                              )}
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Send to a colleague to approve</TooltipContent>
-                        </Tooltip>
-                      ) : (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              size="sm"
-                              onClick={() => doAction('approve')}
-                              disabled={actionLoading !== null || rejectOpen}
-                              className="h-7 text-xs"
-                            >
-                              {actionLoading === 'approve' ? (
-                                <span className="animate-pulse">Approving…</span>
-                              ) : (
-                                <>
-                                  <CheckCircle2 className="h-3 w-3" />
-                                  Approve
-                                </>
-                              )}
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Approve &amp; queue for payment</TooltipContent>
-                        </Tooltip>
-                      )}
-
+                      {/* Approve — always available for actionable invoices */}
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
-                            variant="outline"
                             size="sm"
-                            onClick={() => doAction('hold')}
+                            onClick={() => doAction('approve')}
                             disabled={actionLoading !== null || rejectOpen}
                             className="h-7 text-xs"
                           >
-                            {actionLoading === 'hold' ? (
-                              <span className="animate-pulse">Holding…</span>
+                            {actionLoading === 'approve' ? (
+                              <span className="animate-pulse">Approving…</span>
                             ) : (
                               <>
-                                <PauseCircle className="h-3 w-3" />
-                                Hold
+                                <CheckCircle2 className="h-3 w-3" />
+                                {isHeldOrBlocked ? 'Release & Approve' : 'Approve'}
                               </>
                             )}
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent>Pause — needs more info</TooltipContent>
+                        <TooltipContent>
+                          {isHeldOrBlocked ? 'Override and approve for payment' : 'Approve & queue for payment'}
+                        </TooltipContent>
                       </Tooltip>
+
+                      {/* Hold — only when not already held */}
+                      {invoice?.status !== 'held' && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => doAction('hold')}
+                              disabled={actionLoading !== null || rejectOpen}
+                              className="h-7 text-xs"
+                            >
+                              {actionLoading === 'hold' ? (
+                                <span className="animate-pulse">Holding…</span>
+                              ) : (
+                                <>
+                                  <PauseCircle className="h-3 w-3" />
+                                  Hold
+                                </>
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Pause — needs more info</TooltipContent>
+                        </Tooltip>
+                      )}
 
                       <Tooltip>
                         <TooltipTrigger asChild>
