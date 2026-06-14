@@ -59,9 +59,6 @@ def signup(db: Session, email: str, password: str, org_name: str) -> tuple[User,
         )
         user_repo.add(db, user)
 
-        # Seed demo dataset for this new org
-        _seed_org(db, org_id)
-
         return user, "active"
     else:
         # Existing org — member flow, pending admin approval
